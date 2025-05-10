@@ -1,0 +1,28 @@
+{
+    "name": "dataset1",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "ls_blob",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "AzureBlobStorage",
+        "structure": [],
+        "typeProperties": {
+            "folderPath": "input",
+            "fileName": {
+                "value": "@dataset().fileName",
+                "type": "Expression"
+            },
+            "format": {
+                "type": "TextFormat",
+                "columnDelimiter": ",",
+                "rowDelimiter": "\n",
+                "quoteChar": "\"",
+                "escapeChar": "\\",
+                "nullValue": "null",
+                "encodingName": "UTF-8"
+            }
+        }
+    }
+}

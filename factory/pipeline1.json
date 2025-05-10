@@ -1,0 +1,45 @@
+{
+    "name": "pipeline1",
+    "properties": {
+        "annotations": [],
+        "activities": [
+            {
+                "name": "CopyBlob",
+                "type": "Copy",
+                "inputs": [
+                    {
+                        "referenceName": "dataset1",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "fileName": "test.csv"
+                        }
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "dataset2",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "typeProperties": {
+                    "source": {
+                        "type": "BlobSource",
+                        "recursive": false
+                    },
+                    "sink": {
+                        "type": "BlobSink",
+                        "storeSettings": {
+                            "type": "AzureBlobStorageWriteSettings"
+                        }
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "fileName": {
+                "type": "string",
+                "defaultValue": "test.csv"
+            }
+        }
+    }
+}
