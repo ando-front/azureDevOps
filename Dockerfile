@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y python3 python3-pip python3-venv npm
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 RUN pip3 install azure-storage-blob
+RUN pip3 install pytest
 
 RUN npm install -g @azure/storage-blob azurite
 
