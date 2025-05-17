@@ -34,4 +34,4 @@ EXPOSE 2222
 WORKDIR /tests
 
 # AzuriteとSFTPサーバをバックグラウンドで起動し、テストを実行
-CMD /bin/bash -c "azurite --location /data --debug /data/debug.log & /usr/sbin/sshd -D & python3 /tests/run_tests.py"
+CMD ["/bin/bash", "-c", "azurite --location /data --debug /data/debug.log & /usr/sbin/sshd -D & python3 /tests/run_tests.py"]
