@@ -1,0 +1,49 @@
+name: ADF Deploy
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker
+        uses: docker/setup-docker@v2
+
+      - name: Build and run Docker container
+        run: |
+          docker build -t adf-test .
+          docker run -d -p 8080:80 adf-test
+          # Azuriteが起動していることを確認
+          docker exec -it adf-test azurite -v
+
+      - name: Run tests
+        run: |
+          # テストスクリプトの実行 (例: pytest)
+          echo "Running tests..."
+          docker exec -it adf-test python3 run_tests.py
+          docker exec -it adf-test python3 tests/test_pipeline2.py
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Azure Deploy
+        run: |
+          # Azureへのデプロイコマンド
+          echo "Deploying to Azure..."
+          az deployment group create \
+            --name adf-deploy \
+            --resource-group adf-rg01 \
+            --template-file factory/adf-rg01.json \
+            --parameters @factory/publish_config.json
