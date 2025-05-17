@@ -1,29 +1,43 @@
 FROM ubuntu:latest
 
 # 必要なパッケージのインストール
-RUN apt-get update && apt-get install -y python3 python3-pip python3-venv npm
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    npm \
+    openssh-server \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python仮想環境のセットアップ
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN pip3 install azure-storage-blob pytest pytest-cov
 
+# Pythonパッケージのインストール
+COPY requirements.txt /tmp/
+RUN pip3 install -r /tmp/requirements.txt
+
+# npmパッケージのインストール
 RUN npm install -g @azure/storage-blob azurite
 
-# SFTPサーバのインストールと設定
-RUN apt-get update && apt-get install -y openssh-server
+# SFTPサーバの設定
 RUN mkdir /var/run/sshd
 RUN echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
 RUN sed -i 's/#Port 22/Port 2222/g' /etc/ssh/sshd_config
 
-# ソースコードとテストのコピー
+# ディレクトリ構造の作成
 COPY . /app
 WORKDIR /app
 
-# 必要なディレクトリの作成
-RUN mkdir -p tests/data/input tests/data/output tests/data/sftp /data
-RUN chmod 777 tests/data/input tests/data/output tests/data/sftp /data
+# 必要なディレクトリの作成と権限設定
+RUN mkdir -p /app/tests/data/{input,output,sftp} /data \
+    && chmod 777 /app/tests/data/input \
+    && chmod 777 /app/tests/data/output \
+    && chmod 777 /app/tests/data/sftp \
+    && chmod 777 /data
 
 # ポートの公開
-EXPOSE 10000 10001 10002 2222
+EXPOSE 10000 10001 10002 2222 80
 
-# AzuriteとSFTPサーバをバックグラウンドで起動し、テストを実行
-CMD /bin/bash -c "azurite --location /data --debug /data/debug.log & /usr/sbin/sshd -D & python3 -m pytest tests/unit -v"
+# サービスの起動
+CMD ["/bin/bash", "-c", "azurite --location /data --debug /data/debug.log & /usr/sbin/sshd -D & python3 -m pytest /app/tests/unit/ -v"]
