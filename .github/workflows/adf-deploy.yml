@@ -24,6 +24,7 @@ jobs:
           docker rm -f adf-test || true
           docker build -t adf-test .
           docker run -d -p 8080:80 adf-test
+          docker ps -a
           # Azuriteが起動していることを確認
           docker exec -it adf-test azurite -v
 
