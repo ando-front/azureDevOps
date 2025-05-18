@@ -1,35 +1,35 @@
-## ジョブフロー仕様書
+## ジョブフローの仕様
 
-### 1. Checkout code
+### 1. コードのチェックアウト
 
-*   リポジトリのコードをチェックアウトします。
+*   リポジトリからコードをチェックアウトします。
 *   `actions/checkout@v3`を使用します。
 
-### 2. Set up Docker
+### 2. Dockerのセットアップ
 
-*   Dockerをセットアップします。
+*   Docker環境をセットアップします。
 *   `docker/setup-docker@v2`を使用します。
 
-### 3. Build and run Docker container
+### 3. Dockerコンテナのビルドと実行
 
-*   Dockerコンテナをビルドし、実行します。
+*   Dockerコンテナをビルドして実行します。
 *   `docker build -t adf-test .`を使用します。
 *   `docker run -d -p 8080:80 adf-test`を使用します。
-*   `azurite`が起動していることを確認します。
+*   Azuriteストレージエミュレーターが起動していることを確認します。
 *   `docker exec -it adf-test azurite -v`を使用します。
 
-### 4. Run tests
+### 4. テストの実行
 
 *   テストスクリプトを実行します。
 *   `docker exec -it adf-test python3 run_tests.py`を使用します。
 
-### 5. Azure Login
+### 5. Azureへのログイン
 
 *   Azureにログインします。
 *   `azure/login@v1`を使用します。
 *   `secrets.AZURE_CREDENTIALS`を使用します。
 
-### 6. Azure Deploy
+### 6. Azureへのデプロイ
 
 *   Azureにデプロイします。
 *   `az deployment group create`を使用します。
