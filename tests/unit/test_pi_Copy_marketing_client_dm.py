@@ -83,7 +83,7 @@ class TestPiCopyMarketingClientDm(unittest.TestCase):
         sql = sql.replace("SELECT", "SELECT DUMMY_COL,", 1)
         activities[0]["typeProperties"]["source"]["sqlReaderQuery"] = sql
         with self.assertRaises(AssertionError):
-            TestPiCopyMarketingClientDm.test_input_output_columns_match.__func__(self)
+            self.test_input_output_columns_match()
         print("[INFO] カラム数不一致時のAssertionErrorを正常に検出")
 
     def test_mock_column_names(self):

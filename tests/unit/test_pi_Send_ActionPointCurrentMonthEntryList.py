@@ -53,15 +53,42 @@ class TestPiSendActionPointCurrentMonthEntryList(unittest.TestCase):
         activities = self.pipeline["properties"]["activities"]
         first = activities[0]
         sql = first["typeProperties"]["source"]["sqlReaderQuery"]
-        m = re.search(r"SELECT(.+?)FROM", sql, re.DOTALL)
+        m = re.search(r"SELECT(.+?)FROM", sql, re.DOTALL | re.IGNORECASE)
         self.assertIsNotNone(m, "SELECT句が見つかりません")
         select_body = m.group(1)
-        columns = [line.strip().split()[0].strip(',') for line in select_body.splitlines() if line.strip() and not line.strip().startswith('--')]
+        # カンマ区切りで1行にまとめてから分割し、関数やAS句も考慮
+        select_lines = []
+        buf = ''
+        for line in select_body.splitlines():
+            line = line.strip()
+            if not line or line.startswith('--'):
+                continue
+            buf += ' ' + line
+            if ',' in line or line.lower().endswith(' as'):
+                select_lines.append(buf.strip())
+                buf = ''
+        if buf:
+            select_lines.append(buf.strip())
+        columns = []
+        aliases = []
+        for col in ','.join(select_lines).split(','):
+            col = col.strip()
+            if not col:
+                continue
+            # AS句でエイリアスがあれば両方抽出
+            m_as = re.match(r"(.+?)\s+AS\s+([\w@]+)", col, re.IGNORECASE)
+            if m_as:
+                columns.append(m_as.group(1).strip())
+                aliases.append(m_as.group(2).strip())
+            else:
+                columns.append(col)
         print(f"[DEBUG] SELECT句カラム: {columns}")
+        print(f"[DEBUG] SELECT句エイリアス: {aliases}")
         # 期待カラム例
         expected = ['MTGID', 'ACTIONPOINT_TYPE', 'FORMAT(ENTRY_DATE,', '@outputDT']
         for col in expected:
-            self.assertTrue(any(col in c for c in columns), f"期待カラム {col} がSELECT句に存在しない")
+            found = any(col in c for c in columns) or any(col in a for a in aliases)
+            self.assertTrue(found, f"期待カラム {col} がSELECT句に存在しない")
         print("[INFO] モックデータによるSELECTカラムテスト成功")
 
 if __name__ == "__main__":
