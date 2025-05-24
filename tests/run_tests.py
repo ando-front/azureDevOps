@@ -1,6 +1,9 @@
 import unittest
 import os
+import sys
 from azure.storage.blob import BlobServiceClient
+
+sys.path.insert(0, os.path.dirname(__file__))
 
 class TestADF(unittest.TestCase):
     def setUp(self):
@@ -94,11 +97,22 @@ class TestADF(unittest.TestCase):
             if os.path.exists(file_path):
                 os.remove(file_path)
 
-if __name__ == '__main__':
+def main():
     print("=== ADFパイプラインテストの実行 ===")
-    result = unittest.main(verbosity=2, exit=False)
+    loader = unittest.TestLoader()
+    unit_dir = os.path.join(os.path.dirname(__file__), "unit")
+    unit_dir = os.path.abspath(unit_dir)
+    print(f"テスト検索ディレクトリ: {unit_dir}")
+    suite = loader.discover(unit_dir, pattern="test_*.py")
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(suite)
     print("\n=== テスト実行完了 ===")
-    print(f"実行されたテスト数: {result.result.testsRun}")
-    print(f"成功したテスト数: {result.result.testsRun - len(result.result.failures) - len(result.result.errors)}")
-    print(f"失敗したテスト数: {len(result.result.failures)}")
-    print(f"エラーが発生したテスト数: {len(result.result.errors)}")
+    print(f"実行されたテスト数: {result.testsRun}")
+    print(f"成功したテスト数: {result.testsRun - len(result.failures) - len(result.errors)}")
+    print(f"失敗したテスト数: {len(result.failures)}")
+    print(f"エラーが発生したテスト数: {len(result.errors)}")
+    sys.exit(len(result.failures) + len(result.errors))
+
+# エントリーポイント
+if __name__ == '__main__':
+    main()
