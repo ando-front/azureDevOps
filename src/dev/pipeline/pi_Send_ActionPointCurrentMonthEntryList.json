@@ -1,0 +1,160 @@
+{
+    "name": "[concat(parameters('factoryName'), '/pi_Send_ActionPointCurrentMonthEntryList')]",
+    "type": "Microsoft.DataFactory/factories/pipelines",
+    "apiVersion": "2018-06-01",
+    "properties": {
+        "description": "ODM「アクションポイントエントリーevent」からIFに必要なデータを抽出、gzipファイルでBLOB出力し、SFMCにSFTP連携する。",
+        "activities": [
+            {
+                "name": "at_CreateCSV_ActionPointCurrentMonthEntryList",
+                "description": "ODM「アクションポイントエントリーevent」からIFに必要なデータを抽出、gzipファイルでBLOB出力",
+                "type": "Copy",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 2,
+                    "retryIntervalInSeconds": 120,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "SqlDWSource",
+                        "sqlReaderQuery": "--------------------------------------------------------------------------\n-- アクションポイント当月エントリーリスト＞ADF整備（SFTP送信）\n-- \n-- 2025/03/17  新規作成\n--------------------------------------------------------------------------\n\n-- テーブル「アクションポイントエントリーevent」からMA向けの項目を抽出する\n-- 最新の日時の宣言\nDECLARE @today_jst datetime;\n-- 最新の日時を取得\nSET @today_jst=CONVERT(DATETIME, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time');  \n\n-- IF出力日時の宣言\nDECLARE @outputDT varchar(20);\n-- 取得した最新の日時をyyyy/MM/dd HH:mm:ssに変換する\nSET @outputDT = FORMAT(@today_jst, 'yyyy/MM/dd HH:mm:ss');\n\n-- 実行年月の月初日と月末日を宣言\nDECLARE @month_startDT varchar(10);  -- 実行日の月初日\nDECLARE @month_endDT varchar(10);    -- 実行日の月末日\n-- 実行年月の月初日を取得\nSET @month_startDT = FORMAT(@today_jst, 'yyyy-MM') + '-01';\n-- 実行年月の月末日を取得\nSET @month_endDT = EOMONTH(@today_jst);\n\nSELECT\n     MTGID                                           -- mTG会員ID\n    ,ACTIONPOINT_TYPE                                -- アクションポイント種別\n    ,FORMAT(ENTRY_DATE, 'yyyy/MM/dd') AS ENTRY_DATE  -- エントリー年月日\n    ,@outputDT AS OUTPUT_DATETIME                    -- IF出力日時\nFROM [omni].[omni_odm_actionpoint_trn_entry_event]   -- アクションポイントエントリーevent\nWHERE ENTRY_DATE BETWEEN @month_startDT AND @month_endDT  -- 「エントリー年月日」の年月が実行日の年月と一致するレコード\n;\n",
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "sink": {
+                        "type": "DelimitedTextSink",
+                        "storeSettings": {
+                            "type": "AzureBlobStorageWriteSettings"
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextWriteSettings",
+                            "quoteAllText": true,
+                            "fileExtension": ".csv"
+                        }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "type": "TabularTranslator",
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                            "allowDataTruncation": true,
+                            "treatBooleanAsNumber": false
+                        }
+                    }
+                },
+                "inputs": [
+                    {
+                        "referenceName": "ds_DamDwhTable_shir",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "table": "--"
+                        }
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "ds_CSV_BlobGz",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "directory": "datalake/OMNI/MA/ActionPointCurrentMonthEntryList",
+                            "columnDelimiter": ",",
+                            "quoteChar": "\"",
+                            "firstRowAsHeader": true,
+                            "filename": {
+                                "value": "@concat('ActionPointCurrentMonthEntryList_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "at_SendSftp_ActionPointCurrentMonthEntryList",
+                "description": "Blobに出力されたgzipファイルをSFMCにSFTP連携",
+                "type": "Copy",
+                "dependsOn": [
+                    {
+                        "activity": "at_CreateCSV_ActionPointCurrentMonthEntryList",
+                        "dependencyConditions": [
+                            "Skipped"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 2,
+                    "retryIntervalInSeconds": 120,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "BinarySource",
+                        "storeSettings": {
+                            "type": "AzureBlobStorageReadSettings",
+                            "recursive": false,
+                            "deleteFilesAfterCompletion": false
+                        },
+                        "formatSettings": {
+                            "type": "BinaryReadSettings"
+                        }
+                    },
+                    "sink": {
+                        "type": "BinarySink",
+                        "storeSettings": {
+                            "type": "SftpWriteSettings",
+                            "operationTimeout": "01:20:00",
+                            "useTempFileRename": false
+                        }
+                    },
+                    "enableStaging": false
+                },
+                "inputs": [
+                    {
+                        "referenceName": "ds_BlobGz",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "directory": "datalake/OMNI/MA/ActionPointCurrentMonthEntryList",
+                            "filename": {
+                                "value": "@concat('ActionPointCurrentMonthEntryList_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "ds_Gz_Sftp",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "directory": "Import/DAM/ActionPointCurrentMonthEntryList",
+                            "filename": {
+                                "value": "@concat('ActionPointCurrentMonthEntryList_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                ]
+            }
+        ],
+        "policy": {
+            "elapsedTimeMetric": {}
+        },
+        "folder": {
+            "name": "SMC"
+        },
+        "annotations": [],
+        "lastPublishTime": "2025-03-25T01:43:02Z"
+    },
+    "dependsOn": [
+        "[concat(variables('factoryId'), '/datasets/ds_DamDwhTable_shir')]",
+        "[concat(variables('factoryId'), '/datasets/ds_CSV_BlobGz')]",
+        "[concat(variables('factoryId'), '/datasets/ds_BlobGz')]",
+        "[concat(variables('factoryId'), '/datasets/ds_Gz_Sftp')]"
+    ]
+}
