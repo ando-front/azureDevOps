@@ -1,6 +1,8 @@
 import unittest
 import json
 import os
+from .normalize_column import normalize_column_name
+import re
 
 class TestPiInsertClientDmBx(unittest.TestCase):
     @classmethod
@@ -48,7 +50,6 @@ class TestPiInsertClientDmBx(unittest.TestCase):
         print("[INFO] モックデータでINSERT/SELECT構造の検証")
         activity = self.pipeline["properties"]["activities"][0]
         script = activity["typeProperties"]["scripts"][0]["text"]
-        import re
         insert_match = re.search(r"INSERT\s+INTO\s+\[omni\]\.\[omni_ods_marketing_trn_client_dm_bx_temp\].*?SELECT(.+?)FROM", script, re.DOTALL | re.IGNORECASE)
         self.assertIsNotNone(insert_match, "INSERT INTO SELECT構造が見つかりません")
         select_body = insert_match.group(1)
@@ -56,7 +57,24 @@ class TestPiInsertClientDmBx(unittest.TestCase):
         print(f"[DEBUG] SELECT句のカラム数: {len(select_lines)} カラム例: {select_lines[:5]}")
         self.assertGreaterEqual(len(select_lines), 6, "SELECT句のカラム数が想定より少ない")
         self.assertIn('cldm.*', select_body, "cldm.*がSELECT句に含まれていない")
-        print("[INFO] モックデータによるINSERT/SELECT構造テスト成功")
+        # 正規化してカラム抽出・検証
+        select_columns = []
+        for col in select_lines:
+            # AS句でエイリアスがあれば両方抽出
+            m_as = re.match(r"(.+?)\s+AS\s+([\w@]+)", col, re.IGNORECASE)
+            if m_as:
+                select_columns.append(m_as.group(1).strip())
+                select_columns.append(m_as.group(2).strip())
+            else:
+                select_columns.append(col)
+        norm_columns = [normalize_column_name(c) for c in select_columns]
+        print(f"[DEBUG] 正規化後SELECT句カラム: {norm_columns}")
+        # 例: 期待カラム（必要に応じて追加）
+        # expected = ["CLDM_ID", ...]
+        # for col in expected:
+        #     norm_col = normalize_column_name(col)
+        #     self.assertIn(norm_col, norm_columns, f"期待カラム {col} がSELECT句に存在しない (正規化: {norm_col})")
+        print("[INFO] モックデータによるINSERT/SELECT構造テスト成功 (正規化比較)")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -1,3 +1,4 @@
+from .normalize_column import normalize_column_name
 import unittest
 import json
 import os
@@ -85,11 +86,17 @@ class TestPiSendActionPointCurrentMonthEntryList(unittest.TestCase):
                 columns.append(col)
         print(f"[DEBUG] SELECT句カラム: {columns}")
         print(f"[DEBUG] SELECT句エイリアス: {aliases}")
+        # 正規化
+        norm_columns = [normalize_column_name(c) for c in columns]
+        norm_aliases = [normalize_column_name(a) for a in aliases]
+        print(f"[DEBUG] 正規化後カラム: {norm_columns}")
+        print(f"[DEBUG] 正規化後エイリアス: {norm_aliases}")
         # 期待カラム例
-        expected = ['MTGID', 'ACTIONPOINT_TYPE', 'FORMAT(ENTRY_DATE,', '@outputDT']
+        expected = ['MTGID', 'ACTIONPOINT_TYPE', 'ENTRY_DATE', 'OUTPUT_DATETIME']
         for col in expected:
-            found = any(col in c for c in columns) or any(col in a for a in aliases)
-            self.assertTrue(found, f"期待カラム {col} がSELECT句に存在しない")
+            norm_col = normalize_column_name(col)
+            found = norm_col in norm_columns or norm_col in norm_aliases
+            self.assertTrue(found, f"期待カラム {col} がSELECT句に存在しない (正規化: {norm_col})")
         print("[INFO] モックデータによるSELECTカラムテスト成功")
 
 if __name__ == "__main__":

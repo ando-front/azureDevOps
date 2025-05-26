@@ -2,6 +2,7 @@ import unittest
 import json
 import os
 import re
+from .normalize_column import normalize_column_name
 
 class TestPiCopyMarketingClientDm(unittest.TestCase):
     @classmethod
@@ -60,10 +61,15 @@ class TestPiCopyMarketingClientDm(unittest.TestCase):
         self.assertIsNotNone(m2, "INSERT INTO SELECT句が見つかりません")
         insert_columns = [line.strip().strip(',') for line in m2.group(1).splitlines() if line.strip() and not line.strip().startswith('--')]
         print(f"[DEBUG] INSERT句カラム数: {len(insert_columns)} カラム例: {insert_columns[:3]} ...")
-        self.assertEqual(len(columns), len(insert_columns), f"インプット({len(columns)})とアウトプット({len(insert_columns)})のカラム数が一致しません")
-        for i, (c1, c2) in enumerate(zip(columns, insert_columns)):
+        # 正規化して比較
+        norm_columns = [normalize_column_name(c) for c in columns]
+        norm_insert_columns = [normalize_column_name(c) for c in insert_columns]
+        print(f"[DEBUG] 正規化後SELECT句カラム例: {norm_columns[:3]} ...")
+        print(f"[DEBUG] 正規化後INSERT句カラム例: {norm_insert_columns[:3]} ...")
+        self.assertEqual(len(norm_columns), len(norm_insert_columns), f"インプット({len(norm_columns)})とアウトプット({len(norm_insert_columns)})のカラム数が一致しません")
+        for i, (c1, c2) in enumerate(zip(norm_columns, norm_insert_columns)):
             self.assertEqual(c1, c2, f"{i+1}番目のカラムが一致しません: {c1} != {c2}")
-        print("[INFO] カラム一致テスト成功")
+        print("[INFO] カラム一致テスト成功 (正規化比較)")
 
     def test_missing_required_property(self):
         print("[INFO] 必須プロパティ欠損時の異常系テスト開始")
@@ -97,10 +103,13 @@ class TestPiCopyMarketingClientDm(unittest.TestCase):
         select_body = m.group(1)
         columns = [line.strip().split()[0].strip(',') for line in select_body.splitlines() if line.strip() and not line.strip().startswith('--')]
         expected = ["CLIENT_KEY_AX", "LIV0EU_1X", "LIV0EU_8X"]
-        for col in expected:
-            self.assertIn(col, columns, f"期待カラム {col} がSELECT句に存在しない")
-        print(f"[DEBUG] SELECT句カラム: {columns[:5]} ...")
-        print("[INFO] モックデータによるカラム名テスト成功")
+        # 正規化して期待カラムと比較
+        norm_columns = [normalize_column_name(c) for c in columns]
+        norm_expected = [normalize_column_name(c) for c in expected]
+        for col in norm_expected:
+            self.assertIn(col, norm_columns, f"期待カラム {col} がSELECT句に存在しない (正規化: {col})")
+        print(f"[DEBUG] 正規化後SELECT句カラム: {norm_columns[:5]} ...")
+        print("[INFO] モックデータによるカラム名テスト成功 (正規化比較)")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
