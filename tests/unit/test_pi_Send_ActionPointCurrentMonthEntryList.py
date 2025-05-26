@@ -1,4 +1,5 @@
 from .normalize_column import normalize_column_name
+from .helpers.sql_column_extractor import extract_normalized_columns
 import unittest
 import json
 import os
@@ -51,52 +52,12 @@ class TestPiSendActionPointCurrentMonthEntryList(unittest.TestCase):
 
     def test_mock_select_columns(self):
         print("[INFO] モックデータでSELECTカラム検証")
-        activities = self.pipeline["properties"]["activities"]
-        first = activities[0]
-        sql = first["typeProperties"]["source"]["sqlReaderQuery"]
-        import re
-        m = re.search(r"SELECT(.+?)FROM", sql, re.DOTALL | re.IGNORECASE)
-        self.assertIsNotNone(m, "SELECT句が見つかりません")
-        select_body = m.group(1)
-        # カンマ区切りで1行にまとめてから分割し、関数やAS句も考慮
-        select_lines = []
-        buf = ''
-        for line in select_body.splitlines():
-            line = line.strip()
-            if not line or line.startswith('--'):
-                continue
-            buf += ' ' + line
-            if ',' in line or line.lower().endswith(' as'):
-                select_lines.append(buf.strip())
-                buf = ''
-        if buf:
-            select_lines.append(buf.strip())
-        columns = []
-        aliases = []
-        for col in ','.join(select_lines).split(','):
-            col = col.strip()
-            if not col:
-                continue
-            # AS句でエイリアスがあれば両方抽出
-            m_as = re.match(r"(.+?)\s+AS\s+([\w@]+)", col, re.IGNORECASE)
-            if m_as:
-                columns.append(m_as.group(1).strip())
-                aliases.append(m_as.group(2).strip())
-            else:
-                columns.append(col)
-        print(f"[DEBUG] SELECT句カラム: {columns}")
-        print(f"[DEBUG] SELECT句エイリアス: {aliases}")
-        # 正規化
-        norm_columns = [normalize_column_name(c) for c in columns]
-        norm_aliases = [normalize_column_name(a) for a in aliases]
-        print(f"[DEBUG] 正規化後カラム: {norm_columns}")
-        print(f"[DEBUG] 正規化後エイリアス: {norm_aliases}")
-        # 期待カラム例
+        # モックデータのSELECT句から期待カラム(ASエイリアス)が抽出されること
+        sql = self.pipeline["properties"]["activities"][0]["typeProperties"]["source"]["sqlReaderQuery"]
+        cols = extract_normalized_columns(sql)
         expected = ['MTGID', 'ACTIONPOINT_TYPE', 'ENTRY_DATE', 'OUTPUT_DATETIME']
-        for col in expected:
-            norm_col = normalize_column_name(col)
-            found = norm_col in norm_columns or norm_col in norm_aliases
-            self.assertTrue(found, f"期待カラム {col} がSELECT句に存在しない (正規化: {norm_col})")
+        for exp in expected:
+            self.assertIn(exp, cols, f"期待カラム {exp} が存在しません: {cols}")
         print("[INFO] モックデータによるSELECTカラムテスト成功")
 
 if __name__ == "__main__":

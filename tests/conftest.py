@@ -2,7 +2,9 @@
 テストの共通設定を管理するモジュール
 """
 import os
+import json
 import pytest
+from azure.storage.blob import BlobServiceClient
 
 # テストデータのパス設定
 DATA_ROOT = "tests/data"
@@ -33,3 +35,33 @@ def setup_test_environment():
         for root, _, files in os.walk(dir_path):
             for file in files:
                 os.remove(os.path.join(root, file))
+
+# パイプライン読み込み用フィクスチャ
+@pytest.fixture(scope="module")
+def pipeline_copy_marketing_client_dm():
+    path = os.path.join(os.path.dirname(__file__), "unit", "..", "src", "dev", "pipeline", "pi_Copy_marketing_client_dm.json")
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+@pytest.fixture(scope="module")
+def pipeline_insert_clientdm_bx():
+    path = os.path.join(os.path.dirname(__file__), "unit", "..", "src", "dev", "pipeline", "pi_Insert_ClientDmBx.json")
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+@pytest.fixture(scope="module")
+def pipeline_send_actionpoint():
+    path = os.path.join(os.path.dirname(__file__), "unit", "..", "src", "dev", "pipeline", "pi_Send_ActionPointCurrentMonthEntryList.json")
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+@pytest.fixture(scope="module")
+def pipeline_point_grant_email():
+    path = os.path.join(os.path.dirname(__file__), "unit", "..", "src", "dev", "pipeline", "pi_PointGrantEmail.json")
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+# BlobServiceClient フィクスチャ
+@pytest.fixture(scope="session")
+def blob_service_client():
+    return BlobServiceClient.from_connection_string(AZURITE_CONNECTION_STRING)
