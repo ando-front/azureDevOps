@@ -1,7 +1,15 @@
-FROM ubuntu:latest
+FROM node:18-bullseye-slim
 
-# 必要なパッケージのインストール
-RUN apt-get update && apt-get install -y python3 python3-pip python3-venv npm
+ARG http_proxy
+ARG https_proxy
+ENV http_proxy=${http_proxy}
+ENV https_proxy=${https_proxy}
+
+# Pythonのインストール
+RUN apt-get update \
+    && apt-get install -y python3 python3-pip python3-venv build-essential \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Python仮想環境のセットアップ
 RUN python3 -m venv /opt/venv
