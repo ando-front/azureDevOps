@@ -1,6 +1,7 @@
 import unittest
 import json
 import os
+import re
 
 class TestPiCopyMarketingClientDm(unittest.TestCase):
     @classmethod
@@ -48,21 +49,20 @@ class TestPiCopyMarketingClientDm(unittest.TestCase):
         first = activities[0]
         sql = first["typeProperties"]["source"]["sqlReaderQuery"]
         import re
-        m = re.search(r"SELECT(.+?)FROM", sql, re.DOTALL)
+        m = re.search(r"SELECT(.+?)FROM", sql, re.DOTALL | re.IGNORECASE)
         self.assertIsNotNone(m, "SELECT句が見つかりません")
         select_body = m.group(1)
         columns = [line.strip().split()[0].strip(',') for line in select_body.splitlines() if line.strip() and not line.strip().startswith('--')]
         print(f"[DEBUG] SELECT句カラム数: {len(columns)} カラム例: {columns[:3]} ...")
         second = activities[1]
         script = second["typeProperties"]["scripts"][0]["text"]
-        m2 = re.search(r"INSERT INTO \\[omni\\]\\.\\[omni_ods_marketing_trn_client_dm\\]\\s*SELECT(.+?)FROM", script, re.DOTALL)
+        m2 = re.search(r"INSERT\s+INTO\s+\[omni\]\.\[omni_ods_marketing_trn_client_dm\]\s*SELECT(.+?)FROM", script, re.DOTALL | re.IGNORECASE)
         self.assertIsNotNone(m2, "INSERT INTO SELECT句が見つかりません")
         insert_columns = [line.strip().strip(',') for line in m2.group(1).splitlines() if line.strip() and not line.strip().startswith('--')]
         print(f"[DEBUG] INSERT句カラム数: {len(insert_columns)} カラム例: {insert_columns[:3]} ...")
         self.assertEqual(len(columns), len(insert_columns), f"インプット({len(columns)})とアウトプット({len(insert_columns)})のカラム数が一致しません")
         for i, (c1, c2) in enumerate(zip(columns, insert_columns)):
-            print(f"[CHECK] {i+1}列目: {c1} == {c2}")
-            self.assertEqual(c1, c2, f"カラム名不一致: {c1} != {c2}")
+            self.assertEqual(c1, c2, f"{i+1}番目のカラムが一致しません: {c1} != {c2}")
         print("[INFO] カラム一致テスト成功")
 
     def test_missing_required_property(self):
@@ -92,11 +92,10 @@ class TestPiCopyMarketingClientDm(unittest.TestCase):
         first = activities[0]
         sql = first["typeProperties"]["source"]["sqlReaderQuery"]
         import re
-        m = re.search(r"SELECT(.+?)FROM", sql, re.DOTALL)
+        m = re.search(r"SELECT(.+?)FROM", sql, re.DOTALL | re.IGNORECASE)
         self.assertIsNotNone(m, "SELECT句が見つかりません")
         select_body = m.group(1)
         columns = [line.strip().split()[0].strip(',') for line in select_body.splitlines() if line.strip() and not line.strip().startswith('--')]
-        # 期待カラム例
         expected = ["CLIENT_KEY_AX", "LIV0EU_1X", "LIV0EU_8X"]
         for col in expected:
             self.assertIn(col, columns, f"期待カラム {col} がSELECT句に存在しない")

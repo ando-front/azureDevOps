@@ -33,8 +33,8 @@ class TestPiInsertClientDmBx(unittest.TestCase):
         print("[INFO] Script SQLにINSERT文が含まれるかテスト")
         activity = self.pipeline["properties"]["activities"][0]
         script = activity["typeProperties"]["scripts"][0]["text"]
-        self.assertIn("INSERT INTO", script)
-        self.assertIn("SELECT", script)
+        self.assertIn("INSERT INTO", script.upper())
+        self.assertIn("SELECT", script.upper())
 
     def test_missing_required_property(self):
         print("[INFO] 必須プロパティ欠損時の異常系テスト")
@@ -46,15 +46,12 @@ class TestPiInsertClientDmBx(unittest.TestCase):
 
     def test_mock_insert_select_structure(self):
         print("[INFO] モックデータでINSERT/SELECT構造の検証")
-        # モックSQL（本来はSQLパーサやDBを使うが、ここでは文字列検証）
         activity = self.pipeline["properties"]["activities"][0]
         script = activity["typeProperties"]["scripts"][0]["text"]
-        # 例: INSERT INTO ... SELECT ... FROM ... の構造があるか
         import re
-        insert_match = re.search(r"INSERT INTO\\s+\\[omni\\]\\.\\[omni_ods_marketing_trn_client_dm_bx_temp\\].*?SELECT(.+?)FROM", script, re.DOTALL)
+        insert_match = re.search(r"INSERT\s+INTO\s+\[omni\]\.\[omni_ods_marketing_trn_client_dm_bx_temp\].*?SELECT(.+?)FROM", script, re.DOTALL | re.IGNORECASE)
         self.assertIsNotNone(insert_match, "INSERT INTO SELECT構造が見つかりません")
         select_body = insert_match.group(1)
-        # モック期待値: 5列+cldm.*
         select_lines = [line.strip() for line in select_body.splitlines() if line.strip() and not line.strip().startswith('--')]
         print(f"[DEBUG] SELECT句のカラム数: {len(select_lines)} カラム例: {select_lines[:5]}")
         self.assertGreaterEqual(len(select_lines), 6, "SELECT句のカラム数が想定より少ない")

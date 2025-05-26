@@ -53,6 +53,7 @@ class TestPiSendActionPointCurrentMonthEntryList(unittest.TestCase):
         activities = self.pipeline["properties"]["activities"]
         first = activities[0]
         sql = first["typeProperties"]["source"]["sqlReaderQuery"]
+        import re
         m = re.search(r"SELECT(.+?)FROM", sql, re.DOTALL | re.IGNORECASE)
         self.assertIsNotNone(m, "SELECT句が見つかりません")
         select_body = m.group(1)
