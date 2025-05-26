@@ -14,8 +14,9 @@ RUN apt-get update \
 # Python仮想環境のセットアップ
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN pip3 install azure-storage-blob
-RUN pip3 install pytest
+# venv環境のpipでパッケージをインストール
+RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install azure-storage-blob pytest pytest-cov
 
 RUN npm install -g @azure/storage-blob azurite
 
