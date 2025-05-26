@@ -44,20 +44,33 @@ class TestPiCopyMarketingClientDm(unittest.TestCase):
         self.assertEqual(second["linkedServiceName"]["referenceName"], "li_dam_dwh")
         self.assertEqual(second["dependsOn"][0]["activity"], "at_Copy_marketing_ClientDM_temp")
 
-    def test_input_output_columns_match(self):
+    def test_input_output_columns_match(self, pipeline=None):
         print("[INFO] インプットとアウトプットのカラム一致テスト開始")
-        activities = self.pipeline["properties"]["activities"]
+        if pipeline is None:
+            pipeline = self.pipeline
+        activities = pipeline["properties"]["activities"]
         first = activities[0]
         sql = first["typeProperties"]["source"]["sqlReaderQuery"]
-        import re
         m = re.search(r"SELECT(.+?)FROM", sql, re.DOTALL | re.IGNORECASE)
         self.assertIsNotNone(m, "SELECT句が見つかりません")
         select_body = m.group(1)
-        columns = [line.strip().split()[0].strip(',') for line in select_body.splitlines() if line.strip() and not line.strip().startswith('--')]
+        columns = []
+        for line in select_body.splitlines():
+            line = line.strip()
+            if not line or line.startswith('--'):
+                continue
+            m_as = re.match(r".+? AS ([A-Z0-9_]+)", line, re.IGNORECASE)
+            if m_as:
+                columns.append(m_as.group(1).strip())
+            else:
+                columns.append(line.split()[0].strip(','))
         print(f"[DEBUG] SELECT句カラム数: {len(columns)} カラム例: {columns[:3]} ...")
         second = activities[1]
         script = second["typeProperties"]["scripts"][0]["text"]
         m2 = re.search(r"INSERT\s+INTO\s+\[omni\]\.\[omni_ods_marketing_trn_client_dm\]\s*SELECT(.+?)FROM", script, re.DOTALL | re.IGNORECASE)
+        if not m2:
+            # テスト用SQL用のパターン
+            m2 = re.search(r"INSERT\s+INTO\s+\w+\s*SELECT(.+?)FROM", script, re.DOTALL | re.IGNORECASE)
         self.assertIsNotNone(m2, "INSERT INTO SELECT句が見つかりません")
         insert_columns = [line.strip().strip(',') for line in m2.group(1).splitlines() if line.strip() and not line.strip().startswith('--')]
         print(f"[DEBUG] INSERT句カラム数: {len(insert_columns)} カラム例: {insert_columns[:3]} ...")
@@ -85,11 +98,21 @@ class TestPiCopyMarketingClientDm(unittest.TestCase):
         import copy
         broken = copy.deepcopy(self.pipeline)
         activities = broken["properties"]["activities"]
-        sql = activities[0]["typeProperties"]["source"]["sqlReaderQuery"]
-        sql = sql.replace("SELECT", "SELECT DUMMY_COL,", 1)
-        activities[0]["typeProperties"]["source"]["sqlReaderQuery"] = sql
+        # テスト用のシンプルなSQLに書き換え（複数行でカラムを記述）
+        activities[0]["typeProperties"]["source"]["sqlReaderQuery"] = '''
+            SELECT
+                COL1 AS COL1,
+                COL2 AS COL2
+            FROM DUAL
+        '''
+        activities[1]["typeProperties"]["scripts"][0]["text"] = '''
+            INSERT INTO DUMMY_TABLE
+            SELECT
+                COL1
+            FROM DUAL
+        '''
         with self.assertRaises(AssertionError):
-            self.test_input_output_columns_match()
+            self.test_input_output_columns_match(broken)
         print("[INFO] カラム数不一致時のAssertionErrorを正常に検出")
 
     def test_mock_column_names(self):
@@ -101,7 +124,19 @@ class TestPiCopyMarketingClientDm(unittest.TestCase):
         m = re.search(r"SELECT(.+?)FROM", sql, re.DOTALL | re.IGNORECASE)
         self.assertIsNotNone(m, "SELECT句が見つかりません")
         select_body = m.group(1)
-        columns = [line.strip().split()[0].strip(',') for line in select_body.splitlines() if line.strip() and not line.strip().startswith('--')]
+        columns = []
+        for line in select_body.splitlines():
+            line = line.strip()
+            if not line or line.startswith('--'):
+                continue
+            # NULL AS ... 行は除外
+            if re.match(r"NULL\s+AS", line, re.IGNORECASE):
+                continue
+            m_as = re.match(r".+? AS ([A-Z0-9_]+)", line, re.IGNORECASE)
+            if m_as:
+                columns.append(m_as.group(1).strip())
+            else:
+                columns.append(line.split()[0].strip(','))
         expected = ["CLIENT_KEY_AX", "LIV0EU_1X", "LIV0EU_8X"]
         # 正規化して期待カラムと比較
         norm_columns = [normalize_column_name(c) for c in columns]
@@ -110,6 +145,3 @@ class TestPiCopyMarketingClientDm(unittest.TestCase):
             self.assertIn(col, norm_columns, f"期待カラム {col} がSELECT句に存在しない (正規化: {col})")
         print(f"[DEBUG] 正規化後SELECT句カラム: {norm_columns[:5]} ...")
         print("[INFO] モックデータによるカラム名テスト成功 (正規化比較)")
-
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
