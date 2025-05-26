@@ -11,8 +11,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 # プロキシ設定の確認
 RUN echo "Proxy settings: http_proxy=${http_proxy}, https_proxy=${https_proxy}, no_proxy=${no_proxy}"
 
-# Pythonのインストール（プロキシ対応）
-RUN apt-get update -o Acquire::http::Proxy="${http_proxy}" -o Acquire::https::Proxy="${https_proxy}" --fix-missing \
+# Pythonのインストール（プロキシ対応・プロキシがある場合のみオプション付与）
+RUN if [ -n "$http_proxy" ]; then \
+    apt-get update -o Acquire::http::Proxy="$http_proxy" -o Acquire::https::Proxy="$https_proxy" --fix-missing ; \
+    else \
+    apt-get update --fix-missing ; \
+    fi \
     && apt-get install -y --no-install-recommends python3 python3-pip python3-venv build-essential curl ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -61,7 +65,7 @@ RUN sed -i 's/#Port 22/Port 2222/g' /etc/ssh/sshd_config
 
 # テストスクリプトのコピー
 COPY tests /tests
-COPY src /src
+COPY src /tests/src
 
 # 必要なディレクトリの作成
 RUN mkdir -p /tests/input /tests/output /data
