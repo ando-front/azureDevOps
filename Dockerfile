@@ -4,10 +4,11 @@ ARG http_proxy
 ARG https_proxy
 ENV http_proxy=${http_proxy}
 ENV https_proxy=${https_proxy}
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Pythonのインストール
-RUN apt-get update \
-    && apt-get install -y python3 python3-pip python3-venv build-essential \
+RUN apt-get update -o Acquire::Retries=3 --fix-missing \
+    && apt-get install -y --no-install-recommends python3 python3-pip python3-venv build-essential --fix-missing -o Acquire::Retries=3 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

@@ -110,6 +110,12 @@ pytest --cov=tests/unit --cov-report=html
 - **Application Insightsの送信エラー**: `APPLICATIONINSIGHTS_DISABLED=true` で抑止
 - **pytestでテストが検出されない**: ファイル名/関数名が `test_` で始まっているか確認
 - **Blobストレージ関連のテスト失敗**: Azurite起動・NO_PROXY・ポート競合を再確認
+- **apt-get fetch エラー (Connection reset by peer)**:
+  - Dockerビルド時にネットワークホストモードを使う:  
+    ```powershell
+    docker build --network host .
+    ```
+  - `Dockerfile` には `Acquire::Retries=3`, `--fix-missing`, `DEBIAN_FRONTEND=noninteractive` を追加済みです
 
 ---
 
