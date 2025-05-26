@@ -39,6 +39,14 @@ RUN /opt/venv/bin/python -m pip install azure-storage-blob pytest pytest-cov --t
 # pytestが正しく仮想環境にインストールされているか確認
 RUN /opt/venv/bin/python -c "import pytest; print(f'pytest version: {pytest.__version__}')"
 
+# npmのSSL検証を無効化（プロキシ環境でのみ有効）
+RUN if [ -n "$http_proxy" ]; then \
+    npm config set strict-ssl false && \
+    npm config set registry "https://registry.npmjs.org/" && \
+    npm config set proxy "$http_proxy" && \
+    npm config set https-proxy "$https_proxy" ; \
+    fi
+
 RUN npm install -g @azure/storage-blob azurite
 
 # Azuriteの起動
