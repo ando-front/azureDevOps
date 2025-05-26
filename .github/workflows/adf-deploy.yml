@@ -2,14 +2,10 @@ name: ADF Deploy
 
 on:
   push:
-    # branches:
-    #   - main    #すべてのブランチで発動させるため削除
   pull_request:
-    # branches:
-    #   - main    #すべてのブランチで発動させるため削除
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,54 +15,50 @@ jobs:
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
 
-      - name: Build and run Docker container
+      - name: Remove existing adf-test container
+        run: docker rm -f adf-test || true
+
+      - name: Build test image
+        run: docker build -t adf-test-image .
+      
+      - name: Run test container
         run: |
-          # 既存のコンテナを停止・削除
-          docker ps -a | grep 'adf-test' | awk '{print $1}' | xargs -r docker rm -f
-          
-          # コンテナのビルドと実行
-          docker build -t adf-test .
-          docker run -d \
-            --name adf-test \
+          docker run -d --name adf-test \
             -p 10000:10000 \
             -p 10001:10001 \
             -p 10002:10002 \
             -p 2222:2222 \
-            -p 8080:80 \
-            adf-test
-          
-          # コンテナの状態確認
-          docker ps -a
-          sleep 10  # Azuriteの起動を待つ
-          
-          # Azuriteの状態確認
-          docker logs adf-test
-
-      - name: Remove existing adf-test container (if any)
+            adf-test-image tail -f /dev/null
+      
+      - name: Wait for container
+        run: sleep 5
+      
+      - name: Verify Python environment
         run: |
-          docker rm -f adf-test || true
-
-      - name: Build test image
-        run: docker build -t adf-test-image .
-      - name: Run test container (background)
-        run: docker run -d --name adf-test adf-test-image tail -f /dev/null
-      - name: Run pytest in container
-        run: PYTHONPATH=/tests python -m pytest /tests/unit/ -v
-      - name: Stop and remove container
+          docker exec adf-test bash -c "
+            source /opt/venv/bin/activate && \
+            python --version && \
+            pip list | grep pytest && \
+            ls -la /tests/
+          "
+      
+      - name: Run pytest
+        run: |
+          docker exec adf-test bash -c "
+            source /opt/venv/bin/activate && \
+            export PYTHONPATH=/tests && \
+            cd /tests && \
+            python -m pytest unit/ -v --tb=short --no-header
+          "
+      
+      - name: Get logs on failure
+        if: failure()
+        run: |
+          echo \"Container logs:\"
+          docker logs adf-test
+          echo \"Container processes:\"
+          docker exec adf-test ps aux || true
+      
+      - name: Cleanup
+        if: always()
         run: docker rm -f adf-test
-
-      # - name: Azure Login
-      #   uses: azure/login@v1
-      #   with:
-      #     auth-type: AZURE_CREDENTIALS
-      #     creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      # - name: Azure Deploy
-      #   run: |
-      #     # Azureへのデプロイコマンド
-      #     echo "Deploying to Azure..."
-      #     az deployment group create \
-      #       --name adf-deploy \
-      #       --resource-group adf-rg01 \
-      #       --template-file src/factory/adf-rg01.json \
-      #       --parameters @src/factory/publish_config.json
