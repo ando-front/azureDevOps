@@ -42,10 +42,14 @@ jobs:
           # Azuriteの状態確認
           docker logs adf-test
 
-      - name: Run tests
-        run: |
-          # pytest を使用してテストを実行
-          docker exec adf-test python3 -m pytest /tests/unit/ -v
+      - name: Build test image
+        run: docker build -t adf-test-image .
+      - name: Run test container (background)
+        run: docker run -d --name adf-test adf-test-image tail -f /dev/null
+      - name: Run pytest in container
+        run: docker exec adf-test python3 -m pytest /tests/unit/ -v
+      - name: Stop and remove container
+        run: docker rm -f adf-test
 
       # - name: Azure Login
       #   uses: azure/login@v1
