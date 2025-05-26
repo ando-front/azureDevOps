@@ -2,11 +2,11 @@ name: ADF Deploy
 
 on:
   push:
-    branches:
-      - main
+    # branches:
+    #   - main    #すべてのブランチで発動させるため削除
   pull_request:
-    branches:
-      - main
+    # branches:
+    #   - main    #すべてのブランチで発動させるため削除
 
 jobs:
   deploy:
