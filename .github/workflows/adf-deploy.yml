@@ -42,6 +42,10 @@ jobs:
           # Azuriteの状態確認
           docker logs adf-test
 
+      - name: Remove existing adf-test container (if any)
+        run: |
+          docker rm -f adf-test || true
+
       - name: Build test image
         run: docker build -t adf-test-image .
       - name: Run test container (background)
