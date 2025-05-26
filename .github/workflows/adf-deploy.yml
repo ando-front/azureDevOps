@@ -51,7 +51,7 @@ jobs:
       - name: Run test container (background)
         run: docker run -d --name adf-test adf-test-image tail -f /dev/null
       - name: Run pytest in container
-        run: docker exec adf-test python3 -m pytest /tests/unit/ -v
+        run: PYTHONPATH=/tests python3 -m pytest /tests/unit/ -v
       - name: Stop and remove container
         run: docker rm -f adf-test
 

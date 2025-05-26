@@ -1,5 +1,5 @@
 import re
-from .normalize_column import normalize_column_name
+from tests.unit.normalize_column import normalize_column_name
 from typing import List
 
 
