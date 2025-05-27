@@ -11,12 +11,7 @@ services:
     volumes:
       - azurite-data:/data
     command: >
-      azurite  --location /data  --debug /data/debug.log --loose --skipApiVersionCheck    # healthcheck:
-    #   test: ["CMD-SHELL", "nc -z localhost 10000 || exit 1"]
-    #   interval: 5s
-    #   timeout: 3s
-    #   retries: 10
-    #   start_period: 30s
+      azurite --location /data --debug /data/debug.log --loose --skipApiVersionCheck --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
     networks:
       - test-network
   # Main pytest test service
@@ -30,9 +25,10 @@ services:
       - ./src:/tests/src
     environment:
       - PYTHONPATH=/tests
-      - NO_PROXY=127.0.0.1,localhost,devstoreaccount1
+      - NO_PROXY=127.0.0.1,localhost,devstoreaccount1,azurite
       - AZURITE_HOST=azurite
-      - AZURITE_ENDPOINT=http://azurite:10000 # depends_on:
+      - AZURITE_ENDPOINT=http://azurite:10000
+    # depends_on:
     #   azurite:
     #     condition: service_healthy
     networks:
