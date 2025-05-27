@@ -13,6 +13,7 @@ def test_activities_exist(pipeline_insert_clientdm_bx):
 
 
 def test_input_output_columns_match(pipeline_insert_clientdm_bx):
+    # TODO: SQLスクリプトアクティビティの入出力カラム検証ロジックを実装する
     # SQLスクリプトタイプのため、このテストはスキップ
     pytest.skip("SQLスクリプトタイプのアクティビティにはsource/sinkプロパティがありません")
 
@@ -27,5 +28,6 @@ def test_missing_required_property(pipeline_insert_clientdm_bx):
 
 
 def test_column_count_mismatch(pipeline_insert_clientdm_bx):
+    # TODO: SQLスクリプトアクティビティのカラム数不一致検証ロジックを実装する
     # SQLスクリプトタイプのため、このテストはスキップ
     pytest.skip("SQLスクリプトタイプのアクティビティにはsource/sinkプロパティがありません")
