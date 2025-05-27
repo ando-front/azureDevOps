@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # Azurite standalone service for reliable blob storage emulation
   azurite:
