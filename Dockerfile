@@ -66,6 +66,7 @@ RUN sed -i 's/#Port 22/Port 2222/g' /etc/ssh/sshd_config
 # テストスクリプトのコピー
 COPY tests /tests
 COPY src /tests/src
+COPY src/dev/pipeline /tests/src/dev/pipeline
 
 # 必要なディレクトリの作成
 RUN mkdir -p /tests/input /tests/output /data

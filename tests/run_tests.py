@@ -1,6 +1,8 @@
 import unittest
 import os
 import sys
+import subprocess
+import time
 from azure.storage.blob import BlobServiceClient
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -115,4 +117,11 @@ def main():
 
 # エントリーポイント
 if __name__ == '__main__':
-    main()
+    # Azuriteをバックグラウンドで起動
+    azurite_proc = subprocess.Popen(["azurite", "--location", "/data", "--debug", "/data/debug.log"])
+    time.sleep(3)  # Azuriteの起動待ち
+    try:
+        # pytest実行
+        sys.exit(subprocess.call([sys.executable, "-m", "pytest"] + sys.argv[1:]))
+    finally:
+        azurite_proc.terminate()
