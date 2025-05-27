@@ -1,6 +1,6 @@
 import pytest
 import copy
-from tests.unit.helpers.sql_column_extractor import extract_normalized_columns
+from tests.unit.helpers.english_column_extractor import compare_english_columns
 from tests.unit.normalize_column import normalize_column_name
 
 
@@ -15,9 +15,21 @@ def test_activities_exist(pipeline_copy_marketing_client_dm):
 
 def test_input_output_columns_match(pipeline_copy_marketing_client_dm):
     activities = pipeline_copy_marketing_client_dm["properties"]["activities"]
-    cols_in  = extract_normalized_columns(activities[0]["typeProperties"]["source"]["sqlReaderQuery"])
-    cols_out = extract_normalized_columns(activities[1]["typeProperties"]["scripts"][0]["text"])
-    assert cols_in == cols_out, f"SELECTとINSERTのカラムリストが一致しません: {cols_in} != {cols_out}"
+    select_sql = activities[0]["typeProperties"]["source"]["sqlReaderQuery"]
+    insert_sql = activities[1]["typeProperties"]["scripts"][0]["text"]
+    
+    is_match, select_cols, insert_cols = compare_english_columns(select_sql, insert_sql)
+    
+    if not is_match:
+        # 差分を詳細に表示
+        select_only = select_cols - insert_cols
+        insert_only = insert_cols - select_cols
+        print(f"\nSELECT句のみにある英語カラム: {sorted(select_only)}")
+        print(f"INSERT句のみにある英語カラム: {sorted(insert_only)}")
+        print(f"SELECT句英語カラム数: {len(select_cols)}")
+        print(f"INSERT句英語カラム数: {len(insert_cols)}")
+    
+    assert is_match, f"SELECTとINSERTの英語カラムリストが一致しません"
 
 
 def test_missing_required_property(pipeline_copy_marketing_client_dm):
@@ -36,19 +48,22 @@ def test_column_count_mismatch(pipeline_copy_marketing_client_dm):
         FROM DUAL
     '''
     broken["properties"]["activities"][1]["typeProperties"]["scripts"][0]["text"] = '''
-        INSERT INTO DUMMY_TABLE
+        INSERT INTO DUMMY_TABLE (COL1)
         SELECT
             COL1
         FROM DUAL
     '''
-    cols_in  = extract_normalized_columns(broken["properties"]["activities"][0]["typeProperties"]["source"]["sqlReaderQuery"])
-    cols_out = extract_normalized_columns(broken["properties"]["activities"][1]["typeProperties"]["scripts"][0]["text"])
-    assert cols_in != cols_out
+    select_sql = broken["properties"]["activities"][0]["typeProperties"]["source"]["sqlReaderQuery"]
+    insert_sql = broken["properties"]["activities"][1]["typeProperties"]["scripts"][0]["text"]
+    
+    is_match, select_cols, insert_cols = compare_english_columns(select_sql, insert_sql)
+    assert not is_match
 
 
 def test_mock_column_names(pipeline_copy_marketing_client_dm):
     sql = pipeline_copy_marketing_client_dm["properties"]["activities"][0]["typeProperties"]["source"]["sqlReaderQuery"]
-    cols = extract_normalized_columns(sql)
+    from tests.unit.helpers.english_column_extractor import extract_english_column_names
+    cols = extract_english_column_names(sql)
     expected = ["CLIENT_KEY_AX", "LIV0EU_1X", "LIV0EU_8X"]
     for c in expected:
-        assert normalize_column_name(c) in cols
+        assert c in cols

@@ -1,9 +1,60 @@
 version: "3.9"
+
 services:
-  adf-test:
-    build: .
+  # Azurite standalone service for reliable blob storage emulation
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    ports:
+      - "10000:10000" # Blob service
+      - "10001:10001" # Queue service
+      - "10002:10002" # Table service
+    volumes:
+      - azurite-data:/data
+    command: >
+      azurite  --location /data  --debug /data/debug.log --loose --skipApiVersionCheck    # healthcheck:
+    #   test: ["CMD-SHELL", "nc -z localhost 10000 || exit 1"]
+    #   interval: 5s
+    #   timeout: 3s
+    #   retries: 10
+    #   start_period: 30s
+    networks:
+      - test-network
+  # Main pytest test service
+  pytest-test:
+    image: pytest-test:latest
     ports:
       - "8080:80"
       - "2222:22"
     volumes:
       - ./tests:/tests
+      - ./src:/tests/src
+    environment:
+      - PYTHONPATH=/tests
+      - NO_PROXY=127.0.0.1,localhost,devstoreaccount1
+      - AZURITE_HOST=azurite
+      - AZURITE_ENDPOINT=http://azurite:10000 # depends_on:
+    #   azurite:
+    #     condition: service_healthy
+    networks:
+      - test-network
+  # Legacy adf-test for backward compatibility
+  adf-test:
+    image: adf-test-image:latest
+    ports:
+      - "8081:80"
+      - "2223:22"
+    volumes:
+      - ./tests:/tests
+      - ./src:/tests/src
+    environment:
+      - PYTHONPATH=/tests
+      - AZURITE_HOST=azurite
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge
+
+volumes:
+  azurite-data:

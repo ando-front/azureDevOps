@@ -40,7 +40,7 @@ def extract_normalized_columns(sql: str) -> List[str]:
         if re.match(r"NULL\s+AS", part, re.IGNORECASE):
             continue
             
-        # AS句がある場合、AS句の後の名前を使用
+        # AS句がある場合
         as_match = re.search(r"\s+AS\s+(.+?)$", part, re.IGNORECASE)
         if as_match:
             col_name = as_match.group(1).strip()

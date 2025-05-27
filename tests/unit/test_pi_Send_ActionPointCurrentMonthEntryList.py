@@ -7,11 +7,12 @@ import re
 import copy
 
 class TestPiSendActionPointCurrentMonthEntryList(unittest.TestCase):
+    
     @classmethod
     def setUpClass(cls):
+        # Dockerコンテナ内では/testsがルートディレクトリ
         cls.json_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-            "src", "dev", "pipeline", "pi_Send_ActionPointCurrentMonthEntryList.json"
+            "/tests", "src", "dev", "pipeline", "pi_Send_ActionPointCurrentMonthEntryList.json"
         )
         with open(cls.json_path, encoding="utf-8") as f:
             cls.pipeline = json.load(f)
