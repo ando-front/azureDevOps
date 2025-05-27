@@ -99,8 +99,8 @@ COPY tests /tests
 COPY src /tests/src
 
 # Create necessary directories with proper permissions
-RUN mkdir -p /tests/{input,output,data/{input,output,sftp}} /data && \
-    chmod -R 777 /tests/input /tests/output /tests/data /data
+RUN mkdir -p /tests/input /tests/output /tests/data/input /tests/data/output /tests/data/sftp /data && \
+    chmod -R 777 /tests /data
 
 # Expose required ports
 EXPOSE 10000 10001 10002 2222 80
