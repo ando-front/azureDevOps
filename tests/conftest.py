@@ -12,8 +12,20 @@ INPUT_DIR = os.path.join(DATA_ROOT, "input")
 OUTPUT_DIR = os.path.join(DATA_ROOT, "output")
 SFTP_DIR = os.path.join(DATA_ROOT, "sftp")
 
-# Azurite設定 - docker-compose環境とスタンドアロン環境の両方に対応
-AZURITE_HOST = os.environ.get('AZURITE_HOST', '127.0.0.1')
+# Azurite設定 - GitHub Actions、docker-compose、スタンドアロン環境の全てに対応
+def get_azurite_host():
+    """環境に応じたAzuriteホストを取得"""
+    if os.environ.get('GITHUB_ACTIONS'):
+        # GitHub Actions環境では azurite-test コンテナを使用
+        return 'azurite-test'
+    elif os.environ.get('AZURITE_HOST'):
+        # Docker Compose環境では環境変数を使用
+        return os.environ.get('AZURITE_HOST')
+    else:
+        # スタンドアロン環境ではlocalhostを使用
+        return '127.0.0.1'
+
+AZURITE_HOST = get_azurite_host()
 AZURITE_CONNECTION_STRING = (
     "DefaultEndpointsProtocol=http;"
     "AccountName=devstoreaccount1;"
