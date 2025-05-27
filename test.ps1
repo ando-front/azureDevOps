@@ -45,6 +45,30 @@ function Start-Services {
     else {
         Write-Host "⚠ Azurite may not be ready yet" -ForegroundColor Yellow
     }
+
+    # pytest-testコンテナの起動を待つ（コンテナIDで判定）
+    $maxRetry = 30
+    $retry = 0
+    $containerId = docker-compose ps -q pytest-test
+    while ($retry -lt $maxRetry) {
+        if (-not $containerId) {
+            Start-Sleep -Seconds 2
+            $containerId = docker-compose ps -q pytest-test
+            $retry++
+            continue
+        }
+        $status = docker inspect -f "{{.State.Running}}" $containerId 2>$null
+        if ($status -eq "true") {
+            Write-Host "pytest-test is running." -ForegroundColor Green
+            break
+        }
+        Start-Sleep -Seconds 2
+        $retry++
+        if ($retry -eq $maxRetry) {
+            Write-Host "pytest-test did not start in time." -ForegroundColor Red
+            exit 1
+        }
+    }
 }
 
 function Stop-Services {

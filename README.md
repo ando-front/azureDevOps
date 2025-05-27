@@ -141,6 +141,37 @@ pytest tests/unit/ -v
 
 ---
 
+## test.ps1 の使い方
+
+`test.ps1` は、Dockerベースの統合テスト環境を一発で起動・実行・クリーンアップできるPowerShellスクリプトです。
+
+- **基本実行:**
+  ```powershell
+  ./test.ps1 test
+  ```
+  → Dockerサービスの起動、pytestによる全テスト実行、終了後の自動クリーンアップまで一括実行します。
+
+- **主なオプション:**
+  - `test` : テスト環境の起動と全テスト実行（最もよく使う）
+  - `up`   : サービスのみ起動（テストは実行しない）
+  - `down` : サービスの停止・クリーンアップ
+  - `logs` : pytest-test/azuriteのログを表示
+
+- **よく使う実行例:**
+  ```powershell
+  ./test.ps1 test         # サービス起動＋全テスト実行
+  ./test.ps1 up           # サービスのみ起動
+  ./test.ps1 down         # サービス停止・クリーンアップ
+  ./test.ps1 logs         # ログ確認
+  ```
+
+- **注意:**
+  - Windows PowerShell/WSL/VSCodeターミナルいずれでも実行可能
+  - Rancher DesktopのDocker互換環境が必要です
+  - テスト失敗時は自動でログ出力・クリーンアップされます
+
+---
+
 ## 更新履歴
 
 ### 2025年5月27日 - 大幅リファクタリング完了
