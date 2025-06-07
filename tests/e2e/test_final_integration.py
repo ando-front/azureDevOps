@@ -16,7 +16,7 @@ class TestFinalE2EIntegration:
         conn_str = (
             "DRIVER={ODBC Driver 18 for SQL Server};"
             "SERVER=localhost,1433;"
-            "DATABASE=SynapseTestDB;"
+            "DATABASE=TGMATestDB;"
             "UID=sa;"
             "PWD=YourStrong!Passw0rd123;"
             "TrustServerCertificate=yes;"
@@ -28,16 +28,16 @@ class TestFinalE2EIntegration:
         # データベース名確認
         cursor.execute("SELECT DB_NAME() as current_db")
         result = cursor.fetchone()
-        assert result[0] == "SynapseTestDB"
+        assert result[0] == "TGMATestDB"
         
         # テーブル存在確認
         cursor.execute("""
             SELECT COUNT(*) 
             FROM INFORMATION_SCHEMA.TABLES 
-            WHERE TABLE_NAME IN ('ClientDm', 'PointGrantEmail')
+            WHERE TABLE_NAME IN ('client_dm', 'ClientDmBx', 'point_grant_email')
         """)
         table_count = cursor.fetchone()[0]
-        assert table_count == 2
+        assert table_count == 3
         
         conn.close()
     

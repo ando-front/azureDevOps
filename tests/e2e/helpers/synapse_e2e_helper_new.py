@@ -29,9 +29,9 @@ class SynapseE2EConnection:
     def _get_connection_string(self) -> str:
         """環境変数から接続文字列を構築"""
         server = os.getenv('E2E_SQL_SERVER', 'localhost,1433')
-        database = os.getenv('E2E_SQL_DATABASE', 'SynapseTestDB')
+        database = os.getenv('E2E_SQL_DATABASE', 'TGMATestDB')
         username = os.getenv('E2E_SQL_USERNAME', 'sa')
-        password = os.getenv('E2E_SQL_PASSWORD', 'YourStrong@Passw0rd')
+        password = os.getenv('E2E_SQL_PASSWORD', 'YourStrong!Passw0rd123')
         driver = os.getenv('E2E_SQL_DRIVER', 'ODBC Driver 18 for SQL Server')
         
         connection_string = (

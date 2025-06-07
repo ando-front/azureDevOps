@@ -27,6 +27,7 @@ import gzip
 import io
 import json
 import logging
+import random
 import tempfile
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Optional
@@ -104,7 +105,7 @@ class TestPipelineOpeningPaymentGuide:
         "OUTPUT_DATETIME"
     ]
 
-    def __init__(self):
+    def setup_method(self):
         """Initialize test configuration and Azure clients."""
         self.config = {
             "azure": {
@@ -126,7 +127,7 @@ class TestPipelineOpeningPaymentGuide:
         
         self.logger = logging.getLogger(__name__)
 
-    async def setup_method(self):
+    async def additional_setup_method(self):
         """Set up test environment before each test method."""
         self.credential = DefaultAzureCredential()
         self.df_client = DataFactoryManagementClient(

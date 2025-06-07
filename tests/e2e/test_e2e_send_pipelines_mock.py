@@ -42,7 +42,7 @@ logging.basicConfig(
 class MockSynapseE2EConnection:
     """SQL Server接続が利用できない環境用のモッククラス"""
     
-    def __init__(self):
+    def setup_method(self):
         self.logger = logging.getLogger(__name__)
         self.connection_available = False
         

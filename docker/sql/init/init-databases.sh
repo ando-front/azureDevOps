@@ -12,10 +12,12 @@ sleep 30
 
 # スクリプトの実行順序を定義
 scripts=(
-    "/docker-entrypoint-initdb.d/00_create_synapse_db.sql"
-    "/docker-entrypoint-initdb.d/01_init_database.sql"
-    "/docker-entrypoint-initdb.d/02_create_test_tables.sql"
-    "/docker-entrypoint-initdb.d/03_insert_test_data.sql"
+    "/opt/sql-scripts/00_create_synapse_db.sql"
+    "/opt/sql-scripts/01_init_database.sql"
+    "/opt/sql-scripts/02_create_test_tables.sql"
+    "/opt/sql-scripts/04_enhanced_test_tables.sql"
+    "/opt/sql-scripts/03_insert_test_data.sql"
+    "/opt/sql-scripts/05_comprehensive_test_data.sql"
 )
 
 # 各スクリプトを順次実行

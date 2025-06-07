@@ -53,7 +53,7 @@ class TestDataIntegrityValidation:
         cursor.execute("""
             SELECT c.client_id, c.status, b.bx_flag
             FROM client_dm c
-            LEFT JOIN ClientDmBx b ON c.client_id = b.user_id
+            LEFT JOIN ClientDmBx b ON c.client_id = b.client_id
             WHERE c.client_id LIKE 'E2E_%'
             ORDER BY c.client_id
         """)
@@ -133,7 +133,7 @@ class TestDataIntegrityValidation:
         cursor.execute("""
             SELECT COUNT(*) 
             FROM client_dm c
-            JOIN ClientDmBx b ON c.client_id = b.user_id
+            JOIN ClientDmBx b ON c.client_id = b.client_id
             WHERE c.client_id LIKE 'E2E_%'
         """)
         

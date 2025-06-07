@@ -250,11 +250,11 @@ def test_database_tables_and_data():
     try:
         import pyodbc
         
-        # SynapseTestDBに接続
+        # TGMATestDBに接続
         connection_string = (
             "DRIVER={ODBC Driver 18 for SQL Server};"
             "SERVER=localhost,1433;"
-            "DATABASE=SynapseTestDB;"
+            "DATABASE=TGMATestDB;"
             "UID=sa;"
             "PWD=YourStrong!Passw0rd123;"
             "TrustServerCertificate=yes;"
@@ -267,7 +267,7 @@ def test_database_tables_and_data():
         cursor.execute("""
             SELECT TABLE_NAME 
             FROM INFORMATION_SCHEMA.TABLES 
-            WHERE TABLE_CATALOG = 'SynapseTestDB'
+            WHERE TABLE_CATALOG = 'TGMATestDB'
             AND TABLE_TYPE = 'BASE TABLE'
         """)
         

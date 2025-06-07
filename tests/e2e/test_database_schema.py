@@ -16,22 +16,11 @@ class TestDatabaseSchemaValidation:
     @pytest.fixture(scope="class")
     def db_connection(self):
         """データベース接続のフィクスチャ"""
-        # Docker環境でのサーバー名を使用
-        server = os.getenv('SQL_SERVER', 'sqlserver-e2e-simple')
-        port = os.getenv('SQL_PORT', '1433')
-        database = os.getenv('SQL_DATABASE', 'TGMATestDB')
-        username = os.getenv('SQL_USERNAME', 'sa')
-        password = os.getenv('SQL_PASSWORD', 'YourStrong!Passw0rd123')
-        
-        # ODBC Driver Managerを使用して最適な接続文字列を構築
-        driver_manager = ODBCDriverManager()
-        connection_string = driver_manager.build_connection_string(
-            host=server,
-            port=port,
-            database=database,
-            user=username,
-            password=password
-        )
+        # 環境変数から直接接続文字列を取得
+        connection_string = os.getenv('SQL_SERVER_CONNECTION_STRING')
+        if not connection_string:
+            # フォールバック用の直接接続文字列
+            connection_string = "DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost,1433;DATABASE=TGMATestDB;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes;Encrypt=yes;"
         
         conn = None
         try:
@@ -71,19 +60,19 @@ class TestDatabaseSchemaValidation:
         cursor = db_connection.cursor()
         
         e2e_tables = [
-            'e2e_test_execution_log',
-            'test_data_management'
+            ('e2e_test_execution_log', 'etl'),
+            ('test_data_management', 'staging')
         ]
         
-        for table in e2e_tables:
+        for table, schema in e2e_tables:
             cursor.execute(f"""
                 SELECT COUNT(*) 
                 FROM INFORMATION_SCHEMA.TABLES 
-                WHERE TABLE_NAME = '{table}' AND TABLE_SCHEMA = 'dbo'
+                WHERE TABLE_NAME = '{table}' AND TABLE_SCHEMA = '{schema}'
             """)
             
             count = cursor.fetchone()[0]
-            assert count == 1, f"E2Eテーブル '{table}' が存在しません"
+            assert count == 1, f"E2Eテーブル '{schema}.{table}' が存在しません"
 
     def test_enhanced_table_columns(self, db_connection):
         """強化されたテーブルカラムの確認"""
@@ -137,9 +126,9 @@ class TestDatabaseSchemaValidation:
             if table == 'client_dm':
                 id_column = 'client_id'
             elif table == 'ClientDmBx':
-                id_column = 'user_id'
+                id_column = 'client_id'
             elif table == 'point_grant_email':
-                id_column = 'email_id'
+                id_column = 'client_id'
             elif table == 'marketing_client_dm':
                 id_column = 'client_id'
             
@@ -196,7 +185,7 @@ class TestDatabaseSchemaValidation:
         # E2Eテストデータの整合性確認
         cursor.execute("""
             SELECT COUNT(*) FROM client_dm c
-            INNER JOIN ClientDmBx b ON c.client_id = b.user_id
+            INNER JOIN ClientDmBx b ON c.client_id = b.client_id
             WHERE c.client_id LIKE 'E2E_%'
         """)
         

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class TestPipelinePointGrantEmail:
     """Point Grant Email Pipeline E2E Test (Simple Version)"""
 
-    def __init__(self):
+    def setup_method(self):
         self.sql_manager = E2ESQLQueryManager('point_grant_lost_email.sql')
 
     def test_database_connection_basic(self, e2e_synapse_connection: SynapseE2EConnection):

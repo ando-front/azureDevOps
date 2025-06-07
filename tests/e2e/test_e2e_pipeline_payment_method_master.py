@@ -47,7 +47,7 @@ from tests.e2e.helpers.missing_helpers_placeholder import MissingHelperPlacehold
 class AzureClientFactory(MissingHelperPlaceholder):
     pass
 
-class TestDataGenerator(MissingHelperPlaceholder):
+class _TestDataGenerator(MissingHelperPlaceholder):
     pass
 
 class PipelineTestHelper(MissingHelperPlaceholder):
@@ -98,10 +98,10 @@ class PaymentMethodMasterTestResult:
 class TestPipelinePaymentMethodMaster:
     """pi_Send_PaymentMethodMaster パイプラインのE2Eテストクラス"""
     
-    def __init__(self):
+    def setup_method(self):
         self.pipeline_name = "pi_Send_PaymentMethodMaster"
         self.azure_clients = AzureClientFactory()
-        self.test_data_generator = TestDataGenerator()
+        self.test_data_generator = _TestDataGenerator()
         self.pipeline_helper = PipelineTestHelper()
         self.monitoring_helper = MonitoringHelper()
         self.db_fixtures = DatabaseFixtures()
