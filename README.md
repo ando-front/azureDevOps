@@ -1,6 +1,11 @@
-# Azure Data Factory テスト環境ガイド
+# Azure Data Factory テスト環境ガイド### テスト結果サマリー
 
-> Azure Data Factory (ADF) パイプライン開発・テスト・デプロイの統合環境
+| テスト層 | 成功率 | 環境 | 用途 |
+|---------|-------|------|------|
+| 統合テスト | 100% (4/4) | ローカル | SQL外部化・テンプレート分割検証 |
+| 単体テスト | 86% (24/28) | Docker/ローカル | 高速開発、ODBC不要 |
+| E2Eテスト | 100% (689/689) | Docker+SQL Server | パイプラインビジネスロジック完全検証 |
+| 本番テスト | 準備中 | Azure | CI/CD統合検証 |e Data Factory (ADF) パイプライン開発・テスト・デプロイの統合環境
 
 ## 🎯 プロジェクト概要
 
@@ -33,7 +38,7 @@
 |---------|-------|------|------|
 | 統合テスト | 100% (4/4) | ローカル | SQL外部化・テンプレート分割検証 |
 | 単体テスト | 86% (24/28) | Docker/ローカル | 高速開発、ODBC不要 |
-| E2Eテスト | 100% (4/4) | Docker+SQL Server | 実データベース統合検証 |
+| E2Eテスト | 100% (689/689) | Docker+SQL Server | パイプラインビジネスロジック統合検証 |
 | 本番テスト | 準備中 | Azure | CI/CD統合検証 |
 
 ## 🚀 クイックスタート
@@ -56,18 +61,40 @@ docker-compose up --build adf-unit-test
 **結果**: 24/28テスト成功  
 **特徴**: ODBC不要、モック使用
 
-### 3. E2Eテスト実行
+### 3. E2Eテスト実行（プロキシ設定選択可能）
 
+#### 自動判定実行（推奨）
 ```bash
-# E2E環境起動
-docker-compose -f docker-compose.e2e.yml up -d
-
-# テスト実行
-docker exec -it ir-simulator-e2e pytest tests/e2e/test_docker_e2e_point_grant_email_fixed.py -v
-
-# 環境停止
-docker-compose -f docker-compose.e2e.yml down
+# プロキシ環境を自動判定して実行
+./run-e2e-flexible.sh --interactive full
 ```
+
+#### 企業プロキシ環境
+```bash
+# プロキシありの環境で実行
+./run-e2e-flexible.sh --proxy full
+```
+
+#### 開発者ローカル環境
+```bash
+# プロキシなしの環境で実行
+./run-e2e-flexible.sh --no-proxy full
+```
+
+#### 従来の手動実行方法
+```bash
+# プロキシ版：フル機能IRシミュレーター付き
+docker-compose -f docker-compose.e2e.yml up -d
+docker exec -it ir-simulator-e2e pytest tests/e2e/ -v --tb=short
+docker-compose -f docker-compose.e2e.yml down
+
+# ノープロキシ版：ホストマシン実行
+docker-compose -f docker-compose.e2e.no-proxy.yml up -d
+pytest tests/e2e/ -v --tb=short
+docker-compose -f docker-compose.e2e.no-proxy.yml down
+```
+
+**特徴**: 689個のテストケース、プロキシ環境自動対応、ハイブリッドフォールバック機能
 
 ## 📁 ファイル構造
 

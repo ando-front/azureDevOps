@@ -36,20 +36,32 @@ from unittest.mock import Mock
 from typing import Dict, Any, List
 
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
+from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
 # from tests.conftest import azure_data_factory_client
+
 
 logger = logging.getLogger(__name__)
 
 
 class TestPipelineMarketingClientDMComprehensive:
-
+ 
+       
     @classmethod
     def setup_class(cls):
-        """Disable proxy settings for tests"""
-        # Store and clear proxy environment variables
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
+        
+        # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
             if var in os.environ:
                 del os.environ[var]
+    
+    @classmethod
+    def teardown_class(cls):
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
+
+
 
     def _get_no_proxy_session(self):
         """Get a requests session with proxy disabled"""
@@ -135,6 +147,9 @@ class TestPipelineMarketingClientDMComprehensive:
         except Exception as e:
             logger.error(f"パイプライン実行準備エラー: {e}")
             pytest.fail(f"パイプライン実行準備に失敗: {e}")
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
 
     def _pre_execution_validation(self, helper):
         """実行前検証"""
@@ -243,6 +258,9 @@ class TestPipelineMarketingClientDMComprehensive:
         except Exception as e:
             logger.error(f"533列構造検証エラー: {table_name} - {e}")
             raise
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
 
     def _validate_comprehensive_data_quality(self, helper, table_name: str):
         """包括的データ品質検証（533列対応）"""
@@ -279,6 +297,9 @@ class TestPipelineMarketingClientDMComprehensive:
         except Exception as e:
             logger.error(f"包括的データ品質検証エラー: {table_name} - {e}")
             raise
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
 
     def _validate_comprehensive_data_consistency(self, helper):
         """包括的データ整合性確認（533列対応）"""
@@ -312,6 +333,9 @@ class TestPipelineMarketingClientDMComprehensive:
         except Exception as e:
             logger.warning(f"包括的データ整合性確認でエラー（継続）: {e}")
             # 一部のクエリが実行できない場合も想定（スキーマの変更等）
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
 
     def _validate_column_group(self, helper, group_name: str, group_info: Dict[str, Any]):
         """カラムグループ別検証"""
@@ -340,6 +364,9 @@ class TestPipelineMarketingClientDMComprehensive:
         except Exception as e:
             logger.warning(f"カラムグループ検証でエラー（継続）: {group_name} - {e}")
             # 533列全てが常に存在するとは限らない（スキーマ変更やNULL設定列）
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
 
     def test_performance_validation(self, helper, pipeline_run_id):
         """パフォーマンス検証テスト"""

@@ -33,19 +33,30 @@ from typing import Dict, Any, List
 
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
 # from tests.conftest import azure_data_factory_client
+from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
 
 logger = logging.getLogger(__name__)
 
 
 class TestPipelineMarketingClientDM:
-
+ 
+       
     @classmethod
     def setup_class(cls):
-        """Disable proxy settings for tests"""
-        # Store and clear proxy environment variables
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
+        
+        # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
             if var in os.environ:
                 del os.environ[var]
+    
+    @classmethod
+    def teardown_class(cls):
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
+
+
 
     def _get_no_proxy_session(self):
         """Get a requests session with proxy disabled"""

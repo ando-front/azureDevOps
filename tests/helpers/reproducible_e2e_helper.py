@@ -9,6 +9,7 @@ import sys
 import time
 import logging
 import subprocess
+import pyodbc
 from pathlib import Path
 
 # ログ設定
@@ -152,6 +153,26 @@ def setup_reproducible_test_class():
     """テストクラスで使用する簡単なセットアップ関数"""
     reproducible_helper.setup_test_class()
 
-def teardown_reproducible_test_class():
+def cleanup_reproducible_test_class():
     """テストクラスで使用する簡単なクリーンアップ関数"""
     reproducible_helper.teardown_test_class()
+
+def teardown_reproducible_test_class():
+    """テストクラスで使用する簡単なクリーンアップ関数（互換性のため）"""
+    reproducible_helper.teardown_test_class()
+
+def get_reproducible_database_connection():
+    """再現可能テスト用のデータベース接続を取得"""
+    connection_string = (
+        "DRIVER={ODBC Driver 17 for SQL Server};"
+        "SERVER=localhost,1433;"
+        "DATABASE=testdb;"
+        "UID=sa;"
+        "PWD=Password123!;"
+        "TrustServerCertificate=yes;"
+    )
+    return pyodbc.connect(connection_string)
+
+def get_reproducible_synapse_connection():
+    """Synapse接続のシミュレーション（実際にはSQL Serverに接続）"""
+    return get_reproducible_database_connection()

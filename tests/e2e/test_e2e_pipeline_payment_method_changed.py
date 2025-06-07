@@ -5,7 +5,7 @@ This module contains comprehensive end-to-end tests for the pi_Send_PaymentMetho
 which extracts payment method change data from the customer DM table and sends it to SFMC via SFTP.
 
 Test Coverage:
-- Basic pipeline execution and data flow validation
+    - Basic pipeline execution and data flow validation
 - Large dataset performance testing
 - Data quality and integrity validation
 - Error handling and recovery scenarios
@@ -27,6 +27,7 @@ import pandas as pd
 import gzip
 import io
 import json
+from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
 
 # from azure.datafactory import DataFactoryManagementClient
 # from azure.storage.blob import BlobServiceClient  
@@ -79,14 +80,28 @@ class PaymentMethodChangedTestResult:
 
 
 class TestPipelinePaymentMethodChanged:
-
+ 
+       
     @classmethod
     def setup_class(cls):
-        """Disable proxy settings for tests"""
-        # Store and clear proxy environment variables
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
+        
+        # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
             if var in os.environ:
                 del os.environ[var]
+    
+    
+    
+    
+    
+    @classmethod
+    def teardown_class(cls):
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
+
+
 
     def _get_no_proxy_session(self):
         """Get a requests session with proxy disabled"""
@@ -404,6 +419,7 @@ class TestPipelinePaymentMethodChanged:
     async def _get_performance_metrics(self, logs_client: LogsQueryClient, 
                                      config: Dict, run_id: str) -> Dict[str, Any]:
         """Get performance metrics from Azure Monitor logs."""
+
         try:
             query = f"""
             ADFPipelineRun
@@ -695,6 +711,9 @@ class TestPipelinePaymentMethodChanged:
             
         except Exception as e:
             pytest.fail(f"Payment method business rules validation failed: {str(e)}")
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
 
     def test_pipeline_configuration(self):
         """

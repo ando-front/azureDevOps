@@ -29,6 +29,7 @@ import pandas as pd
 import os
 import gzip
 import tempfile
+import io
 
 # Azure SDK imports
 from azure.storage.blob import BlobServiceClient
@@ -43,6 +44,7 @@ import pyodbc
 
 # Test framework imports (using placeholders for missing imports)
 from tests.e2e.helpers.missing_helpers_placeholder import MissingHelperPlaceholder
+from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
 
 # Placeholder implementations for missing classes
 class AzureClientFactory(MissingHelperPlaceholder):
@@ -97,21 +99,28 @@ class PaymentMethodMasterTestResult:
 
 
 class TestPipelinePaymentMethodMaster:
-
+    """pi_Send_PaymentMethodMaster パイプラインのE2Eテストクラス"""
+       
     @classmethod
     def setup_class(cls):
-        """Disable proxy settings for tests"""
-        # Store and clear proxy environment variables
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
+        
+        # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
             if var in os.environ:
                 del os.environ[var]
+    
+    @classmethod
+    def teardown_class(cls):
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
 
     def _get_no_proxy_session(self):
         """Get a requests session with proxy disabled"""
         session = requests.Session()
         session.proxies = {'http': None, 'https': None}
         return session
-    """pi_Send_PaymentMethodMaster パイプラインのE2Eテストクラス"""
     
     def setup_method(self):
         self.pipeline_name = "pi_Send_PaymentMethodMaster"
@@ -511,7 +520,6 @@ class TestPipelinePaymentMethodMaster:
                 content = decompressed_data.decode('utf-8')
                 
                 # CSVとしての読み込み検証
-                import io
                 df = pd.read_csv(io.StringIO(content))
                 
                 # 必須カラムの確認

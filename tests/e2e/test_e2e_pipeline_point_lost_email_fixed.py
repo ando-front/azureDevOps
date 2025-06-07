@@ -6,12 +6,12 @@
 データを抽出し、CSVファイルをgzip圧縮してBLOB出力し、SFMCにSFTP連携します。
 
 特徴:
-- 標準的なSend系パイプライン（CSV生成 → gzip → SFTP転送）
+    - 標準的なSend系パイプライン（CSV生成 → gzip → SFTP転送）
 - 顧客データの抽出・変換処理
 - 大量データ処理に対応
 
 Azureベストプラクティス:
-- Managed Identityによるセキュアな認証
+    - Managed Identityによるセキュアな認証
 - 適切なエラーハンドリング・リトライロジック
 - 性能最適化されたデータ転送
 - 包括的な監視・ログ機能
@@ -29,6 +29,8 @@ from dataclasses import dataclass
 
 from .helpers.synapse_e2e_helper import SynapseE2EConnection, e2e_synapse_connection, e2e_clean_test_data
 from .helpers.sql_query_manager import E2ESQLQueryManager
+from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
+
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -65,14 +67,24 @@ class PointLostEmailTestResult:
 
 
 class TestPipelinePointLostEmail:
-
+ 
+       
     @classmethod
     def setup_class(cls):
-        """Disable proxy settings for tests"""
-        # Store and clear proxy environment variables
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
+        
+        # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
             if var in os.environ:
                 del os.environ[var]
+    
+    @classmethod
+    def teardown_class(cls):
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
+
+
 
     def _get_no_proxy_session(self):
         """Get a requests session with proxy disabled"""
@@ -223,6 +235,9 @@ class TestPipelinePointLostEmail:
         except Exception as e:
             logger.error(f"テストテーブルセットアップ失敗: {e}")
             raise
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
     
     def _prepare_point_lost_email_test_data(
         self, 
@@ -277,6 +292,9 @@ class TestPipelinePointLostEmail:
         except Exception as e:
             logger.error(f"テストデータ準備失敗: {e}")
             raise
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
     
     def _execute_pipeline_test(
         self, 
@@ -352,6 +370,9 @@ class TestPipelinePointLostEmail:
                 data_quality_score=0.0,
                 error_messages=[str(e)]
             )
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
     
     def _collect_pipeline_results(self, test_data: Dict[str, Any]) -> Dict[str, Any]:
         """パイプライン実行結果の収集"""
@@ -405,6 +426,9 @@ class TestPipelinePointLostEmail:
                 'data_quality_score': 0.0,
                 'error_messages': [str(e)]
             }
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
     
     def _verify_point_lost_email_data_quality(self, result: PointLostEmailTestResult):
         """ポイント失効メールデータ品質検証"""
@@ -455,6 +479,9 @@ class TestPipelinePointLostEmail:
             logger.error(f"データ品質検証失敗: {e}")
             result.data_quality_score = 0.0
             result.error_messages.append(f"品質検証エラー: {e}")
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
     
     def _cleanup_test_data(self):
         """テストデータクリーンアップ"""
@@ -483,3 +510,6 @@ class TestPipelinePointLostEmail:
         except Exception as e:
             logger.error(f"テストデータクリーンアップ失敗: {e}")
             # クリーンアップの失敗はテスト結果に影響しないが、ログに記録
+        except Exception as e:
+            print(f"Error: {e}")
+            return False

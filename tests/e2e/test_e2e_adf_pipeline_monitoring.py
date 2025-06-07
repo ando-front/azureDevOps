@@ -12,20 +12,35 @@ import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
+from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
 
 
 @pytest.mark.e2e
 @pytest.mark.adf
 @pytest.mark.monitoring
 class TestADFPipelineMonitoring:
-
+ 
+       
     @classmethod
     def setup_class(cls):
-        """Disable proxy settings for tests"""
-        # Store and clear proxy environment variables
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
+        
+        # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
             if var in os.environ:
                 del os.environ[var]
+    
+    
+    
+    
+    
+    @classmethod
+    def teardown_class(cls):
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
+
+
 
     def _get_no_proxy_session(self):
         """Get a requests session with proxy disabled"""
@@ -409,20 +424,42 @@ class TestADFPipelineMonitoring:
         """長時間実行パイプラインのシミュレーション"""
         start_time = time.time()
         timeout_time = start_time + duration_seconds
+    
+    
+    
+    
 
-@classmethod
-def setup_class(cls):
-    """Disable proxy settings for tests"""
-    # Store and clear proxy environment variables
-    for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
-        if var in os.environ:
-            del os.environ[var]
+    @classmethod
+    def setup_class(cls):
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
+        
+        # Disable proxy settings for tests
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+    
+    
+    
+    
+    
+    @classmethod
+    def teardown_class(cls):
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
 
-def _get_no_proxy_session(self):
-    """Get a requests session with proxy disabled"""
-    session = requests.Session()
-    session.proxies = {'http': None, 'https': None}
-    return session
+
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
+
+    def _simulate_long_running_process(self, connection, timeout_seconds=30):
+        """長時間実行プロセスのシミュレーション"""
+        start_time = time.time()
+        timeout_time = start_time + timeout_seconds
         
         while time.time() < timeout_time:
             # 長時間処理をシミュレート

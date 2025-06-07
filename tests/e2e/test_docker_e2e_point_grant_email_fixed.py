@@ -9,6 +9,8 @@ import os
 import requests
 from datetime import datetime, timedelta
 from tests.e2e.helpers.docker_e2e_helper import DockerE2EConnection, E2ETestHelper
+from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +29,24 @@ def test_helper(e2e_connection):
 
 @pytest.mark.e2e
 class TestPointGrantEmailPipelineE2E:
-
+ 
+       
     @classmethod
     def setup_class(cls):
-        """Disable proxy settings for tests"""
-        # Store and clear proxy environment variables
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
+        
+        # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
             if var in os.environ:
                 del os.environ[var]
+    
+    @classmethod
+    def teardown_class(cls):
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
+
+
 
     def _get_no_proxy_session(self):
         """Get a requests session with proxy disabled"""

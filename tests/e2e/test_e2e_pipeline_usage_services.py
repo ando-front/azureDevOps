@@ -19,6 +19,7 @@ import csv
 
 # from tests.e2e.conftest import SynapseE2EConnection
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
+from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
 
 
 @pytest.mark.e2e
@@ -26,14 +27,24 @@ from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
 @pytest.mark.pipeline
 @pytest.mark.usage_services
 class TestPipelineUsageServices:
-
+ 
+       
     @classmethod
     def setup_class(cls):
-        """Disable proxy settings for tests"""
-        # Store and clear proxy environment variables
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
+        
+        # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
             if var in os.environ:
                 del os.environ[var]
+    
+    @classmethod
+    def teardown_class(cls):
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
+
+
 
     def _get_no_proxy_session(self):
         """Get a requests session with proxy disabled"""

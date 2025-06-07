@@ -14,20 +14,34 @@ from decimal import Decimal
 from tests.e2e.helpers.data_quality_test_manager import DataQualityTestManager
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
 from tests.e2e.helpers.missing_helpers_placeholder import DataValidationHelper, SynapseHelper
+from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
 # from tests.helpers.data_validation import DataValidationHelper
 # from tests.helpers.synapse_helper import SynapseHelper
 from tests.fixtures.pipeline_fixtures import pipeline_runner
 
 
 class TestKarteContractScoreInfoPipeline:
-
+ 
+       
     @classmethod
     def setup_class(cls):
-        """Disable proxy settings for tests"""
-        # Store and clear proxy environment variables
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
+        
+        # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
             if var in os.environ:
                 del os.environ[var]
+    
+    
+    
+    
+    @classmethod
+    def teardown_class(cls):
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
+
+
 
     def _get_no_proxy_session(self):
         """Get a requests session with proxy disabled"""

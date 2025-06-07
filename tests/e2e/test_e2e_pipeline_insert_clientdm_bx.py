@@ -23,20 +23,32 @@ from datetime import datetime
 from typing import Dict, Any, List
 
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
+from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
 # from tests.conftest import azure_data_factory_client  # このフィクスチャは存在しないためコメントアウト
+
 
 logger = logging.getLogger(__name__)
 
 
 class TestPipelineInsertClientDmBx:
-
+ 
+       
     @classmethod
     def setup_class(cls):
-        """Disable proxy settings for tests"""
-        # Store and clear proxy environment variables
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
+        
+        # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
             if var in os.environ:
                 del os.environ[var]
+    
+    @classmethod
+    def teardown_class(cls):
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
+
+
 
     def _get_no_proxy_session(self):
         """Get a requests session with proxy disabled"""
@@ -97,6 +109,9 @@ class TestPipelineInsertClientDmBx:
         except Exception as e:
             logger.error(f"パイプライン実行開始に失敗: {str(e)}")
             pytest.fail(f"パイプライン実行開始に失敗: {str(e)}")
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
 
     def _pre_execution_checks(self, helper):
         """実行前チェック"""

@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock
 import sys
 import os
+from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
 
 # プロジェクトルートをsys.pathに追加
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -24,6 +25,7 @@ if project_root not in sys.path:
 from tests.e2e.helpers.sql_query_manager import E2ESQLQueryManager
 from tests.e2e.helpers.missing_helpers_placeholder import MissingHelperPlaceholder
 
+
 # Placeholder for missing SynapseE2ETestHelper
 class SynapseE2ETestHelper(MissingHelperPlaceholder):
     pass
@@ -31,14 +33,24 @@ class SynapseE2ETestHelper(MissingHelperPlaceholder):
 logger = logging.getLogger(__name__)
 
 class TestE2EPipelinePointLostEmailExternalized:
-
+ 
+       
     @classmethod
     def setup_class(cls):
-        """Disable proxy settings for tests"""
-        # Store and clear proxy environment variables
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
+        
+        # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
             if var in os.environ:
                 del os.environ[var]
+    
+    @classmethod
+    def teardown_class(cls):
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
+
+
 
     def _get_no_proxy_session(self):
         """Get a requests session with proxy disabled"""

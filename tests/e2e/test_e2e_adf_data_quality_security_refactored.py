@@ -23,14 +23,28 @@ from tests.e2e.helpers.data_quality_test_manager import (
 @pytest.mark.adf
 @pytest.mark.data_quality
 class TestADFDataQualityRefactored:
-
+ 
+       
     @classmethod
     def setup_class(cls):
-        """Disable proxy settings for tests"""
-        # Store and clear proxy environment variables
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
+        
+        # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
             if var in os.environ:
                 del os.environ[var]
+    
+    
+    
+    
+    
+    @classmethod
+    def teardown_class(cls):
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
+
+
 
     def _get_no_proxy_session(self):
         """Get a requests session with proxy disabled"""
@@ -196,26 +210,46 @@ class TestADFDataQualityRefactored:
             
             # データ品質基準のチェック
             target = next((t for t, _ in profile_results if t.table_name == table and t.column_name == column), None)
+    
+    
+    
+    
 
-@classmethod
-def setup_class(cls):
-    """Disable proxy settings for tests"""
-    # Store and clear proxy environment variables
-    for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
-        if var in os.environ:
-            del os.environ[var]
+    @classmethod
+    def setup_class(cls):
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
+        
+        # Disable proxy settings for tests
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+    
+    
+    
+    
+    
+    @classmethod
+    def teardown_class(cls):
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
 
-def _get_no_proxy_session(self):
-    """Get a requests session with proxy disabled"""
-    session = requests.Session()
-    session.proxies = {'http': None, 'https': None}
-    return session
-            if target:
-                if 'unique' in target.business_rules:
-                    assert unique_pct >= 95.0, f"{table}.{column}: ユニーク性が基準を下回っています"
+
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
+
+    def _validate_business_rules(self, table, column, stats, target):
+        """ビジネスルールの検証"""
+        if target:
+            if 'unique' in target.business_rules:
+                assert stats['unique_pct'] >= 95.0, f"{table}.{column}: ユニーク性が基準を下回っています"
                 
-                if 'not_null' in target.business_rules:
-                    assert null_pct <= 5.0, f"{table}.{column}: NULL率が基準を超えています"
+            if 'not_null' in target.business_rules:
+                assert stats['null_pct'] <= 5.0, f"{table}.{column}: NULL率が基準を超えています"
 
 
 @pytest.mark.e2e
@@ -277,6 +311,7 @@ class TestADFSecurityRefactored:
             """
             SELECT COUNT(*) FROM access_control_policies 
             WHERE is_active = 1 AND effective_from <= GETDATE() AND effective_to >= GETDATE()
+from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
             """
         )
         
