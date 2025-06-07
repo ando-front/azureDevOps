@@ -71,7 +71,7 @@ class DockerE2EConnection:
     def get_sql_connection(self):
         """SQL Server接続を取得"""
         connection_string = f"""
-        DRIVER={{ODBC Driver 17 for SQL Server}};
+        DRIVER={{ODBC Driver 18 for SQL Server}};
         SERVER={self.sql_host},{self.sql_port};
         DATABASE={self.sql_database};
         UID={self.sql_user};

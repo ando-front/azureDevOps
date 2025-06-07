@@ -6,11 +6,11 @@ version: '3.8'
 
 services:
   # ユニットテスト実行環境（モック使用、高速）
-  unit-test-runner:
+  adf-unit-test:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: adf-unit-test-runner
+    container_name: adf-unit-test
     environment:
       - TEST_MODE=unit
       - PYTEST_MARKERS=unit
@@ -25,8 +25,6 @@ services:
     working_dir: /app
     networks:
       - unit-test-network
-    profiles:
-      - unit-test
     command: >
       sh -c "
         echo '🚀 ユニットテストを開始します...' &&
@@ -46,8 +44,6 @@ services:
     command: [ "azurite", "--blobHost", "0.0.0.0", "--location", "/data", "--debug", "/data/debug.log" ]
     networks:
       - unit-test-network
-    profiles:
-      - unit-test
     healthcheck:
       test: [ "CMD-SHELL", "nc -z localhost 10000 || exit 1" ]
       interval: 5s

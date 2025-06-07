@@ -1,0 +1,50 @@
+# E2Eテスト用軽量Dockerfileの完全版
+FROM python:3.9-slim
+
+# 作業ディレクトリを設定
+WORKDIR /app
+
+# システムの更新とMicrosoft ODBC Driver for SQL Serverのインストール
+RUN apt-get update && apt-get install -y \
+    curl \
+    apt-transport-https \
+    gnupg \
+    unixodbc-dev \
+    gcc \
+    g++ \
+    build-essential \
+    && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+    && curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y msodbcsql18 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# E2E要件ファイルをコピーしてインストール
+COPY requirements.e2e.txt .
+RUN pip install --no-cache-dir -r requirements.e2e.txt
+
+# 基本要件もインストール
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# E2Eテストに必要な追加パッケージを確実にインストール（冪等性担保）
+RUN pip install --no-cache-dir \
+    pandas==2.1.4 \
+    numpy==1.24.4 \
+    openpyxl==3.1.2 \
+    xlsxwriter==3.1.9 \
+    python-dateutil==2.8.2
+
+# アプリケーションファイルをコピー
+COPY . .
+
+# テスト結果ディレクトリを作成
+RUN mkdir -p /app/test_results
+
+# 環境変数を設定
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+# デフォルトコマンド
+CMD ["python", "-m", "pytest", "tests/e2e/", "-v", "--tb=short"]

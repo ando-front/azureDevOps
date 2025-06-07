@@ -13,7 +13,7 @@ class TestE2EWorking:
     def test_database_connection_working(self):
         """データベース接続テスト - 動作確認済み"""
         conn_str = (
-            "DRIVER={ODBC Driver 17 for SQL Server};"
+            "DRIVER={ODBC Driver 18 for SQL Server};"
             "SERVER=localhost,1433;"
             "DATABASE=SynapseTestDB;"
             "UID=sa;"
@@ -61,7 +61,7 @@ class TestE2EWorking:
     def test_table_operations(self):
         """テーブル操作テスト"""
         conn_str = (
-            "DRIVER={ODBC Driver 17 for SQL Server};"
+            "DRIVER={ODBC Driver 18 for SQL Server};"
             "SERVER=localhost,1433;"
             "DATABASE=SynapseTestDB;"
             "UID=sa;"

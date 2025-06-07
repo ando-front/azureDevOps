@@ -37,7 +37,7 @@ def test_database_connection():
         print("📦 pyodbc ライブラリが利用可能です")
         
         conn_str = (
-            "DRIVER={ODBC Driver 17 for SQL Server};"
+            "DRIVER={ODBC Driver 18 for SQL Server};"
             f"SERVER={db_info['host']},{db_info['port']};"
             f"DATABASE={db_info['database']};"
             f"UID={db_info['user']};"
@@ -252,7 +252,7 @@ def test_database_tables_and_data():
         
         # SynapseTestDBに接続
         connection_string = (
-            "DRIVER={ODBC Driver 17 for SQL Server};"
+            "DRIVER={ODBC Driver 18 for SQL Server};"
             "SERVER=localhost,1433;"
             "DATABASE=SynapseTestDB;"
             "UID=sa;"

@@ -14,7 +14,7 @@ class TestFinalE2EIntegration:
     def test_01_sql_server_connection(self):
         """SQL Server接続テスト"""
         conn_str = (
-            "DRIVER={ODBC Driver 17 for SQL Server};"
+            "DRIVER={ODBC Driver 18 for SQL Server};"
             "SERVER=localhost,1433;"
             "DATABASE=SynapseTestDB;"
             "UID=sa;"
@@ -54,7 +54,7 @@ class TestFinalE2EIntegration:
     def test_04_data_operations(self):
         """データ操作テスト"""
         conn_str = (
-            "DRIVER={ODBC Driver 17 for SQL Server};"
+            "DRIVER={ODBC Driver 18 for SQL Server};"
             "SERVER=localhost,1433;"
             "DATABASE=SynapseTestDB;"
             "UID=sa;"
@@ -89,7 +89,7 @@ class TestFinalE2EIntegration:
         
         # 1. SQL接続を維持しながら
         conn = pyodbc.connect(
-            "DRIVER={ODBC Driver 17 for SQL Server};"
+            "DRIVER={ODBC Driver 18 for SQL Server};"
             "SERVER=localhost,1433;"
             "DATABASE=SynapseTestDB;"
             "UID=sa;"

@@ -42,7 +42,7 @@
 
 ```bash
 git clone <repository-url>
-cd tgma-MA-POC
+cd azureDevOps
 ```
 
 ### 2. 単体テスト実行（推奨）

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="5" time="0.113" timestamp="2025-06-07T05:56:18.014476" hostname="5709ac6c51b5"><testcase classname="tests.e2e.test_basic_connections" name="test_database_connection" time="0.059" /><testcase classname="tests.e2e.test_basic_connections" name="test_ir_simulator_connection" time="0.006"><failure message="Failed: IR Simulator サービスに接続できません: http://localhost:8080">tests/e2e/test_basic_connections.py:178: in test_ir_simulator_connection
+    pytest.fail(f"IR Simulator サービスに接続できません: {ir_url}")
+E   Failed: IR Simulator サービスに接続できません: http://localhost:8080</failure></testcase><testcase classname="tests.e2e.test_basic_connections" name="test_azurite_connection" time="0.009" /><testcase classname="tests.e2e.test_basic_connections" name="test_database_tables_and_data" time="0.000"><failure message="Failed: Database tables and data test failed: ('01000', &quot;[01000] [unixODBC][Driver Manager]Can't open lib 'ODBC Driver 17 for SQL Server' : file not found (0) (SQLDriverConnect)&quot;)">tests/e2e/test_basic_connections.py:263: in test_database_tables_and_data
+    conn = pyodbc.connect(connection_string, timeout=10)
+E   pyodbc.Error: ('01000', "[01000] [unixODBC][Driver Manager]Can't open lib 'ODBC Driver 17 for SQL Server' : file not found (0) (SQLDriverConnect)")
+
+During handling of the above exception, another exception occurred:
+tests/e2e/test_basic_connections.py:310: in test_database_tables_and_data
+    pytest.fail(f"Database tables and data test failed: {str(e)}")
+E   Failed: Database tables and data test failed: ('01000', "[01000] [unixODBC][Driver Manager]Can't open lib 'ODBC Driver 17 for SQL Server' : file not found (0) (SQLDriverConnect)")</failure></testcase><testcase classname="tests.e2e.test_basic_connections" name="test_all_services_integration" time="0.004" /></testsuite></testsuites>

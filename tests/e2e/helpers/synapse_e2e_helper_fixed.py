@@ -36,7 +36,7 @@ class SynapseE2EConnection:
         database = os.getenv('E2E_SQL_DATABASE', 'SynapseTestDB')
         username = os.getenv('E2E_SQL_USERNAME', 'sa')
         password = os.getenv('E2E_SQL_PASSWORD', 'YourStrong!Passw0rd')
-        driver = os.getenv('E2E_SQL_DRIVER', 'ODBC Driver 17 for SQL Server')
+        driver = os.getenv('E2E_SQL_DRIVER', 'ODBC Driver 18 for SQL Server')
         
         connection_string = (
             f"DRIVER={{{driver}}};"

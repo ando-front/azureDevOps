@@ -45,6 +45,8 @@ class MockSynapseConnection:
                     return [(1,)]
                 elif any('UPD001' in str(p) for p in params):
                     return [(2,)]
+                elif any('SUT001' in str(p) for p in params):
+                    return [(200,)]  # ステータス更新テスト用ClientId
                 elif any('CMF001' in str(p) for p in params):
                     return [(1,)]  # 当月フィルタテスト用
                 else:
@@ -53,6 +55,12 @@ class MockSynapseConnection:
             elif 'CurrentMonth = 1' in query and params:
                 # 当月データのみを返す
                 return [('CurrentMonth', 500.0)]
+            # ステータス更新後の確認クエリ
+            elif 'Status' in query and 'ProcessedDate' in query and params:
+                if any('status.test@example.com' in str(p) for p in params):
+                    return [('Completed', '2024-01-01 10:00:00')]  # 更新されたステータス
+                else:
+                    return [('Processing', None)]
             # 結合クエリ（JOIN）の処理
             elif 'JOIN' in query.upper() and params:
                 if any('test.pge@example.com' in str(p) for p in params):
@@ -120,6 +128,8 @@ class MockCursor:
                 return [(1,)]
             elif any('UPD001' in str(p) for p in self._last_params):
                 return [(2,)]
+            elif any('SUT001' in str(p) for p in self._last_params):
+                return [(200,)]  # ステータス更新テスト用ClientId
             else:
                 return [(1,)]
         elif 'JOIN' in self._last_query.upper() and self._last_params:
@@ -127,6 +137,11 @@ class MockCursor:
                 return [('test.pge@example.com', 1500.0, 'Processing', 'ポイント付与テスト')]
             else:
                 return [('mock_email@example.com', 1000.0, 'Active', 'Mock Client')]
+        elif 'Status' in self._last_query and 'ProcessedDate' in self._last_query and self._last_params:
+            if any('status.test@example.com' in str(p) for p in self._last_params):
+                return [('Completed', '2024-01-01 10:00:00')]  # 更新されたステータス
+            else:
+                return [('Processing', None)]
         elif self._last_params and any('AUTO001' in str(p) for p in self._last_params):
             return [('テストクライアント_自動', 'AUTO001', 'Active')]
         elif self._last_params and any('UPD001' in str(p) for p in self._last_params):
