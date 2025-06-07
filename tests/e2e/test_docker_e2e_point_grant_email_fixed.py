@@ -5,6 +5,8 @@ Docker化されたE2Eテスト - Point Grant Email Pipeline
 
 import pytest
 import logging
+import os
+import requests
 from datetime import datetime, timedelta
 from tests.e2e.helpers.docker_e2e_helper import DockerE2EConnection, E2ETestHelper
 
@@ -25,6 +27,20 @@ def test_helper(e2e_connection):
 
 @pytest.mark.e2e
 class TestPointGrantEmailPipelineE2E:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """Point Grant Email パイプラインのE2Eテスト"""
     
     def test_pipeline_point_grant_email_complete_flow(self, e2e_connection, test_helper):

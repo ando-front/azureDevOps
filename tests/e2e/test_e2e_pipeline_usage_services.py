@@ -8,6 +8,7 @@ Azure Data Factory pi_Send_UsageServices パイプラインE2Eテストモジュ
 import asyncio
 import time
 import pytest
+import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional, Tuple
 import pandas as pd
@@ -25,6 +26,20 @@ from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
 @pytest.mark.pipeline
 @pytest.mark.usage_services
 class TestPipelineUsageServices:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """利用サービス送信パイプライン pi_Send_UsageServices のE2Eテスト"""
     
     # パイプライン固有の設定

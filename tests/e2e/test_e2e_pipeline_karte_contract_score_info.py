@@ -6,6 +6,8 @@ Tests cover contract scoring data extraction, CSV generation, and SFTP transfer 
 
 import pytest
 import time
+import os
+import requests
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
 from decimal import Decimal
@@ -18,6 +20,20 @@ from tests.fixtures.pipeline_fixtures import pipeline_runner
 
 
 class TestKarteContractScoreInfoPipeline:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """Test class for Karte Contract Score Info pipeline."""
 
     PIPELINE_NAME = "pi_Send_karte_contract_score_info"

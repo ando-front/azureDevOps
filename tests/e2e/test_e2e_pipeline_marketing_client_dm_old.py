@@ -25,6 +25,8 @@ E2Eテスト: pi_Copy_marketing_client_dm パイプライン
 import pytest
 import time
 import logging
+import os
+import requests
 from datetime import datetime
 from unittest.mock import Mock
 from typing import Dict, Any, List
@@ -36,6 +38,20 @@ logger = logging.getLogger(__name__)
 
 
 class TestPipelineMarketingClientDM:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """pi_Copy_marketing_client_dm パイプライン専用のE2Eテストクラス"""
     
     PIPELINE_NAME = "pi_Copy_marketing_client_dm"

@@ -6,18 +6,33 @@ E2Eテストデータの整合性と一貫性を検証するテスト
 import pytest
 import pyodbc
 import os
+import requests
 from datetime import datetime
 from .conftest import ODBCDriverManager
 
 
 class TestDataIntegrityValidation:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """データ整合性検証テストクラス"""
 
     @pytest.fixture(scope="class")
     def db_connection(self):
         """データベース接続のフィクスチャ"""
         # Docker環境でのサーバー名を使用
-        server = os.getenv('SQL_SERVER', 'sqlserver-e2e-simple')
+        server = os.getenv('SQL_SERVER', 'localhost')
         port = os.getenv('SQL_PORT', '1433')
         database = os.getenv('SQL_DATABASE', 'TGMATestDB')
         username = os.getenv('SQL_USERNAME', 'sa')

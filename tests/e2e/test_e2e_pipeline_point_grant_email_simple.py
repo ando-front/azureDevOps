@@ -6,6 +6,8 @@ E2E Test for Point Grant Email Pipeline (Simple Version)
 
 import pytest
 import logging
+import os
+import requests
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
 from tests.e2e.helpers.sql_query_manager import E2ESQLQueryManager
 
@@ -13,6 +15,20 @@ logger = logging.getLogger(__name__)
 
 
 class TestPipelinePointGrantEmail:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """Point Grant Email Pipeline E2E Test (Simple Version)"""
 
     def setup_method(self):

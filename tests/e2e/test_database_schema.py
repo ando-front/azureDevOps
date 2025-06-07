@@ -13,18 +13,49 @@ from .conftest import ODBCDriverManager
 class TestDatabaseSchemaValidation:
     """データベーススキーマの検証テストクラス"""
 
+    @classmethod
+    def setup_class(cls):
+        """クラス初期化時にプロキシを無効化"""
+        # プロキシ環境変数を一時的に保存してクリア
+        cls.original_http_proxy = os.environ.get('http_proxy')
+        cls.original_https_proxy = os.environ.get('https_proxy')
+        cls.original_HTTP_PROXY = os.environ.get('HTTP_PROXY')
+        cls.original_HTTPS_PROXY = os.environ.get('HTTPS_PROXY')
+        
+        # プロキシ環境変数をクリア
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+    
+    @classmethod
+    def teardown_class(cls):
+        """クラス終了時にプロキシ設定を復元"""
+        # 元のプロキシ設定を復元
+        if cls.original_http_proxy:
+            os.environ['http_proxy'] = cls.original_http_proxy
+        if cls.original_https_proxy:
+            os.environ['https_proxy'] = cls.original_https_proxy
+        if cls.original_HTTP_PROXY:
+            os.environ['HTTP_PROXY'] = cls.original_HTTP_PROXY
+        if cls.original_HTTPS_PROXY:
+            os.environ['HTTPS_PROXY'] = cls.original_HTTPS_PROXY
+
     @pytest.fixture(scope="class")
     def db_connection(self):
         """データベース接続のフィクスチャ"""
-        # 環境変数から直接接続文字列を取得
-        connection_string = os.getenv('SQL_SERVER_CONNECTION_STRING')
-        if not connection_string:
-            # フォールバック用の直接接続文字列
-            connection_string = "DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost,1433;DATABASE=TGMATestDB;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes;Encrypt=yes;"
+        # 直接接続文字列を使用（E2E環境向け）
+        connection_string = (
+            "DRIVER={ODBC Driver 18 for SQL Server};"
+            "SERVER=localhost,1433;"
+            "DATABASE=TGMATestDB;"
+            "UID=sa;"
+            "PWD=YourStrong!Passw0rd123;"
+            "TrustServerCertificate=yes;"
+        )
         
         conn = None
         try:
-            conn = pyodbc.connect(connection_string, timeout=30)
+            conn = pyodbc.connect(connection_string, timeout=10)
             yield conn
         except Exception as e:
             print(f"データベース接続エラー: {e}")

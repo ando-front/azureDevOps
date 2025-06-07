@@ -2,11 +2,27 @@
 E2Eテスト: ClientDmテーブルの実際のデータベース操作テスト
 """
 import pytest
+import os
+import requests
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
 
 
 @pytest.mark.e2e
 class TestClientDmE2E:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """ClientDmテーブルのE2Eテスト"""
     
     def test_e2e_database_connection(self, e2e_synapse_connection: SynapseE2EConnection):
@@ -119,6 +135,20 @@ class TestClientDmE2E:
                 SELECT COUNT(*)
                 FROM dbo.ClientDm
                 WHERE ClientCode = ?
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
                 """,
                 (test_client_code,)
             )

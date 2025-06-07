@@ -9,6 +9,7 @@ Point Lost Email パイプライン E2E テスト (SQL外部化版)
 
 import pytest
 import logging
+import requests
 from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock
 import sys
@@ -30,6 +31,20 @@ class SynapseE2ETestHelper(MissingHelperPlaceholder):
 logger = logging.getLogger(__name__)
 
 class TestE2EPipelinePointLostEmailExternalized:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """Point Lost Email パイプライン SQL外部化版 E2E テスト"""
     
     # ===========================

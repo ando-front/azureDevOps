@@ -7,6 +7,8 @@ E2Eテスト: Azure Data Factory パイプライン監視とスケジューリ�
 import pytest
 import json
 import time
+import os
+import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
@@ -16,6 +18,20 @@ from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
 @pytest.mark.adf
 @pytest.mark.monitoring
 class TestADFPipelineMonitoring:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """ADFパイプライン監視のE2Eテスト"""
     
     def test_e2e_pipeline_execution_status_tracking(self, e2e_synapse_connection: SynapseE2EConnection):
@@ -393,6 +409,20 @@ class TestADFPipelineMonitoring:
         """長時間実行パイプラインのシミュレーション"""
         start_time = time.time()
         timeout_time = start_time + duration_seconds
+
+@classmethod
+def setup_class(cls):
+    """Disable proxy settings for tests"""
+    # Store and clear proxy environment variables
+    for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+        if var in os.environ:
+            del os.environ[var]
+
+def _get_no_proxy_session(self):
+    """Get a requests session with proxy disabled"""
+    session = requests.Session()
+    session.proxies = {'http': None, 'https': None}
+    return session
         
         while time.time() < timeout_time:
             # 長時間処理をシミュレート

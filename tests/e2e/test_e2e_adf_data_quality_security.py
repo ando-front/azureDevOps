@@ -9,6 +9,8 @@ import json
 import hashlib
 import time
 import base64
+import os
+import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional, Tuple
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
@@ -18,6 +20,20 @@ from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
 @pytest.mark.adf
 @pytest.mark.data_quality
 class TestADFDataQuality:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """ADFデータ品質管理のE2Eテスト"""
     
     def test_e2e_data_validation_rules(self, e2e_synapse_connection: SynapseE2EConnection):
@@ -668,6 +684,20 @@ class TestADFDataQuality:
                 'avg_length': avg_length,
                 'pattern_compliance': pattern_compliance,
                 'anomaly_count': anomaly_count
+
+          @classmethod
+          def setup_class(cls):
+              """Disable proxy settings for tests"""
+              # Store and clear proxy environment variables
+              for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+                  if var in os.environ:
+                      del os.environ[var]
+
+          def _get_no_proxy_session(self):
+              """Get a requests session with proxy disabled"""
+              session = requests.Session()
+              session.proxies = {'http': None, 'https': None}
+              return session
             }
             
         except Exception as e:

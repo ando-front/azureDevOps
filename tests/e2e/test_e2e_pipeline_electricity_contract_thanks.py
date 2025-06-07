@@ -6,6 +6,8 @@ Tests cover data extraction, CSV generation, and SFTP transfer validation.
 
 import pytest
 import time
+import os
+import requests
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
 from tests.e2e.helpers.data_quality_test_manager import DataQualityTestManager
@@ -17,6 +19,20 @@ from tests.fixtures.pipeline_fixtures import pipeline_runner
 
 
 class TestElectricityContractThanksPipeline:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """Test class for Electricity Contract Thanks pipeline."""
 
     PIPELINE_NAME = "pi_Send_ElectricityContractThanks"

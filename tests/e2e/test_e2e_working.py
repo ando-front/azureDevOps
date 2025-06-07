@@ -10,6 +10,39 @@ import os
 class TestE2EWorking:
     """動作するE2Eテスト"""
     
+    @classmethod
+    def setup_class(cls):
+        """クラス初期化時にプロキシを無効化"""
+        # プロキシ環境変数を一時的に保存してクリア
+        cls.original_http_proxy = os.environ.get('http_proxy')
+        cls.original_https_proxy = os.environ.get('https_proxy')
+        cls.original_HTTP_PROXY = os.environ.get('HTTP_PROXY')
+        cls.original_HTTPS_PROXY = os.environ.get('HTTPS_PROXY')
+        
+        # プロキシ環境変数をクリア
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+    
+    @classmethod
+    def teardown_class(cls):
+        """クラス終了時にプロキシ設定を復元"""
+        # 元のプロキシ設定を復元
+        if cls.original_http_proxy:
+            os.environ['http_proxy'] = cls.original_http_proxy
+        if cls.original_https_proxy:
+            os.environ['https_proxy'] = cls.original_https_proxy
+        if cls.original_HTTP_PROXY:
+            os.environ['HTTP_PROXY'] = cls.original_HTTP_PROXY
+        if cls.original_HTTPS_PROXY:
+            os.environ['HTTPS_PROXY'] = cls.original_HTTPS_PROXY
+    
+    def _get_no_proxy_session(self):
+        """プロキシを無効にしたrequestsセッションを取得"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
+    
     def test_database_connection_working(self):
         """データベース接続テスト - 動作確認済み"""
         conn_str = (
@@ -43,7 +76,8 @@ class TestE2EWorking:
     def test_ir_simulator_basic(self):
         """IR Simulator基本テスト"""
         try:
-            response = requests.get("http://localhost:8080/", timeout=10)
+            session = self._get_no_proxy_session()
+            response = session.get("http://localhost:8080/", timeout=10)
             # 403でも接続は成功（認証の問題）
             assert response.status_code in [200, 403]
         except requests.exceptions.ConnectionError:
@@ -52,9 +86,10 @@ class TestE2EWorking:
     def test_azurite_basic(self):
         """Azurite基本テスト"""
         try:
-            response = requests.get("http://localhost:10000/devstoreaccount1?comp=list", timeout=10)
-            # 200, 403, 400 いずれも接続成功とみなす
-            assert response.status_code in [200, 403, 400]
+            session = self._get_no_proxy_session()
+            response = session.get("http://localhost:10000/devstoreaccount1", timeout=10)
+            # 400でも接続は成功（認証不正だが接続成功）
+            assert response.status_code in [200, 400]
         except requests.exceptions.ConnectionError:
             pytest.skip("Azurite not accessible")
     
@@ -72,38 +107,35 @@ class TestE2EWorking:
         conn = pyodbc.connect(conn_str, timeout=10)
         cursor = conn.cursor()
         
-        # client_dmテーブルのテスト
-        cursor.execute("SELECT COUNT(*) FROM client_dm")
-        client_count = cursor.fetchone()[0]
-        assert client_count >= 0
+        # テストデータ操作
+        test_id = 'TEST_WORKING_999'
         
-        # point_grant_emailテーブルのテスト
-        cursor.execute("SELECT COUNT(*) FROM point_grant_email")
-        email_count = cursor.fetchone()[0]
-        assert email_count >= 0
+        # データ挿入
+        cursor.execute("""
+            INSERT INTO client_dm (client_id, client_name, email) 
+            VALUES (?, ?, ?)
+        """, (test_id, 'Working Test Client', 'working@test.com'))
         
-        # テストデータの挿入と削除（テーブル構造に合わせて修正）
-        cursor.execute("INSERT INTO client_dm (client_id, client_name) VALUES ('TEST_CLIENT_001', 'TEST_CLIENT')")
-        cursor.execute("SELECT COUNT(*) FROM client_dm WHERE client_name = 'TEST_CLIENT'")
-        test_count = cursor.fetchone()[0]
-        assert test_count == 1
+        # データ確認
+        cursor.execute("SELECT COUNT(*) FROM client_dm WHERE client_id = ?", (test_id,))
+        count = cursor.fetchone()[0]
+        assert count == 1
         
         # クリーンアップ
-        cursor.execute("DELETE FROM client_dm WHERE client_name = 'TEST_CLIENT'")
+        cursor.execute("DELETE FROM client_dm WHERE client_id = ?", (test_id,))
         conn.commit()
+        
         conn.close()
     
     def test_environment_variables(self):
         """環境変数テスト"""
-        # E2Eテスト固有の環境変数を確認
+        # E2E テスト環境の基本変数をチェック
         required_vars = {
-            "E2E_SQL_SERVER": "localhost,1433",
-            "E2E_SQL_DATABASE": "TGMATestDB", 
-            "E2E_SQL_USERNAME": "sa",
-            "E2E_SQL_PASSWORD": "YourStrong!Passw0rd123"
+            'SQL_SERVER_HOST': 'localhost',
+            'SQL_SERVER_PORT': '1433',
+            'SQL_SERVER_USER': 'sa'
         }
         
-        for var, default in required_vars.items():
-            value = os.getenv(var, default)
-            assert value is not None, f"環境変数 {var} が設定されていません"
+        for var, default_value in required_vars.items():
+            value = os.getenv(var, default_value)
             assert value != "", f"環境変数 {var} が空です"

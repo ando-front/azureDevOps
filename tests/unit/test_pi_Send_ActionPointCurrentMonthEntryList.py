@@ -4,6 +4,7 @@ ADFパイプライン: pi_Send_ActionPointCurrentMonthEntryList のユニット�
 """
 
 from .normalize_column import normalize_column_name
+import requests
 from .helpers.sql_column_extractor import extract_normalized_columns
 from .helpers.synapse_test_helper import SynapseTestConnection, verify_synapse_connection
 import unittest
@@ -14,6 +15,20 @@ import copy
 import pytest
 
 class TestPiSendActionPointCurrentMonthEntryList(unittest.TestCase):
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     
     @classmethod
     def setUpClass(cls):
@@ -27,6 +42,20 @@ class TestPiSendActionPointCurrentMonthEntryList(unittest.TestCase):
         print("[INFO] パイプライン名テスト")
         name = self.pipeline["name"]
         self.assertIn("pi_Send_ActionPointCurrentMonthEntryList", name)
+
+@classmethod
+def setup_class(cls):
+    """Disable proxy settings for tests"""
+    # Store and clear proxy environment variables
+    for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+        if var in os.environ:
+            del os.environ[var]
+
+def _get_no_proxy_session(self):
+    """Get a requests session with proxy disabled"""
+    session = requests.Session()
+    session.proxies = {'http': None, 'https': None}
+    return session
 
     def test_activities_exist(self):
         print("[INFO] activities数テスト")

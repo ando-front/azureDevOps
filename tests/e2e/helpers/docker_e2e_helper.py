@@ -24,7 +24,7 @@ class DockerE2EConnection:
         self.sql_port = os.getenv("SQL_SERVER_PORT", "1433")
         self.sql_user = os.getenv("SQL_SERVER_USER", "sa")
         self.sql_password = os.getenv("SQL_SERVER_PASSWORD", "YourStrong!Passw0rd123")
-        self.sql_database = os.getenv("SQL_SERVER_DATABASE", "SynapseTestDB")
+        self.sql_database = os.getenv("SQL_SERVER_DATABASE", "TGMATestDB")
         self.ir_simulator_url = os.getenv("IR_SIMULATOR_URL", "http://localhost:8080")
         self.azurite_connection_string = os.getenv(
             "AZURITE_CONNECTION_STRING",

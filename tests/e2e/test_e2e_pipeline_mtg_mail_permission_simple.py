@@ -7,12 +7,28 @@ Azure Data Factory Pipeline E2E Tests - mTG Mail Permission Send Pipeline (Simpl
 
 import pytest
 import logging
+import os
+import requests
 from datetime import datetime
 import pytz
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
 
 
 class TestPipelinemTGMailPermission:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """mTG Mail Permission Send パイプライン専用E2Eテストクラス（簡易版）"""
     
     PIPELINE_NAME = "pi_Send_mTGMailPermission"

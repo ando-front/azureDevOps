@@ -21,6 +21,7 @@ import pytest
 import asyncio
 import logging
 import datetime
+import requests
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional, Any, Tuple
@@ -96,6 +97,20 @@ class PaymentMethodMasterTestResult:
 
 
 class TestPipelinePaymentMethodMaster:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """pi_Send_PaymentMethodMaster パイプラインのE2Eテストクラス"""
     
     def setup_method(self):

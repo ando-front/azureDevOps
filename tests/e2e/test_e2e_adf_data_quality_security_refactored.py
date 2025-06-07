@@ -9,6 +9,8 @@ import json
 import hashlib
 import time
 import base64
+import os
+import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional, Tuple
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
@@ -21,6 +23,20 @@ from tests.e2e.helpers.data_quality_test_manager import (
 @pytest.mark.adf
 @pytest.mark.data_quality
 class TestADFDataQualityRefactored:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """ADFデータ品質管理のE2Eテスト（リファクタリング版）"""
     
     @pytest.fixture(autouse=True)
@@ -180,6 +196,20 @@ class TestADFDataQualityRefactored:
             
             # データ品質基準のチェック
             target = next((t for t, _ in profile_results if t.table_name == table and t.column_name == column), None)
+
+@classmethod
+def setup_class(cls):
+    """Disable proxy settings for tests"""
+    # Store and clear proxy environment variables
+    for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+        if var in os.environ:
+            del os.environ[var]
+
+def _get_no_proxy_session(self):
+    """Get a requests session with proxy disabled"""
+    session = requests.Session()
+    session.proxies = {'http': None, 'https': None}
+    return session
             if target:
                 if 'unique' in target.business_rules:
                     assert unique_pct >= 95.0, f"{table}.{column}: ユニーク性が基準を下回っています"

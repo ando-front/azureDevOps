@@ -22,6 +22,7 @@ import pytest
 import time
 import os
 import logging
+import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
@@ -66,6 +67,20 @@ class PointGrantEmailTestResult:
 
 
 class TestPipelinePointGrantEmail:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """パイプライン pi_PointGrantEmail の包括的E2Eテスト"""
     
     PIPELINE_NAME = "pi_PointGrantEmail"

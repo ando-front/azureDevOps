@@ -8,6 +8,7 @@ import pytest
 import json
 import os
 import time
+import requests
 from typing import Dict, List, Any
 from datetime import datetime, timedelta
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
@@ -18,6 +19,20 @@ from tests.e2e.helpers.sql_query_manager import E2ESQLQueryManager
 @pytest.mark.e2e
 @pytest.mark.adf
 class TestADFPipelineExecution:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """ADFパイプライン実行のE2Eテスト"""
     
     def test_e2e_client_dm_bx_pipeline_data_flow(self, e2e_synapse_connection: SynapseE2EConnection, clean_test_data):
@@ -349,6 +364,20 @@ class TestADFPipelineExecution:
             # 圧縮サイズの確認
             compressed_size = len(compressed_data.getvalue())
             original_size = len(file_content.encode('utf-8'))
+
+       @classmethod
+       def setup_class(cls):
+           """Disable proxy settings for tests"""
+           # Store and clear proxy environment variables
+           for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+               if var in os.environ:
+                   del os.environ[var]
+
+       def _get_no_proxy_session(self):
+           """Get a requests session with proxy disabled"""
+           session = requests.Session()
+           session.proxies = {'http': None, 'https': None}
+           return session
             
             compression_ratio = compressed_size / original_size
             print(f"圧縮率: {compression_ratio:.2%}")

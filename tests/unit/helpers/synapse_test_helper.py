@@ -13,7 +13,7 @@ class MockSynapseConnection:
     def __init__(self):
         self.server = os.getenv('SQL_SERVER_HOST', 'localhost')
         self.port = os.getenv('SQL_SERVER_PORT', '1433')
-        self.database = os.getenv('SQL_SERVER_DATABASE', 'SynapseTestDB')
+        self.database = os.getenv('SQL_SERVER_DATABASE', 'TGMATestDB')
         self.username = os.getenv('SQL_SERVER_USER', 'sa')
         self.password = os.getenv('SQL_SERVER_PASSWORD', 'YourStrong!Passw0rd')
         

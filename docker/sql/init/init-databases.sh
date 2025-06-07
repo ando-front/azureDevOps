@@ -18,6 +18,7 @@ scripts=(
     "/opt/sql-scripts/04_enhanced_test_tables.sql"
     "/opt/sql-scripts/03_insert_test_data.sql"
     "/opt/sql-scripts/05_comprehensive_test_data.sql"
+    "/opt/sql-scripts/06_additional_e2e_test_data.sql"
 )
 
 # 各スクリプトを順次実行

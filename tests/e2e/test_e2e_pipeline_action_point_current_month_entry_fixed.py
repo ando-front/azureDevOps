@@ -21,6 +21,7 @@ import pytest
 import time
 import os
 import logging
+import requests
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
@@ -67,6 +68,20 @@ class ActionPointEntryTestResult:
 
 
 class TestPipelineActionPointCurrentMonthEntryList:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """パイプライン pi_Send_ActionPointCurrentMonthEntryList の包括的E2Eテスト"""
     
     PIPELINE_NAME = "pi_Send_ActionPointCurrentMonthEntryList"

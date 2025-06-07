@@ -24,6 +24,7 @@ import pytest
 import asyncio
 import os
 import sys
+import requests
 from datetime import datetime, timedelta
 import pytz
 from typing import Dict, List, Any
@@ -135,6 +136,20 @@ class MockSynapseE2EConnection:
 
 
 class TestSendPipelinesMock:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """Send系パイプライン統合E2Eテスト（モック版）"""
     
     # 全15個のSend系パイプライン

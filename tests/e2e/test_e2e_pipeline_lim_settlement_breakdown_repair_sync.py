@@ -18,6 +18,7 @@ Azure Data Factory Pipeline E2E Tests - LIM Settlement Breakdown Repair Send Pip
 
 import pytest
 import os
+import requests
 from datetime import datetime, timedelta
 import pytz
 from typing import Dict, List, Any
@@ -33,6 +34,20 @@ from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
 
 
 class TestPipelineLIMSettlementBreakdownRepair:
+
+    @classmethod
+    def setup_class(cls):
+        """Disable proxy settings for tests"""
+        # Store and clear proxy environment variables
+        for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def _get_no_proxy_session(self):
+        """Get a requests session with proxy disabled"""
+        session = requests.Session()
+        session.proxies = {'http': None, 'https': None}
+        return session
     """LIM Settlement Breakdown Repair Send パイプライン専用E2Eテストクラス"""
     
     PIPELINE_NAME = "pi_Send_LIMSettlementBreakdownRepair"
