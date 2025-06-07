@@ -1,0 +1,12 @@
+{
+  "name": "default/AzureSynapseAnalytics-dam-dev",
+  "type": "Microsoft.DataFactory/factories/managedVirtualNetworks/managedPrivateEndpoints",
+  "properties": {
+    "privateLinkResourceId": "[parameters('AzureSynapseAnalytics-dam-dev_properties_privateLinkResourceId')]",
+    "groupId": "[parameters('AzureSynapseAnalytics-dam-dev_properties_groupId')]",
+    "fqdns": "[parameters('AzureSynapseAnalytics-dam-dev_properties_fqdns')]"
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/managedVirtualNetworks/default')]"
+  ]
+}

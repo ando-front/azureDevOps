@@ -1,3 +1,7 @@
+"""
+SQLのSELECT/INSERT文からカラム名を抽出・正規化するユーティリティ。
+"""
+
 import re
 from tests.unit.normalize_column import normalize_column_name
 from typing import List

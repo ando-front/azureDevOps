@@ -1,3 +1,7 @@
+"""
+SQL文から英語カラム名（AS句エイリアス等）を抽出・比較するユーティリティ。
+"""
+
 import re
 from typing import List, Set
 
@@ -61,8 +65,6 @@ def extract_english_column_names(sql: str) -> Set[str]:
             if clean_part and re.match(r'^[A-Z_0-9]+$', clean_part.upper()):
                 english_columns.add(clean_part.upper())
 
-    return english_columns
-    
     return english_columns
 
 

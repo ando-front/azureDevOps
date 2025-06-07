@@ -1,54 +1,66 @@
+# =================================================================
+# ユニットテスト用 Docker Compose ファイル
+# 軽量で高速な単体テストを実行するための環境
+# =================================================================
+version: '3.8'
+
 services:
-  # Azurite standalone service for reliable blob storage emulation
-  azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:latest
-    ports:
-      - "10000:10000" # Blob service
-      - "10001:10001" # Queue service
-      - "10002:10002" # Table service
+  # ユニットテスト実行環境（モック使用、高速）
+  unit-test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: adf-unit-test-runner
+    environment:
+      - TEST_MODE=unit
+      - PYTEST_MARKERS=unit
+      - PYTHONPATH=/app
+      - TEST_TIMEOUT=120
     volumes:
-      - azurite-data:/data
+      - ./tests:/app/tests
+      - ./src:/app/src
+      - ./input:/app/input
+      - ./output:/app/output
+      - unit_test_results:/app/test_results
+    working_dir: /app
+    networks:
+      - unit-test-network
+    profiles:
+      - unit-test
     command: >
-      azurite --location /data --debug /data/debug.log --loose --skipApiVersionCheck --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
-    networks:
-      - test-network
-  # Main pytest test service
-  pytest-test:
-    image: pytest-test:latest
-    ports:
-      - "8080:80"
-      - "2222:22"
-    volumes:
-      - ./tests:/tests
-      - ./src:/tests/src
+      sh -c "
+        echo '🚀 ユニットテストを開始します...' &&
+        python -m pytest tests/unit/ -v --tb=short --cov=src --cov-report=term-missing --cov-report=html:test_results/coverage_html --junit-xml=test_results/unit_test_results.xml
+      "
+
+  # Azure Blob Storage エミュレータ（軽量版、ユニットテスト用）
+  azurite-unit:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: azurite-unit-test
     environment:
-      - PYTHONPATH=/tests
-      - NO_PROXY=127.0.0.1,localhost,devstoreaccount1,azurite
-      - AZURITE_HOST=azurite
-      - AZURITE_ENDPOINT=http://azurite:10000
-    # depends_on:
-    #   azurite:
-    #     condition: service_healthy
-    networks:
-      - test-network
-  # Legacy adf-test for backward compatibility
-  adf-test:
-    image: adf-test-image:latest
+      - AZURITE_ACCOUNTS=devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
     ports:
-      - "8081:80"
-      - "2223:22"
+      - "10100:10000" # ユニットテスト用ポート
     volumes:
-      - ./tests:/tests
-      - ./src:/tests/src
-    environment:
-      - PYTHONPATH=/tests
-      - AZURITE_HOST=azurite
+      - azurite_unit_data:/data
+    command: [ "azurite", "--blobHost", "0.0.0.0", "--location", "/data", "--debug", "/data/debug.log" ]
     networks:
-      - test-network
+      - unit-test-network
+    profiles:
+      - unit-test
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -z localhost 10000 || exit 1" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
 networks:
-  test-network:
+  unit-test-network:
     driver: bridge
 
 volumes:
-  azurite-data:
+  unit_test_results:
+    driver: local
+  azurite_unit_data:
+    driver: local

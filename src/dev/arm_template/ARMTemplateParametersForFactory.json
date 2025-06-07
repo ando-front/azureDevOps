@@ -1,0 +1,116 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "value": "omni-df-dev"
+        },
+        "li_dam_dwh_connectionString": {
+            "value": ""
+        },
+        "li_blob_tgomnidevrgsa_container_connectionString": {
+            "value": ""
+        },
+        "li_Karte_AmazonS3_secretAccessKey": {
+            "value": ""
+        },
+        "li_blob_tgomni_container_connectionString": {
+            "value": ""
+        },
+        "li_sqlmi_dwh2_connectionString": {
+            "value": ""
+        },
+        "li_sftp_password": {
+            "value": ""
+        },
+        "AzureSqlDatabase1_connectionString": {
+            "value": ""
+        },
+        "li_ftp_test_password": {
+            "value": ""
+        },
+        "li_blob_tgomnidevrgsa_container_shir_connectionString": {
+            "value": ""
+        },
+        "li_dam_dwh_shir_connectionString": {
+            "value": ""
+        },
+        "li_blob_damhdinsight_container_sasUri": {
+            "value": ""
+        },
+        "li_Karte_AmazonS3_properties_typeProperties_accessKeyId": {
+            "value": "AKIASLGERJSDMDR3YKGF"
+        },
+        "li_sftp_properties_typeProperties_host": {
+            "value": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+        },
+        "li_sftp_properties_typeProperties_userName": {
+            "value": "534003419_2"
+        },
+        "li_ftp_test_properties_typeProperties_host": {
+            "value": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+        },
+        "li_ftp_test_properties_typeProperties_userName": {
+            "value": "534003419_2"
+        },
+        "li_dam_kv_omni_properties_typeProperties_baseUrl": {
+            "value": "https://tgomnidevkey03.vault.azure.net/"
+        },
+        "li_blob_damhdinsight_container_akv_properties_typeProperties_sasUri_secretName": {
+            "value": "0001damdevrgsa-damhdinsight-container"
+        },
+        "li_blob_mytokyogas_container_sasUri": {
+            "value": ""
+        },
+        "li_blob_tgomnidevrgsa_container_properties_privateLinkResourceId": {
+            "value": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.Storage/storageAccounts/0001tgomnidevrgsa"
+        },
+        "li_blob_tgomnidevrgsa_container_properties_groupId": {
+            "value": "blob"
+        },
+        "li_blob_tgomnidevrgsa_container_properties_fqdns": {
+            "value": [
+                "0001tgomnidevrgsa.blob.core.windows.net"
+            ]
+        },
+        "AzureSynapseAnalytics-dam-dev_properties_privateLinkResourceId": {
+            "value": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Sql/servers/damd-dwh"
+        },
+        "AzureSynapseAnalytics-dam-dev_properties_groupId": {
+            "value": "sqlServer"
+        },
+        "AzureSynapseAnalytics-dam-dev_properties_fqdns": {
+            "value": [
+                "damd-dwh.database.windows.net"
+            ]
+        },
+        "omni-df-dev_AzureBlobStorage-dam-dev_properties_privateLinkResourceId": {
+            "value": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Storage/storageAccounts/0001damdevrgsa"
+        },
+        "omni-df-dev_AzureBlobStorage-dam-dev_properties_groupId": {
+            "value": "blob"
+        },
+        "AzureSqlMI-dev_properties_privateLinkResourceId": {
+            "value": "/subscriptions/43d95da1-ff6f-49ae-868b-a427c8bb161e/resourceGroups/dam2-rg-dev/providers/Microsoft.Sql/managedInstances/dam2-sqlmi-dev"
+        },
+        "AzureSqlMI-dev_properties_groupId": {
+            "value": "managedInstance"
+        },
+        "AzureSqlMI-dev_properties_fqdns": {
+            "value": [
+                "dam2-sqlmi-dev.6b9b3938f4f4.database.windows.net"
+            ]
+        },
+        "tgomnidevkey03-dev_properties_privateLinkResourceId": {
+            "value": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.KeyVault/vaults/tgomnidevkey03"
+        },
+        "tgomnidevkey03-dev_properties_groupId": {
+            "value": "vault"
+        },
+        "tgomnidevkey03-dev_properties_fqdns": {
+            "value": [
+                "tgomnidevkey03.vault.azure.net"
+            ]
+        }
+    }
+}

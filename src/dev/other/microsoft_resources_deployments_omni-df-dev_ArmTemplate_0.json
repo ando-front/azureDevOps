@@ -1,0 +1,17 @@
+{
+  "name": "microsoft_resources_deployments_omni-df-dev_ArmTemplate_0",
+  "type": "Microsoft.Resources/deployments",
+  "properties": {
+    "mode": "incremental",
+    "templateLink": {
+      "uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+      "contentVersion": "1.0.0.0"
+    },
+    "parameters": {
+      "factoryName": {
+        "value": "[parameters('factoryName')]"
+      }
+    }
+  },
+  "dependsOn": []
+}

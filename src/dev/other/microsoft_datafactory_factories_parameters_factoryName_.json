@@ -1,0 +1,6 @@
+{
+  "name": "microsoft_datafactory_factories_parameters_factoryName_",
+  "type": "Microsoft.DataFactory/factories",
+  "properties": {},
+  "dependsOn": []
+}

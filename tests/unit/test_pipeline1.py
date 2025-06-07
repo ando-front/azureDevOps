@@ -1,3 +1,7 @@
+"""
+Blob Storageへのアップロード・ダウンロードのユニットテスト。
+"""
+
 import pytest
 from azure.storage.blob import BlobServiceClient
 
@@ -16,11 +20,10 @@ def test_blob_upload(blob_service_client, tmp_path):
 
     # Blob のアップロード
     blob_client = container_client.get_blob_client(blob_name)
-    blob_client.upload_blob(test_file.read_bytes(), overwrite=True)
-
-    # アップロードされた Blob のダウンロードと検証
+    blob_client.upload_blob(test_file.read_bytes(), overwrite=True)    # アップロードされた Blob のダウンロードと検証
     downloaded = blob_client.download_blob().readall().decode("utf-8")
-    assert downloaded == content
+    # 改行文字を正規化して比較
+    assert downloaded.replace('\r\n', '\n') == content
 
     # コンテナのクリーンアップ
     container_client.delete_container()

@@ -1,0 +1,564 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "metadata": "データ ファクトリ名",
+            "defaultValue": "omni-df-dev"
+        },
+        "li_sftp_password": {
+            "type": "secureString",
+            "metadata": "'li_sftp' の 'password' のセキュリティで保護された文字列"
+        },
+        "li_blob_tgomnidevrgsa_container_shir_connectionString": {
+            "type": "secureString",
+            "metadata": "'li_blob_tgomnidevrgsa_container_shir' の 'connectionString' のセキュリティで保護された文字列"
+        },
+        "li_dam_dwh_shir_connectionString": {
+            "type": "secureString",
+            "metadata": "'li_dam_dwh_shir' の 'connectionString' のセキュリティで保護された文字列"
+        },
+        "li_dam_kv_omni_properties_typeProperties_baseUrl": {
+            "type": "string",
+            "defaultValue": "https://tgomnidevkey03.vault.azure.net/"
+        },
+        "li_blob_damhdinsight_container_sasUri": {
+            "type": "secureString",
+            "metadata": "'li_blob_damhdinsight_container' の 'sasUri' のセキュリティで保護された文字列"
+        },
+        "li_sftp_properties_typeProperties_host": {
+            "type": "string",
+            "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+        },
+        "li_sftp_properties_typeProperties_userName": {
+            "type": "string",
+            "defaultValue": "534003419_2"
+        },
+        "li_blob_mytokyogas_container_sasUri": {
+            "type": "secureString",
+            "metadata": "'li_blob_mytokyogas_container' の 'sasUri' のセキュリティで保護された文字列"
+        },
+        "li_blob_tgomnidevrgsa_container_properties_privateLinkResourceId": {
+            "type": "string",
+            "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.Storage/storageAccounts/0001tgomnidevrgsa"
+        },
+        "li_blob_tgomnidevrgsa_container_properties_groupId": {
+            "type": "string",
+            "defaultValue": "blob"
+        },
+        "li_blob_tgomnidevrgsa_container_properties_fqdns": {
+            "type": "array",
+            "defaultValue": [
+                "0001tgomnidevrgsa.blob.core.windows.net"
+            ]
+        },
+        "AzureSynapseAnalytics-dam-dev_properties_privateLinkResourceId": {
+            "type": "string",
+            "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Sql/servers/damd-dwh"
+        },
+        "AzureSynapseAnalytics-dam-dev_properties_groupId": {
+            "type": "string",
+            "defaultValue": "sqlServer"
+        },
+        "AzureSynapseAnalytics-dam-dev_properties_fqdns": {
+            "type": "array",
+            "defaultValue": [
+                "damd-dwh.database.windows.net"
+            ]
+        },
+        "omni-df-dev_AzureBlobStorage-dam-dev_properties_privateLinkResourceId": {
+            "type": "string",
+            "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Storage/storageAccounts/0001damdevrgsa"
+        },
+        "omni-df-dev_AzureBlobStorage-dam-dev_properties_groupId": {
+            "type": "string",
+            "defaultValue": "blob"
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('factoryName'), '/tr_Schedule_CustmNoRegistComp')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "お客さま番号登録完了のお知らせ(CustmNoRegistComp)用のトリガー",
+                "annotations": [],
+                "runtimeState": "Stopped",
+                "pipelines": [],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Day",
+                        "interval": 1,
+                        "startTime": "2025-03-07T08:56:00",
+                        "timeZone": "Tokyo Standard Time",
+                        "schedule": {
+                            "minutes": [
+                                0
+                            ],
+                            "hours": [
+                                3
+                            ]
+                        }
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/tr_Schedule_ActionPointRecentTransactionHistoryList')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "アクションポイント直近取引履歴リスト(ActionPointRecentTransactionHistoryList)用トリガー",
+                "annotations": [],
+                "runtimeState": "Stopped",
+                "pipelines": [],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Day",
+                        "interval": 1,
+                        "startTime": "2025-04-09T01:00:00",
+                        "timeZone": "Tokyo Standard Time",
+                        "schedule": {
+                            "minutes": [
+                                0
+                            ],
+                            "hours": [
+                                2
+                            ]
+                        }
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/tr_Schedule_ActionPointCurrentMonthEntryList')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "アクションポイント当月エントリーリスト(ActionPointCurrentMonthEntryList)用トリガー",
+                "annotations": [],
+                "runtimeState": "Stopped",
+                "pipelines": [],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Day",
+                        "interval": 1,
+                        "startTime": "2025-04-11T03:30:00",
+                        "timeZone": "Tokyo Standard Time",
+                        "schedule": {
+                            "minutes": [
+                                30
+                            ],
+                            "hours": [
+                                4
+                            ]
+                        }
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/tr_Schedule_LINEIDLinkInfo')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "LINEID連携情報(LINEIDLinkInfo)用トリガー",
+                "annotations": [],
+                "runtimeState": "Stopped",
+                "pipelines": [],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Day",
+                        "interval": 1,
+                        "startTime": "2023-12-09T01:00:00",
+                        "timeZone": "Tokyo Standard Time",
+                        "schedule": {
+                            "minutes": [
+                                30
+                            ],
+                            "hours": [
+                                6
+                            ]
+                        }
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/tr_Schedule_OpeningPaymentGuide')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "開栓後の支払方法のご案内(OpeningPaymentGuide)用トリガー",
+                "annotations": [],
+                "runtimeState": "Stopped",
+                "pipelines": [],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Day",
+                        "interval": 1,
+                        "startTime": "2022-03-29T00:00:00",
+                        "timeZone": "Tokyo Standard Time",
+                        "schedule": {
+                            "minutes": [
+                                30
+                            ],
+                            "hours": [
+                                6
+                            ]
+                        }
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/OmniLinkedSelfHostedIntegrationRuntime')]",
+            "type": "Microsoft.DataFactory/factories/integrationRuntimes",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "SelfHosted",
+                "typeProperties": {}
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/li_dam_kv_omni')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureKeyVault",
+                "typeProperties": {
+                    "baseUrl": "[parameters('li_dam_kv_omni_properties_typeProperties_baseUrl')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/pi_alert_test2')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "アラートテスト用",
+                "activities": [
+                    {
+                        "name": "Fail1",
+                        "type": "Fail",
+                        "dependsOn": [],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "message": "【アラートテスト】エラーが発生しました。",
+                            "errorCode": "1"
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "folder": {
+                    "name": "IT"
+                },
+                "annotations": [],
+                "lastPublishTime": "2023-11-24T06:56:37Z"
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/test2')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "先行複数アクティビティの成功終了時の挙動調査\n先行複数アクティビティのすべてが成功終了した場合に、後続アクティビティが実行された",
+                "activities": [
+                    {
+                        "name": "Wait1",
+                        "type": "Wait",
+                        "dependsOn": [],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "waitTimeInSeconds": 1
+                        }
+                    },
+                    {
+                        "name": "Wait2",
+                        "type": "Wait",
+                        "dependsOn": [],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "waitTimeInSeconds": 30
+                        }
+                    },
+                    {
+                        "name": "Wait3",
+                        "type": "Wait",
+                        "dependsOn": [
+                            {
+                                "activity": "Wait1",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            },
+                            {
+                                "activity": "Wait2",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "waitTimeInSeconds": 1
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "folder": {
+                    "name": "IT"
+                },
+                "annotations": [],
+                "lastPublishTime": "2025-04-04T04:52:30Z"
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/default')]",
+            "type": "Microsoft.DataFactory/factories/managedVirtualNetworks",
+            "apiVersion": "2018-06-01",
+            "properties": {},
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/tr_alert_test')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "アラートテスト用",
+                "annotations": [],
+                "runtimeState": "Stopped",
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "pi_alert_test2",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {}
+                    }
+                ],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Day",
+                        "interval": 1,
+                        "startTime": "2023-11-24T05:25:00",
+                        "timeZone": "Tokyo Standard Time",
+                        "schedule": {
+                            "minutes": [
+                                30
+                            ],
+                            "hours": [
+                                14
+                            ]
+                        }
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/pi_alert_test2')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/omni-sharing01-d-jpe')]",
+            "type": "Microsoft.DataFactory/factories/integrationRuntimes",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "Managed",
+                "typeProperties": {
+                    "computeProperties": {
+                        "location": "Japan East",
+                        "dataFlowProperties": {
+                            "computeType": "General",
+                            "coreCount": 8,
+                            "timeToLive": 10,
+                            "cleanup": false,
+                            "customProperties": []
+                        },
+                        "pipelineExternalComputeScaleProperties": {
+                            "timeToLive": 5,
+                            "numberOfPipelineNodes": 1,
+                            "numberOfExternalNodes": 1
+                        }
+                    }
+                },
+                "managedVirtualNetwork": {
+                    "type": "ManagedVirtualNetworkReference",
+                    "referenceName": "default"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/managedVirtualNetworks/default')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/li_blob_damhdinsight_container')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "DAMblob用リンクサービス",
+                "annotations": [],
+                "type": "AzureBlobStorage",
+                "typeProperties": {
+                    "sasUri": "[parameters('li_blob_damhdinsight_container_sasUri')]"
+                },
+                "connectVia": {
+                    "referenceName": "OmniLinkedSelfHostedIntegrationRuntime",
+                    "type": "IntegrationRuntimeReference"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/integrationRuntimes/OmniLinkedSelfHostedIntegrationRuntime')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/li_sftp')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "開発sftpの設定→エラーで使えない。原因不明\n→SHIR経由による接続設定完了（OMNI_1_MA-9037）",
+                "annotations": [],
+                "type": "Sftp",
+                "typeProperties": {
+                    "host": "[parameters('li_sftp_properties_typeProperties_host')]",
+                    "port": 22,
+                    "skipHostKeyValidation": true,
+                    "authenticationType": "Basic",
+                    "userName": "[parameters('li_sftp_properties_typeProperties_userName')]",
+                    "password": {
+                        "type": "SecureString",
+                        "value": "[parameters('li_sftp_password')]"
+                    }
+                },
+                "connectVia": {
+                    "referenceName": "OmniLinkedSelfHostedIntegrationRuntime",
+                    "type": "IntegrationRuntimeReference"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/integrationRuntimes/OmniLinkedSelfHostedIntegrationRuntime')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/li_blob_mytokyogas_container')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "mTGのコンテナーへの接続",
+                "annotations": [],
+                "type": "AzureBlobStorage",
+                "typeProperties": {
+                    "sasUri": "[parameters('li_blob_mytokyogas_container_sasUri')]"
+                },
+                "connectVia": {
+                    "referenceName": "OmniLinkedSelfHostedIntegrationRuntime",
+                    "type": "IntegrationRuntimeReference"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/integrationRuntimes/OmniLinkedSelfHostedIntegrationRuntime')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/li_blob_tgomnidevrgsa_container_shir')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "tgomnidevrgsaコンテナへSHIRで接続する。",
+                "annotations": [],
+                "type": "AzureBlobStorage",
+                "typeProperties": {
+                    "connectionString": "[parameters('li_blob_tgomnidevrgsa_container_shir_connectionString')]"
+                },
+                "connectVia": {
+                    "referenceName": "OmniLinkedSelfHostedIntegrationRuntime",
+                    "type": "IntegrationRuntimeReference"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/integrationRuntimes/OmniLinkedSelfHostedIntegrationRuntime')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/li_dam_dwh_shir')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "DAM-DB(dwh)接続用リンクサービス。\nSHIRを経由して接続する。",
+                "annotations": [],
+                "type": "AzureSqlDW",
+                "typeProperties": {
+                    "connectionString": "[parameters('li_dam_dwh_shir_connectionString')]"
+                },
+                "connectVia": {
+                    "referenceName": "OmniLinkedSelfHostedIntegrationRuntime",
+                    "type": "IntegrationRuntimeReference"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/integrationRuntimes/OmniLinkedSelfHostedIntegrationRuntime')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/default/li_blob_tgomnidevrgsa_container')]",
+            "type": "Microsoft.DataFactory/factories/managedVirtualNetworks/managedPrivateEndpoints",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "privateLinkResourceId": "[parameters('li_blob_tgomnidevrgsa_container_properties_privateLinkResourceId')]",
+                "groupId": "[parameters('li_blob_tgomnidevrgsa_container_properties_groupId')]",
+                "fqdns": "[parameters('li_blob_tgomnidevrgsa_container_properties_fqdns')]"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/managedVirtualNetworks/default')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/default/AzureSynapseAnalytics-dam-dev')]",
+            "type": "Microsoft.DataFactory/factories/managedVirtualNetworks/managedPrivateEndpoints",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "privateLinkResourceId": "[parameters('AzureSynapseAnalytics-dam-dev_properties_privateLinkResourceId')]",
+                "groupId": "[parameters('AzureSynapseAnalytics-dam-dev_properties_groupId')]",
+                "fqdns": "[parameters('AzureSynapseAnalytics-dam-dev_properties_fqdns')]"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/managedVirtualNetworks/default')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/default/omni-df-dev_AzureBlobStorage-dam-dev')]",
+            "type": "Microsoft.DataFactory/factories/managedVirtualNetworks/managedPrivateEndpoints",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "privateLinkResourceId": "[parameters('omni-df-dev_AzureBlobStorage-dam-dev_properties_privateLinkResourceId')]",
+                "groupId": "[parameters('omni-df-dev_AzureBlobStorage-dam-dev_properties_groupId')]"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/managedVirtualNetworks/default')]"
+            ]
+        }
+    ]
+}

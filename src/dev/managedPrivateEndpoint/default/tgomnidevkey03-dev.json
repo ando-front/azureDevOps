@@ -1,0 +1,12 @@
+{
+  "name": "default/tgomnidevkey03-dev",
+  "type": "Microsoft.DataFactory/factories/managedVirtualNetworks/managedPrivateEndpoints",
+  "properties": {
+    "privateLinkResourceId": "[parameters('tgomnidevkey03-dev_properties_privateLinkResourceId')]",
+    "groupId": "[parameters('tgomnidevkey03-dev_properties_groupId')]",
+    "fqdns": "[parameters('tgomnidevkey03-dev_properties_fqdns')]"
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/managedVirtualNetworks/default')]"
+  ]
+}

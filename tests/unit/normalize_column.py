@@ -1,3 +1,7 @@
+"""
+SQLカラム名の正規化ユーティリティ。
+"""
+
 import re
 import unicodedata
 

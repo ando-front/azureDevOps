@@ -1,3 +1,8 @@
+"""
+ADFパイプラインのテスト実行用メインスクリプト。
+AzuriteとBlob Storageの動作確認、パイプラインの入出力検証を行う。
+"""
+
 import unittest
 import os
 import sys

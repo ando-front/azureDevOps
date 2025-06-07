@@ -1,3 +1,8 @@
+"""
+ADFパイプライン: pi_Copy_marketing_client_dm のユニットテスト。
+パイプライン名・アクティビティ・カラム整合性の検証を行う。
+"""
+
 import pytest
 import copy
 from tests.unit.helpers.english_column_extractor import compare_english_columns

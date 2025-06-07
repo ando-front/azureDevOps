@@ -1,0 +1,13 @@
+{
+    "name": "[concat(parameters('factoryName'), '/default/AzureSqlMI-dev')]",
+    "type": "Microsoft.DataFactory/factories/managedVirtualNetworks/managedPrivateEndpoints",
+    "apiVersion": "2018-06-01",
+    "properties": {
+        "privateLinkResourceId": "[parameters('AzureSqlMI-dev_properties_privateLinkResourceId')]",
+        "groupId": "[parameters('AzureSqlMI-dev_properties_groupId')]",
+        "fqdns": "[parameters('AzureSqlMI-dev_properties_fqdns')]"
+    },
+    "dependsOn": [
+        "[concat(variables('factoryId'), '/managedVirtualNetworks/default')]"
+    ]
+}

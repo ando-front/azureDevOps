@@ -1,9 +1,0 @@
-{
-	"name": "adf-rg01",
-	"location": "japaneast",
-	"identity": {
-		"type": "SystemAssigned",
-		"principalId": "aa007606-e6ff-4f5a-9a83-d1780687e7a7",
-		"tenantId": "45a7e04b-d8a8-4c17-b677-fd1167521167"
-	}
-}
