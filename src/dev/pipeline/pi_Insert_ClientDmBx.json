@@ -1,48 +1,47 @@
 {
-    "name": "[concat(parameters('factoryName'), '/pi_Insert_ClientDmBx')]",
-    "type": "Microsoft.DataFactory/factories/pipelines",
-    "apiVersion": "2018-06-01",
-    "properties": {
-        "description": "顧客DMにBxを付与し作業テーブルに出力する",
-        "activities": [
-            {
-                "name": "at_Insert_ClientDmBx",
-                "description": "ODS_顧客DMにODS_利用サービスのBxを付与し、作業テーブルに出力する",
-                "type": "Script",
-                "dependsOn": [],
-                "policy": {
-                    "timeout": "0.12:00:00",
-                    "retry": 0,
-                    "retryIntervalInSeconds": 30,
-                    "secureOutput": false,
-                    "secureInput": false
-                },
-                "userProperties": [],
-                "linkedServiceName": {
-                    "referenceName": "li_dam_dwh",
-                    "type": "LinkedServiceReference"
-                },
-                "typeProperties": {
-                    "scripts": [
-                        {
-                            "type": "NonQuery",
-                            "text": "-- 「Bx、4x」が同一のレコードが複数存在するため、「Bx、4x」ごとに1レコードになるように絞り込む\nTRUNCATE TABLE [omni].[omni_ods_cloak_trn_usageservice_bx4x_temp]; -- 利用サービスBx4x\n\nINSERT INTO [omni].[omni_ods_cloak_trn_usageservice_bx4x_temp]     -- 利用サービスBx4x\nSELECT\n     Bx\n    ,KEY_4X\n    ,INDEX_ID\n    ,TRANSFER_YMD          -- サービス契約異動日\n    ,SERVICE_KEY_START_YMD -- サービス契約キー適用日\n    ,OUTPUT_DATE           -- 出力日時\nFROM (\n    SELECT\n         *\n        ,row_number() over (partition by BX,KEY_4X order by OUTPUT_DATE desc,TRANSFER_YMD desc,SERVICE_KEY_START_YMD desc) as ROWNUM\n\n    FROM (\n        SELECT\n             Bx\n\n            ,CASE WHEN SERVICE_KEY_TYPE1='004' THEN SERVICE_KEY1\n                  WHEN SERVICE_KEY_TYPE2='004' THEN SERVICE_KEY2\n                  WHEN SERVICE_KEY_TYPE3='004' THEN SERVICE_KEY3\n                  ELSE NULL\n             END as KEY_4X\n\n            ,INDEX_ID\n            ,TRANSFER_YMD             -- サービス契約異動日\n            ,SERVICE_KEY_START_YMD    -- サービス契約キー適用日\n            ,OUTPUT_DATE              -- 出力日時\n        FROM [omni].[omni_ods_cloak_trn_usageservice] -- 利用サービス\n        WHERE SERVICE_TYPE='001'      -- サービス契約種別=ガス契約\n              and TRANSFER_TYPE='02'  -- 異動種別=提供中\n    )tmp1\n)tmp2\n\nWHERE ROWNUM=1  -- 「Bx,4x」が一致するレコードのうち、最新のレコードを抽出する\n;\n\n-- 「Bx、3x、SA_ID」が同一のレコードが複数存在するため、「Bx、3x、SA_ID」ごとに1レコードになるように絞り込む\nTRUNCATE TABLE [omni].[omni_ods_cloak_trn_usageservice_bx3xsaid_temp]; -- 利用サービスBx3xSA_ID\n\nINSERT INTO [omni].[omni_ods_cloak_trn_usageservice_bx3xsaid_temp]     -- 利用サービスBx3xSA_ID\nSELECT\n     Bx\n    ,KEY_3X\n    ,KEY_SA_ID\n    ,INDEX_ID\n    ,TRANSFER_YMD          -- サービス契約異動日\n    ,SERVICE_KEY_START_YMD -- サービス契約キー適用日\n    ,OUTPUT_DATE           -- 出力日時\nFROM (\n    SELECT\n         *\n        ,row_number() over (partition by BX,KEY_3X,KEY_SA_ID order by OUTPUT_DATE desc,TRANSFER_YMD desc,SERVICE_KEY_START_YMD desc) as ROWNUM\n\n    FROM (\n        SELECT\n             Bx\n            ,USER_KEY as KEY_3X\n\n            ,CASE WHEN SERVICE_KEY_TYPE1='007' THEN SERVICE_KEY1\n                  WHEN SERVICE_KEY_TYPE2='007' THEN SERVICE_KEY2\n                  WHEN SERVICE_KEY_TYPE3='007' THEN SERVICE_KEY3\n                  ELSE NULL\n             END as KEY_SA_ID\n\n            ,INDEX_ID\n            ,TRANSFER_YMD             -- サービス契約異動日\n            ,SERVICE_KEY_START_YMD    -- サービス契約キー適用日\n            ,OUTPUT_DATE              -- 出力日時\n        FROM [omni].[omni_ods_cloak_trn_usageservice] -- 利用サービス\n        WHERE SERVICE_TYPE='006'      -- サービス契約種別=電気契約\n            and TRANSFER_TYPE='02'    -- 異動種別=提供中\n            and USER_KEY_TYPE='003'   -- ユーザキー種別=お客様登録番号(3x)\n    )tmp1\n)tmp2\n\nWHERE ROWNUM=1  -- 「Bx,3x,SA_ID」が一致するレコードのうち、最新のレコードを抽出する\n;\n\n-- 顧客DMにBxを付与する\n-- ①ガス契約あり\nTRUNCATE TABLE [omni].[omni_ods_marketing_trn_client_dm_bx_temp];\n\nINSERT INTO [omni].[omni_ods_marketing_trn_client_dm_bx_temp]\nSELECT\n      usv.BX\n     ,usv.INDEX_ID\n     ,usv.TRANSFER_YMD             -- サービス契約異動日\n     ,usv.SERVICE_KEY_START_YMD    -- サービス契約キー適用日\n     ,usv.OUTPUT_DATE              -- 出力日時\n\n     ,cldm.*\n\nFROM [omni].[omni_ods_marketing_trn_client_dm] cldm    -- 顧客DM\n\nLEFT JOIN [omni].[omni_ods_cloak_trn_usageservice_bx4x_temp] usv -- 利用サービスBx4x\n    ON cldm.LIV0EU_4X=usv.KEY_4X\n\nWHERE cldm.LIV0EU_4X is not NULL -- ガス契約あり\n;\n\n-- ②電気契約単独\nINSERT INTO [omni].[omni_ods_marketing_trn_client_dm_bx_temp]\nSELECT\n      usv.BX\n     ,usv.INDEX_ID\n     ,usv.TRANSFER_YMD             -- サービス契約異動日\n     ,usv.SERVICE_KEY_START_YMD    -- サービス契約キー適用日\n     ,usv.OUTPUT_DATE              -- 出力日時\n\n     ,cldm.*\n\nFROM [omni].[omni_ods_marketing_trn_client_dm] cldm    -- 顧客DM\n\nLEFT JOIN [omni].[omni_ods_cloak_trn_usageservice_bx3xsaid_temp] usv -- 利用サービスBx3xSA_ID\n    ON cldm.EPCISCRT_3X=usv.KEY_3X -- 3x\n       and isnull(cldm.EPCISCRT_LIGHTING_SA_ID,cldm.EPCISCRT_POWER_SA_ID) = KEY_SA_ID -- 電力契約番号(SA_ID)\nWHERE cldm.LIV0EU_4X is NULL    -- ガス契約なし\n;\n"
-                        }
-                    ],
-                    "scriptBlockExecutionTimeout": "02:00:00"
-                }
-            }
-        ],
+  "name": "pi_Insert_ClientDmBx",
+  "type": "Microsoft.DataFactory/factories/pipelines",
+  "properties": {
+    "description": "顧客DMにBxを付与し作業テーブルに出力する",
+    "activities": [
+      {
+        "name": "at_Insert_ClientDmBx",
+        "description": "ODS_顧客DMにODS_利用サービスのBxを付与し、作業テーブルに出力する",
+        "type": "Script",
+        "dependsOn": [],
         "policy": {
-            "elapsedTimeMetric": {}
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
         },
-        "folder": {
-            "name": "Marketing"
+        "userProperties": [],
+        "linkedServiceName": {
+          "referenceName": "li_dam_dwh",
+          "type": "LinkedServiceReference"
         },
-        "annotations": [],
-        "lastPublishTime": "2024-05-09T02:07:22Z"
+        "typeProperties": {
+          "scripts": [
+            {
+              "type": "NonQuery",
+              "text": "-- 「Bx、4x」が同一のレコードが複数存在するため、「Bx、4x」ごとに1レコードになるように絞り込む\nTRUNCATE TABLE [omni].[omni_ods_cloak_trn_usageservice_bx4x_temp]; -- 利用サービスBx4x\n\nINSERT INTO [omni].[omni_ods_cloak_trn_usageservice_bx4x_temp]     -- 利用サービスBx4x\nSELECT\n     Bx\n    ,KEY_4X\n    ,INDEX_ID\n    ,TRANSFER_YMD          -- サービス契約異動日\n    ,SERVICE_KEY_START_YMD -- サービス契約キー適用日\n    ,OUTPUT_DATE           -- 出力日時\nFROM (\n    SELECT\n         *\n        ,row_number() over (partition by BX,KEY_4X order by OUTPUT_DATE desc,TRANSFER_YMD desc,SERVICE_KEY_START_YMD desc) as ROWNUM\n\n    FROM (\n        SELECT\n             Bx\n\n            ,CASE WHEN SERVICE_KEY_TYPE1='004' THEN SERVICE_KEY1\n                  WHEN SERVICE_KEY_TYPE2='004' THEN SERVICE_KEY2\n                  WHEN SERVICE_KEY_TYPE3='004' THEN SERVICE_KEY3\n                  ELSE NULL\n             END as KEY_4X\n\n            ,INDEX_ID\n            ,TRANSFER_YMD             -- サービス契約異動日\n            ,SERVICE_KEY_START_YMD    -- サービス契約キー適用日\n            ,OUTPUT_DATE              -- 出力日時\n        FROM [omni].[omni_ods_cloak_trn_usageservice] -- 利用サービス\n        WHERE SERVICE_TYPE='001'      -- サービス契約種別=ガス契約\n              and TRANSFER_TYPE='02'  -- 異動種別=提供中\n    )tmp1\n)tmp2\n\nWHERE ROWNUM=1  -- 「Bx,4x」が一致するレコードのうち、最新のレコードを抽出する\n;\n\n-- 「Bx、3x、SA_ID」が同一のレコードが複数存在するため、「Bx、3x、SA_ID」ごとに1レコードになるように絞り込む\nTRUNCATE TABLE [omni].[omni_ods_cloak_trn_usageservice_bx3xsaid_temp]; -- 利用サービスBx3xSA_ID\n\nINSERT INTO [omni].[omni_ods_cloak_trn_usageservice_bx3xsaid_temp]     -- 利用サービスBx3xSA_ID\nSELECT\n     Bx\n    ,KEY_3X\n    ,KEY_SA_ID\n    ,INDEX_ID\n    ,TRANSFER_YMD          -- サービス契約異動日\n    ,SERVICE_KEY_START_YMD -- サービス契約キー適用日\n    ,OUTPUT_DATE           -- 出力日時\nFROM (\n    SELECT\n         *\n        ,row_number() over (partition by BX,KEY_3X,KEY_SA_ID order by OUTPUT_DATE desc,TRANSFER_YMD desc,SERVICE_KEY_START_YMD desc) as ROWNUM\n\n    FROM (\n        SELECT\n             Bx\n            ,USER_KEY as KEY_3X\n\n            ,CASE WHEN SERVICE_KEY_TYPE1='007' THEN SERVICE_KEY1\n                  WHEN SERVICE_KEY_TYPE2='007' THEN SERVICE_KEY2\n                  WHEN SERVICE_KEY_TYPE3='007' THEN SERVICE_KEY3\n                  ELSE NULL\n             END as KEY_SA_ID\n\n            ,INDEX_ID\n            ,TRANSFER_YMD             -- サービス契約異動日\n            ,SERVICE_KEY_START_YMD    -- サービス契約キー適用日\n            ,OUTPUT_DATE              -- 出力日時\n        FROM [omni].[omni_ods_cloak_trn_usageservice] -- 利用サービス\n        WHERE SERVICE_TYPE='006'      -- サービス契約種別=電気契約\n            and TRANSFER_TYPE='02'    -- 異動種別=提供中\n            and USER_KEY_TYPE='003'   -- ユーザキー種別=お客様登録番号(3x)\n    )tmp1\n)tmp2\n\nWHERE ROWNUM=1  -- 「Bx,3x,SA_ID」が一致するレコードのうち、最新のレコードを抽出する\n;\n\n-- 顧客DMにBxを付与する\n-- ①ガス契約あり\nTRUNCATE TABLE [omni].[omni_ods_marketing_trn_client_dm_bx_temp];\n\nINSERT INTO [omni].[omni_ods_marketing_trn_client_dm_bx_temp]\nSELECT\n      usv.BX\n     ,usv.INDEX_ID\n     ,usv.TRANSFER_YMD             -- サービス契約異動日\n     ,usv.SERVICE_KEY_START_YMD    -- サービス契約キー適用日\n     ,usv.OUTPUT_DATE              -- 出力日時\n\n     ,cldm.*\n\nFROM [omni].[omni_ods_marketing_trn_client_dm] cldm    -- 顧客DM\n\nLEFT JOIN [omni].[omni_ods_cloak_trn_usageservice_bx4x_temp] usv -- 利用サービスBx4x\n    ON cldm.LIV0EU_4X=usv.KEY_4X\n\nWHERE cldm.LIV0EU_4X is not NULL -- ガス契約あり\n;\n\n-- ②電気契約単独\nINSERT INTO [omni].[omni_ods_marketing_trn_client_dm_bx_temp]\nSELECT\n      usv.BX\n     ,usv.INDEX_ID\n     ,usv.TRANSFER_YMD             -- サービス契約異動日\n     ,usv.SERVICE_KEY_START_YMD    -- サービス契約キー適用日\n     ,usv.OUTPUT_DATE              -- 出力日時\n\n     ,cldm.*\n\nFROM [omni].[omni_ods_marketing_trn_client_dm] cldm    -- 顧客DM\n\nLEFT JOIN [omni].[omni_ods_cloak_trn_usageservice_bx3xsaid_temp] usv -- 利用サービスBx3xSA_ID\n    ON cldm.EPCISCRT_3X=usv.KEY_3X -- 3x\n       and isnull(cldm.EPCISCRT_LIGHTING_SA_ID,cldm.EPCISCRT_POWER_SA_ID) = KEY_SA_ID -- 電力契約番号(SA_ID)\nWHERE cldm.LIV0EU_4X is NULL    -- ガス契約なし\n;\n"
+            }
+          ],
+          "scriptBlockExecutionTimeout": "02:00:00"
+        }
+      }
+    ],
+    "policy": {
+      "elapsedTimeMetric": {}
     },
-    "dependsOn": [
-        "[concat(variables('factoryId'), '/linkedServices/li_dam_dwh')]"
-    ]
+    "folder": {
+      "name": "Marketing"
+    },
+    "annotations": [],
+    "lastPublishTime": "2024-05-09T02:07:22Z"
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/linkedServices/li_dam_dwh')]"
+  ]
 }

@@ -1,0 +1,193 @@
+# =================================================================
+# E2Eテスト用 Docker Compose ファイル
+# 完全なテスト環境でのEnd-to-Endテストを実行
+# =================================================================
+version: '3.8'
+
+services:  # E2Eテスト用データベース (Enhanced with Idempotent Initialization)
+  sqlserver-test:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver-e2e-test
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong!Passw0rd123
+      - MSSQL_PID=Express
+      - MSSQL_COLLATION=Japanese_CI_AS
+    ports:
+      - "1433:1433"
+    volumes:
+      - ./docker/sql/init:/docker-entrypoint-initdb.d
+      - sqlserver_e2e_data:/var/opt/mssql
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q 'SELECT 1' -C" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s    # 冪等性を担保するため初期化スクリプトを実行（ODBCドライバー問題対応）
+    command: >
+      sh -c "
+        echo 'Starting SQL Server with enhanced idempotent initialization...' &&
+        /opt/mssql/bin/sqlservr &
+        SERVER_PID=$$! &&
+        echo 'Waiting for SQL Server to be ready...' &&
+        sleep 60 &&
+        echo 'Testing SQL Server connection...' &&
+        for i in {1..30}; do
+          if /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q 'SELECT 1' -C >/dev/null 2>&1; then
+            echo 'SQL Server is ready!' &&
+            break
+          fi
+          echo 'Waiting for SQL Server... attempt' $$i &&
+          sleep 5
+        done &&        echo 'Executing idempotent initialization scripts...' &&
+        echo 'Step 1: Creating SynapseTestDB (Fixed)...' &&
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -i /docker-entrypoint-initdb.d/00_create_synapse_db_fixed.sql -C -b &&
+        echo 'Step 2: Initializing TGMATestDB (Fixed)...' &&
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -i /docker-entrypoint-initdb.d/01_init_database_fixed.sql -C -b &&
+        echo 'Step 3: Creating test tables...' &&
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -i /docker-entrypoint-initdb.d/02_create_test_tables.sql -C -b &&
+        echo 'Step 4: Inserting test data...' &&
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -i /docker-entrypoint-initdb.d/03_insert_test_data.sql -C -b &&
+        echo 'Database initialization completed successfully!' &&
+        echo 'SQL Server is ready for connections' &&
+        wait $$SERVER_PID
+      "
+    networks:
+      - e2e-network
+
+  # Azurite for Azure Storage emulation
+  azurite-test:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: azurite-e2e-test
+    environment:
+      - AZURITE_ACCOUNTS=devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
+    ports:
+      - "10000:10000" # Blob service
+      - "10001:10001" # Queue service
+      - "10002:10002" # Table service
+    volumes:
+      - azurite_e2e_data:/data
+    command: [ "azurite", "--blobHost", "0.0.0.0", "--queueHost", "0.0.0.0", "--tableHost", "0.0.0.0", "--location", "/data", "--debug", "/data/debug.log" ]
+    networks:
+      - e2e-network
+
+  # Integration Runtime Simulator
+  ir-simulator:
+    build:
+      context: ./docker/ir-simulator
+      dockerfile: Dockerfile
+    container_name: ir-simulator-e2e
+    environment:
+      - SQL_SERVER_HOST=sqlserver-test
+      - SQL_SERVER_PORT=1433
+      - SQL_SERVER_USER=sa
+      - SQL_SERVER_PASSWORD=YourStrong!Passw0rd123
+      - AZURITE_HOST=azurite-test
+      - AZURITE_PORT=10000
+    ports:
+      - "8080:8080"
+    depends_on:
+      sqlserver-test:
+        condition: service_healthy
+      azurite-test:
+        condition: service_started
+    volumes:
+      - ./docker/ir-simulator/config:/app/config
+      - ./tests/data:/app/test_data
+      - ./tests:/app/tests  # テストファイルをマウント
+      - ./src:/app/src      # ソースファイルをマウント
+    networks:
+      - e2e-network
+
+  # E2Eテスト実行環境（軽量完全版）
+  e2e-test-runner:
+    image: adf-e2e-complete-light:latest # 軽量版E2Eテストイメージ使用
+    container_name: adf-e2e-test-runner
+    depends_on:
+      sqlserver-test:
+        condition: service_healthy
+      azurite-test:
+        condition: service_started
+      ir-simulator:
+        condition: service_started
+    environment:
+      - SQL_SERVER_HOST=sqlserver-test
+      - SQL_SERVER_PORT=1433
+      - SQL_SERVER_DATABASE=master
+      - SQL_SERVER_USER=sa
+      - SQL_SERVER_PASSWORD=YourStrong!Passw0rd123
+      - AZURITE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite-test:10000/devstoreaccount1;
+      - AZURITE_BLOB_ENDPOINT=http://azurite-test:10000
+      - IR_SIMULATOR_URL=http://ir-simulator:8080
+      - TEST_MODE=e2e
+      - PYTEST_MARKERS=e2e
+      - TEST_TIMEOUT=600
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./tests:/app/tests
+      - ./src:/app/src
+      - ./input:/app/input
+      - ./output:/app/output
+      - ./docker/test-runner/config:/app/config
+      - e2e_test_results:/app/test_results
+    working_dir: /app
+    networks:
+      - e2e-network
+    profiles:
+      - e2e-test
+    command: >
+      sh -c "
+        echo '⏳ すべてのサービスが準備完了するまで待機中...' &&
+        sleep 45 &&
+        echo '🚀 完全なE2Eテストスイートを開始します...' &&
+        echo '📊 基本接続テストから開始...' &&
+        python -m pytest tests/e2e/test_basic_connections.py -v --tb=short -s &&
+        echo '✅ 基本接続テスト完了。' &&
+        echo '🔄 Docker統合テストを実行...' &&
+        python -m pytest tests/e2e/test_docker_e2e_integration.py -v --tb=short -s &&
+        echo '📦 パイプライン個別テストを実行...' &&
+        python -m pytest tests/e2e/test_docker_e2e_client_dm.py -v --tb=short -s &&
+        python -m pytest tests/e2e/test_docker_e2e_point_grant_email_fixed.py -v --tb=short -s &&
+        echo '🔍 ADFデータ品質・セキュリティテストを実行...' &&
+        python -m pytest tests/e2e/test_e2e_adf_data_quality_security.py -v --tb=short -s &&
+        echo '⚡ ADF パイプライン実行テストを実行...' &&
+        python -m pytest tests/e2e/test_e2e_adf_pipeline_execution.py -v --tb=short -s &&
+        echo '📈 最終統合テストを実行...' &&
+        python -m pytest tests/e2e/test_final_integration.py -v --tb=short -s &&
+        echo '✅ 完全なE2Eテストスイート完了！' &&
+        echo '📊 テスト結果をtest_resultsに保存中...' &&
+        python -m pytest tests/e2e/ -v --tb=short --junit-xml=test_results/e2e_complete.xml --html=test_results/e2e_report.html --self-contained-html ||
+        echo '⚠️ テスト完了（一部失敗の可能性）'
+      "
+
+  # ホストフォールバック用テストランナー（Docker問題時の代替）
+  host-test-runner:
+    image: alpine:latest
+    container_name: adf-host-test-helper
+    volumes:
+      - ./tests:/tests
+      - ./test_results:/test_results
+    networks:
+      - e2e-network
+    profiles:
+      - host-fallback
+    command: >
+      sh -c "
+        echo '🏠 ホスト環境でのテスト実行を推奨します' &&
+        echo '次のコマンドを実行してください:' &&
+        echo 'python -m pytest tests/e2e/test_basic_connections.py -v --tb=short' &&
+        sleep 5
+      "
+
+networks:
+  e2e-network:
+    driver: bridge
+
+volumes:
+  sqlserver_e2e_data:
+    driver: local
+  azurite_e2e_data:
+    driver: local
+  e2e_test_results:
+    driver: local

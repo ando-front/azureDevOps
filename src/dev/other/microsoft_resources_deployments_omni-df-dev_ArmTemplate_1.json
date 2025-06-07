@@ -1,0 +1,67 @@
+{
+  "name": "microsoft_resources_deployments_omni-df-dev_ArmTemplate_1",
+  "type": "Microsoft.Resources/deployments",
+  "properties": {
+    "mode": "incremental",
+    "templateLink": {
+      "uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+      "contentVersion": "1.0.0.0"
+    },
+    "parameters": {
+      "factoryName": {
+        "value": "[parameters('factoryName')]"
+      },
+      "li_sftp_password": {
+        "value": "[parameters('li_sftp_password')]"
+      },
+      "li_blob_tgomnidevrgsa_container_shir_connectionString": {
+        "value": "[parameters('li_blob_tgomnidevrgsa_container_shir_connectionString')]"
+      },
+      "li_dam_dwh_shir_connectionString": {
+        "value": "[parameters('li_dam_dwh_shir_connectionString')]"
+      },
+      "li_dam_kv_omni_properties_typeProperties_baseUrl": {
+        "value": "[parameters('li_dam_kv_omni_properties_typeProperties_baseUrl')]"
+      },
+      "li_blob_damhdinsight_container_sasUri": {
+        "value": "[parameters('li_blob_damhdinsight_container_sasUri')]"
+      },
+      "li_sftp_properties_typeProperties_host": {
+        "value": "[parameters('li_sftp_properties_typeProperties_host')]"
+      },
+      "li_sftp_properties_typeProperties_userName": {
+        "value": "[parameters('li_sftp_properties_typeProperties_userName')]"
+      },
+      "li_blob_mytokyogas_container_sasUri": {
+        "value": "[parameters('li_blob_mytokyogas_container_sasUri')]"
+      },
+      "li_blob_tgomnidevrgsa_container_properties_privateLinkResourceId": {
+        "value": "[parameters('li_blob_tgomnidevrgsa_container_properties_privateLinkResourceId')]"
+      },
+      "li_blob_tgomnidevrgsa_container_properties_groupId": {
+        "value": "[parameters('li_blob_tgomnidevrgsa_container_properties_groupId')]"
+      },
+      "li_blob_tgomnidevrgsa_container_properties_fqdns": {
+        "value": "[parameters('li_blob_tgomnidevrgsa_container_properties_fqdns')]"
+      },
+      "AzureSynapseAnalytics-dam-dev_properties_privateLinkResourceId": {
+        "value": "[parameters('AzureSynapseAnalytics-dam-dev_properties_privateLinkResourceId')]"
+      },
+      "AzureSynapseAnalytics-dam-dev_properties_groupId": {
+        "value": "[parameters('AzureSynapseAnalytics-dam-dev_properties_groupId')]"
+      },
+      "AzureSynapseAnalytics-dam-dev_properties_fqdns": {
+        "value": "[parameters('AzureSynapseAnalytics-dam-dev_properties_fqdns')]"
+      },
+      "omni-df-dev_AzureBlobStorage-dam-dev_properties_privateLinkResourceId": {
+        "value": "[parameters('omni-df-dev_AzureBlobStorage-dam-dev_properties_privateLinkResourceId')]"
+      },
+      "omni-df-dev_AzureBlobStorage-dam-dev_properties_groupId": {
+        "value": "[parameters('omni-df-dev_AzureBlobStorage-dam-dev_properties_groupId')]"
+      }
+    }
+  },
+  "dependsOn": [
+    "[resourceId('Microsoft.Resources/deployments', 'omni-df-dev_ArmTemplate_0')]"
+  ]
+}

@@ -1,39 +1,32 @@
-FROM ubuntu:latest
+# 超軽量Dockerfile - モック版（ODBC不要）
+FROM python:3.9-slim
 
-# 必要なパッケージのインストール
-RUN apt-get update && apt-get install -y python3 python3-pip python3-venv npm
-
-# Python仮想環境のセットアップ
-RUN python3 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-RUN pip3 install azure-storage-blob
-RUN pip3 install pytest
-
-RUN npm install -g @azure/storage-blob azurite
-
-# Azuriteの起動
-EXPOSE 10000 10001 10002
-# SFTPサーバのインストール
-RUN apt-get update && apt-get install -y openssh-server
-
-# SFTPサーバの設定
-RUN mkdir /var/run/sshd
-RUN echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
-RUN sed -i 's/#Port 22/Port 2222/g' /etc/ssh/sshd_config
-
-# テストスクリプトのコピー
-COPY tests /tests
-COPY src /src
-
-# 必要なディレクトリの作成
-RUN mkdir -p /tests/input /tests/output /data
-RUN chmod 777 /tests/input /tests/output /data
-
-# SFTPサーバのポートを公開
-EXPOSE 2222
+# 環境変数の設定
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app
 
 # 作業ディレクトリの設定
-WORKDIR /tests
+WORKDIR /app
 
-# AzuriteとSFTPサーバをバックグラウンドで起動し、テストを実行
-CMD ["/bin/bash", "-c", "azurite --location /data --debug /data/debug.log & /usr/sbin/sshd -D & python3 /tests/run_tests.py"]
+# SSL/ネットワーク問題回避設定
+ENV PIP_TRUSTED_HOST=pypi.org,pypi.python.org,files.pythonhosted.org
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PYTHONHTTPSVERIFY=0
+
+# 段階1: 基本パッケージのみ（信頼できるホスト設定付き）
+RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --no-cache-dir --upgrade pip && \
+    pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --no-cache-dir pytest==7.4.3
+
+# 段階2: 基本的なライブラリを追加
+RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --no-cache-dir requests==2.31.0 python-dotenv==1.0.0
+
+# requirements.txtをコピーして残りの依存関係をインストール
+COPY requirements.txt .
+RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --no-cache-dir -r requirements.txt
+
+# プロジェクトファイルをコピー
+COPY . .
+
+# デフォルトコマンド
+CMD ["python", "-m", "pytest", "tests/", "--tb=short", "-v", "-x"]

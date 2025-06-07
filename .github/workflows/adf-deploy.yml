@@ -2,14 +2,10 @@ name: ADF Deploy
 
 on:
   push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,46 +15,89 @@ jobs:
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
 
-      - name: Build and run Docker container
+      - name: Clean up existing containers
         run: |
-          # 既存のコンテナを停止・削除
-          docker ps -a | grep 'adf-test' | awk '{print $1}' | xargs -r docker rm -f
-          
-          # コンテナのビルドと実行
-          docker build -t adf-test .
-          docker run -d \
-            --name adf-test \
+          docker rm -f pytest-test azurite-test || true
+          docker network rm test-network || true
+
+      - name: Create test network
+        run: docker network create test-network
+
+      - name: Start Azurite service
+        run: |
+          docker run -d --name azurite-test \
+            --network test-network \
             -p 10000:10000 \
             -p 10001:10001 \
             -p 10002:10002 \
-            -p 2222:2222 \
-            -p 8080:80 \
-            adf-test
-          
-          # コンテナの状態確認
-          docker ps -a
-          sleep 10  # Azuriteの起動を待つ
-          
-          # Azuriteの状態確認
-          docker logs adf-test
+            mcr.microsoft.com/azure-storage/azurite:latest \
+            azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
 
-      - name: Run tests
+      - name: Build test image
+        run: docker build -t pytest-test .
+      
+      - name: Run test container
         run: |
-          # pytest を使用してテストを実行
-          docker exec adf-test python3 -m pytest /tests/unit/ -v
-
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          auth-type: AZURE_CREDENTIALS
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Azure Deploy
+          docker run -d --name pytest-test \
+            --network test-network \
+            -e PYTHONPATH=/tests \
+            -e AZURITE_HOST=azurite-test \
+            -e AZURITE_ENDPOINT=http://azurite-test:10000 \
+            -e GITHUB_ACTIONS=true \
+            -v ${{ github.workspace }}/tests:/tests \
+            -v ${{ github.workspace }}/src:/tests/src \
+            pytest-test tail -f /dev/null
+      
+      - name: Wait for Azurite to be ready
         run: |
-          # Azureへのデプロイコマンド
-          echo "Deploying to Azure..."
-          az deployment group create \
-            --name adf-deploy \
-            --resource-group adf-rg01 \
-            --template-file src/factory/adf-rg01.json \
-            --parameters @src/factory/publish_config.json
+          echo "Waiting for Azurite to be ready..."
+          for i in {1..60}; do
+            if docker exec pytest-test curl -f http://azurite-test:10000/devstoreaccount1 2>/dev/null; then
+              echo "Azurite is ready!"
+              break
+            fi
+            echo "Waiting for Azurite... ($i/60)"
+            sleep 2
+          done
+      
+      - name: Verify test environment
+        run: |
+          echo "=== Python Environment ==="
+          docker exec pytest-test bash -c "
+            source /opt/venv/bin/activate && \
+            python --version && \
+            pip list | grep pytest
+          "          echo "=== Test Directory ==="
+          docker exec pytest-test ls -la /tests/
+          echo "=== Network Connectivity ==="
+          docker exec pytest-test curl -f http://azurite-test:10000/devstoreaccount1 || echo 'Azurite connection failed'
+      
+      - name: Run pytest
+        run: |
+          docker exec pytest-test bash -c "
+            source /opt/venv/bin/activate && \
+            export PYTHONPATH=/tests && \
+            export AZURITE_HOST=azurite-test && \
+            cd /tests && \
+            python -m pytest unit/ -v --tb=short --no-header
+          "
+
+      - name: Get logs on failure
+        if: failure()
+        run: |
+          echo "=== pytest-test container logs ==="
+          docker logs pytest-test
+          echo "=== Azurite service logs ==="
+          docker logs azurite-test || echo "No azurite-test container found"
+          echo "=== Container processes ==="
+          docker exec pytest-test ps aux || true
+          echo "=== Network information ==="
+          docker network inspect test-network || true
+          echo "=== Environment variables ==="
+          docker exec pytest-test printenv | grep -E "(AZURITE|PYTHON)" || true
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f pytest-test azurite-test || true
+          docker network rm test-network || true

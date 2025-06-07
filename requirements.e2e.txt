@@ -1,0 +1,30 @@
+# E2Eテスト用の依存関係（安定版のみ）
+# 基本テストフレームワーク
+pytest==8.3.5
+pytest-xdist==3.3.1
+pytest-html==4.1.1
+pytest-cov==4.1.0
+
+# データベース接続
+pyodbc==5.0.1
+sqlalchemy==2.0.23
+
+# Azure関連（最新安定版）
+azure-storage-blob==12.19.0
+azure-identity==1.15.0
+
+# HTTP/API テスト
+requests==2.31.0
+httpx==0.25.2
+
+# 設定管理
+python-dotenv==1.0.0
+pydantic==2.5.0
+
+# ユーティリティ
+jinja2==3.1.2
+PyYAML==6.0.1
+
+# テスト拡張
+pytest-asyncio==0.21.1
+pytest-timeout==2.1.0

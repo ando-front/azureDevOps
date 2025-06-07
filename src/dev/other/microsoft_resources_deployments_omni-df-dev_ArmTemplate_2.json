@@ -1,0 +1,70 @@
+{
+  "name": "microsoft_resources_deployments_omni-df-dev_ArmTemplate_2",
+  "type": "Microsoft.Resources/deployments",
+  "properties": {
+    "mode": "incremental",
+    "templateLink": {
+      "uri": "[concat(parameters('containerUri'), '/ArmTemplate_2.json', parameters('containerSasToken'))]",
+      "contentVersion": "1.0.0.0"
+    },
+    "parameters": {
+      "factoryName": {
+        "value": "[parameters('factoryName')]"
+      },
+      "li_dam_dwh_connectionString": {
+        "value": "[parameters('li_dam_dwh_connectionString')]"
+      },
+      "li_blob_tgomnidevrgsa_container_connectionString": {
+        "value": "[parameters('li_blob_tgomnidevrgsa_container_connectionString')]"
+      },
+      "li_Karte_AmazonS3_secretAccessKey": {
+        "value": "[parameters('li_Karte_AmazonS3_secretAccessKey')]"
+      },
+      "li_blob_tgomni_container_connectionString": {
+        "value": "[parameters('li_blob_tgomni_container_connectionString')]"
+      },
+      "li_sqlmi_dwh2_connectionString": {
+        "value": "[parameters('li_sqlmi_dwh2_connectionString')]"
+      },
+      "AzureSqlDatabase1_connectionString": {
+        "value": "[parameters('AzureSqlDatabase1_connectionString')]"
+      },
+      "li_ftp_test_password": {
+        "value": "[parameters('li_ftp_test_password')]"
+      },
+      "AzureSqlMI-dev_properties_privateLinkResourceId": {
+        "value": "[parameters('AzureSqlMI-dev_properties_privateLinkResourceId')]"
+      },
+      "AzureSqlMI-dev_properties_groupId": {
+        "value": "[parameters('AzureSqlMI-dev_properties_groupId')]"
+      },
+      "AzureSqlMI-dev_properties_fqdns": {
+        "value": "[parameters('AzureSqlMI-dev_properties_fqdns')]"
+      },
+      "tgomnidevkey03-dev_properties_privateLinkResourceId": {
+        "value": "[parameters('tgomnidevkey03-dev_properties_privateLinkResourceId')]"
+      },
+      "tgomnidevkey03-dev_properties_groupId": {
+        "value": "[parameters('tgomnidevkey03-dev_properties_groupId')]"
+      },
+      "tgomnidevkey03-dev_properties_fqdns": {
+        "value": "[parameters('tgomnidevkey03-dev_properties_fqdns')]"
+      },
+      "li_Karte_AmazonS3_properties_typeProperties_accessKeyId": {
+        "value": "[parameters('li_Karte_AmazonS3_properties_typeProperties_accessKeyId')]"
+      },
+      "li_ftp_test_properties_typeProperties_host": {
+        "value": "[parameters('li_ftp_test_properties_typeProperties_host')]"
+      },
+      "li_ftp_test_properties_typeProperties_userName": {
+        "value": "[parameters('li_ftp_test_properties_typeProperties_userName')]"
+      },
+      "li_blob_damhdinsight_container_akv_properties_typeProperties_sasUri_secretName": {
+        "value": "[parameters('li_blob_damhdinsight_container_akv_properties_typeProperties_sasUri_secretName')]"
+      }
+    }
+  },
+  "dependsOn": [
+    "[resourceId('Microsoft.Resources/deployments', 'omni-df-dev_ArmTemplate_1')]"
+  ]
+}

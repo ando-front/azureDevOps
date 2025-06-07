@@ -1,0 +1,31 @@
+{
+  "name": "omni-sharing01-d-jpe",
+  "type": "Microsoft.DataFactory/factories/integrationRuntimes",
+  "properties": {
+    "type": "Managed",
+    "typeProperties": {
+      "computeProperties": {
+        "location": "Japan East",
+        "dataFlowProperties": {
+          "computeType": "General",
+          "coreCount": 8,
+          "timeToLive": 10,
+          "cleanup": false,
+          "customProperties": []
+        },
+        "pipelineExternalComputeScaleProperties": {
+          "timeToLive": 5,
+          "numberOfPipelineNodes": 1,
+          "numberOfExternalNodes": 1
+        }
+      }
+    },
+    "managedVirtualNetwork": {
+      "type": "ManagedVirtualNetworkReference",
+      "referenceName": "default"
+    }
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/managedVirtualNetworks/default')]"
+  ]
+}

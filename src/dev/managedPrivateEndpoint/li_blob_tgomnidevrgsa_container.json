@@ -1,0 +1,13 @@
+{
+    "name": "[concat(parameters('factoryName'), '/default/li_blob_tgomnidevrgsa_container')]",
+    "type": "Microsoft.DataFactory/factories/managedVirtualNetworks/managedPrivateEndpoints",
+    "apiVersion": "2018-06-01",
+    "properties": {
+        "privateLinkResourceId": "[parameters('li_blob_tgomnidevrgsa_container_properties_privateLinkResourceId')]",
+        "groupId": "[parameters('li_blob_tgomnidevrgsa_container_properties_groupId')]",
+        "fqdns": "[parameters('li_blob_tgomnidevrgsa_container_properties_fqdns')]"
+    },
+    "dependsOn": [
+        "[concat(variables('factoryId'), '/managedVirtualNetworks/default')]"
+    ]
+}
