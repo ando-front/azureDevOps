@@ -12,10 +12,10 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Tuple
 import logging
 
-# テスト環境のセットアップ（改良版を使用）
-from tests.helpers.reproducible_e2e_helper_improved import (
-    setup_improved_reproducible_test_class, 
-    cleanup_improved_reproducible_test_class
+# テスト環境のセットアップ
+from tests.helpers.reproducible_e2e_helper import (
+    setup_reproducible_test_class, 
+    cleanup_reproducible_test_class
 )
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
 
@@ -27,8 +27,8 @@ class TestAdvancedETLPipelineOperations:
     
     @classmethod
     def setup_class(cls):
-        """再現可能テスト環境のセットアップ（改良版を使用）"""
-        setup_improved_reproducible_test_class()
+        """再現可能テスト環境のセットアップ"""
+        setup_reproducible_test_class()
         
         # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
@@ -37,8 +37,8 @@ class TestAdvancedETLPipelineOperations:
     
     @classmethod 
     def teardown_class(cls):
-        """再現可能テスト環境のクリーンアップ（改良版を使用）"""
-        cleanup_improved_reproducible_test_class()
+        """再現可能テスト環境のクリーンアップ"""
+        cleanup_reproducible_test_class()
 
     def test_data_extraction_pipeline(self):
         """データ抽出パイプラインのテスト"""

@@ -102,7 +102,7 @@ services:  # E2Eテスト用データベース (Enhanced with Idempotent Initial
   e2e-test-runner:
     build:
       context: .
-      dockerfile: Dockerfile.e2e.complete-light
+      dockerfile: Dockerfile
     image: adf-e2e-test:latest
     container_name: adf-e2e-test-runner
     depends_on:
