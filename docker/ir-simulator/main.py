@@ -73,6 +73,7 @@ def get_sql_connection():
         UID={SQL_SERVER_USER};
         PWD={SQL_SERVER_PASSWORD};
         TrustServerCertificate=yes;
+        Encrypt=no;
         """
         return pyodbc.connect(connection_string)
     except Exception as e:
@@ -139,10 +140,10 @@ async def execute_copy_activity(request: CopyActivityRequest):
             cursor = conn.cursor()
             
             cursor.execute("""
-                INSERT INTO [etl].[pipeline_execution_log] 
-                (execution_id, pipeline_name, activity_name, start_time, status)
-                VALUES (?, ?, ?, ?, ?)
-            """, execution_id, request.pipeline_name, request.activity_name, start_time, "RUNNING")
+                INSERT INTO [dbo].[pipeline_execution_log] 
+                (pipeline_name, execution_start, status, records_processed)
+                VALUES (?, ?, ?, ?)
+            """, request.pipeline_name, start_time, "RUNNING", 0)
             conn.commit()
         else:
             logger.warning("SQL connection not available - skipping database logging")
@@ -170,10 +171,10 @@ async def execute_copy_activity(request: CopyActivityRequest):
         # ログの更新
         if conn:
             cursor.execute("""
-                UPDATE [etl].[pipeline_execution_log] 
-                SET end_time = ?, status = ?, input_rows = ?, output_rows = ?
-                WHERE execution_id = ?
-            """, end_time, "SUCCESS", rows_copied, rows_copied, execution_id)
+                UPDATE [dbo].[pipeline_execution_log] 
+                SET execution_end = ?, status = ?, records_processed = ?
+                WHERE pipeline_name = ? AND execution_start = ?
+            """, end_time, "SUCCESS", rows_copied, request.pipeline_name, start_time)
             conn.commit()
             conn.close()
         
@@ -198,10 +199,10 @@ async def execute_copy_activity(request: CopyActivityRequest):
         # エラーログの記録
         try:
             cursor.execute("""
-                UPDATE [etl].[pipeline_execution_log] 
-                SET end_time = ?, status = ?, error_message = ?
-                WHERE execution_id = ?
-            """, datetime.now(), "FAILED", error_message, execution_id)
+                UPDATE [dbo].[pipeline_execution_log] 
+                SET execution_end = ?, status = ?, error_message = ?
+                WHERE pipeline_name = ? AND execution_start = ?
+            """, datetime.now(), "FAILED", error_message, request.pipeline_name, start_time)
             conn.commit()
             conn.close()
         except:

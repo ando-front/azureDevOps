@@ -396,10 +396,18 @@ class TestAdvancedETLPipelineOperationsImprovedFixed:
         # パイプライン各段階の検証（修正版）
         pipeline_stages = {}
         for result in pipeline_integration_results:
-            stage = result[0]
-            source_type = result[1]
-            record_count = result[2]
-            status = result[3]
+            # 結果が辞書形式の場合とタプル形式の場合を処理
+            if isinstance(result, dict):
+                stage = result.get('pipeline_stage', '')
+                source_type = result.get('source_type', '')
+                record_count = result.get('record_count', 0)
+                status = result.get('status', '')
+            else:
+                # タプル形式の場合
+                stage = result[0] if len(result) > 0 else ''
+                source_type = result[1] if len(result) > 1 else ''
+                record_count = result[2] if len(result) > 2 else 0
+                status = result[3] if len(result) > 3 else ''
             
             if stage not in pipeline_stages:
                 pipeline_stages[stage] = {}

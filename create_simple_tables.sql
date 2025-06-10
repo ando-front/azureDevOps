@@ -1,10 +1,31 @@
--- シンプルなテーブル作成スクリプト（E2Eテスト用）
--- スキーマエラーを回避するためにdboスキーマのみ使用
+-- 手動実行用：最もシンプルなデータベース・テーブル作成スクリプト
 
+-- データベース作成
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'TGMATestDB')
+BEGIN
+    CREATE DATABASE TGMATestDB COLLATE Japanese_CI_AS;
+END;
+
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'SynapseTestDB')
+BEGIN
+    CREATE DATABASE SynapseTestDB COLLATE Japanese_CI_AS;
+    PRINT 'SynapseTestDB created successfully';
+END
+ELSE
+BEGIN
+    PRINT 'SynapseTestDB already exists';
+END;
+
+-- TGMATestDBに切り替え
 USE TGMATestDB;
 
--- client_dmテーブル作成
+-- 既存テーブル削除（冪等性対応）
 DROP TABLE IF EXISTS dbo.client_dm;
+DROP TABLE IF EXISTS dbo.ClientDmBx;
+DROP TABLE IF EXISTS dbo.point_grant_email;
+DROP TABLE IF EXISTS dbo.marketing_client_dm;
+
+-- client_dmテーブル作成（テストコードが期待するcreated_dateカラム付き）
 CREATE TABLE dbo.client_dm (
     client_id NVARCHAR(50) NOT NULL PRIMARY KEY,
     client_name NVARCHAR(100),
@@ -18,7 +39,6 @@ CREATE TABLE dbo.client_dm (
 );
 
 -- ClientDmBxテーブル作成
-DROP TABLE IF EXISTS dbo.ClientDmBx;
 CREATE TABLE dbo.ClientDmBx (
     id INT IDENTITY(1,1) PRIMARY KEY,
     client_id NVARCHAR(50),
@@ -31,7 +51,6 @@ CREATE TABLE dbo.ClientDmBx (
 );
 
 -- point_grant_emailテーブル作成
-DROP TABLE IF EXISTS dbo.point_grant_email;
 CREATE TABLE dbo.point_grant_email (
     id INT IDENTITY(1,1) PRIMARY KEY,
     client_id NVARCHAR(50),
@@ -44,7 +63,6 @@ CREATE TABLE dbo.point_grant_email (
 );
 
 -- marketing_client_dmテーブル作成
-DROP TABLE IF EXISTS dbo.marketing_client_dm;
 CREATE TABLE dbo.marketing_client_dm (
     id INT IDENTITY(1,1) PRIMARY KEY,
     client_id NVARCHAR(50),
@@ -58,4 +76,15 @@ CREATE TABLE dbo.marketing_client_dm (
     updated_at DATETIME2 DEFAULT GETDATE()
 );
 
-PRINT 'Simple tables created successfully';
+-- テスト用のサンプルデータを挿入
+INSERT INTO dbo.client_dm (client_id, client_name, email, status, created_date)
+VALUES 
+    ('TEST001', 'テストユーザー1', 'test1@example.com', 'ACTIVE', GETDATE()),
+    ('TEST002', 'テストユーザー2', 'test2@example.com', 'ACTIVE', GETDATE());
+
+INSERT INTO dbo.ClientDmBx (client_id, segment, score, data_source)
+VALUES 
+    ('TEST001', 'PREMIUM', 85.5, 'E2E_TEST'),
+    ('TEST002', 'STANDARD', 72.3, 'E2E_TEST');
+
+PRINT 'Database and tables created successfully with test data!';

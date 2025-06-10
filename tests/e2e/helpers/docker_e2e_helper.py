@@ -34,11 +34,11 @@ class DockerE2EConnection:
         # 接続の健全性チェック
         self._wait_for_services()
     
-    def _wait_for_services(self, max_retries: int = 30, delay: int = 2):
+    def _wait_for_services(self, max_retries: int = 10, delay: int = 2):
         """サービスが利用可能になるまで待機"""
         logger.info("Waiting for services to be ready...")
         
-        # SQL Server接続を待機
+        # SQL Server接続を待機（必須サービス）
         for attempt in range(max_retries):
             try:
                 conn = self.get_sql_connection()
@@ -53,19 +53,20 @@ class DockerE2EConnection:
                     raise Exception(f"SQL Server not available after {max_retries} attempts: {str(e)}")
                 logger.warning(f"SQL Server not ready, attempt {attempt + 1}/{max_retries}")
                 time.sleep(delay)
-          # IR Simulator接続を待機
-        for attempt in range(max_retries):
+          # IR Simulator接続を待機（オプションサービス - 試行回数を少なく）
+        ir_retries = 5
+        for attempt in range(ir_retries):
             try:
-                response = requests.get(f"{self.ir_simulator_url}/", timeout=5)
+                response = requests.get(f"{self.ir_simulator_url}/", timeout=3)
                 if response.status_code == 200:
                     logger.info("IR Simulator is ready")
                     break
             except Exception as e:
-                if attempt == max_retries - 1:
-                    logger.warning(f"IR Simulator not available after {max_retries} attempts: {str(e)}")
+                if attempt == ir_retries - 1:
+                    logger.warning(f"IR Simulator not available after {ir_retries} attempts: {str(e)}")
                     break  # IR Simulatorは必須ではないのでcontinue
-                logger.warning(f"IR Simulator not ready, attempt {attempt + 1}/{max_retries}")
-                time.sleep(delay)
+                logger.warning(f"IR Simulator not ready, attempt {attempt + 1}/{ir_retries}")
+                time.sleep(1)  # IRシミュレーター用の短い遅延
     
     def get_sql_connection(self):
         """SQL Server接続を取得"""
@@ -76,6 +77,7 @@ class DockerE2EConnection:
         UID={self.sql_user};
         PWD={self.sql_password};
         TrustServerCertificate=yes;
+        Encrypt=no;
         """
         return pyodbc.connect(connection_string)
     
@@ -136,7 +138,7 @@ class DockerE2EConnection:
         logger.info(f"Cleared table: {schema}.{table_name}")
     
     def insert_test_data(self, table_name: str, data: List[Dict], schema: str = "dbo"):
-        """テストデータを挿入"""
+        """テストデータを挿入（IDENTITY列自動処理対応）"""
         if not data:
             return
         
@@ -144,8 +146,28 @@ class DockerE2EConnection:
         cursor = conn.cursor()
         
         try:
-            # カラム名と値を準備
-            columns = list(data[0].keys())
+            # IDENTITY列を確認
+            identity_check_query = """
+                SELECT COLUMN_NAME 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_NAME = ? AND TABLE_SCHEMA = ? 
+                AND COLUMNPROPERTY(OBJECT_ID(TABLE_SCHEMA+'.'+TABLE_NAME), COLUMN_NAME, 'IsIdentity') = 1
+            """
+            cursor.execute(identity_check_query, (table_name, schema))
+            identity_columns = [row[0] for row in cursor.fetchall()]
+            
+            # カラム名と値を準備（IDENTITY列は除外）
+            all_columns = list(data[0].keys())
+            columns = [col for col in all_columns if col not in identity_columns]
+            
+            # IDENTITY_INSERTを有効にする必要がある場合
+            identity_insert_needed = any(col in identity_columns for col in all_columns)
+            
+            if identity_insert_needed and identity_columns:
+                # IDENTITY列も含める場合（明示的にIDを指定）
+                columns = all_columns
+                cursor.execute(f"SET IDENTITY_INSERT [{schema}].[{table_name}] ON")
+            
             placeholders = ', '.join(['?' for _ in columns])
             column_names = ', '.join([f'[{col}]' for col in columns])
             
@@ -156,9 +178,21 @@ class DockerE2EConnection:
                 values = [row.get(col) for col in columns]
                 cursor.execute(query, values)
             
+            # IDENTITY_INSERTを無効にする
+            if identity_insert_needed and identity_columns:
+                cursor.execute(f"SET IDENTITY_INSERT [{schema}].[{table_name}] OFF")
+            
             conn.commit()
             logger.info(f"Inserted {len(data)} records into {schema}.{table_name}")
             
+        except Exception as e:
+            # エラーが発生した場合もIDENTITY_INSERTを確実に無効にする
+            try:
+                cursor.execute(f"SET IDENTITY_INSERT [{schema}].[{table_name}] OFF")
+                conn.commit()
+            except:
+                pass
+            raise e
         finally:
             conn.close()
     
@@ -240,11 +274,11 @@ class DockerE2EConnection:
     def get_pipeline_execution_logs(self, pipeline_name: str, hours_back: int = 1) -> List[Dict]:
         """パイプライン実行ログを取得"""
         query = """
-        SELECT execution_id, pipeline_name, activity_name, start_time, end_time, 
-               status, input_rows, output_rows, error_message, created_at
-        FROM [etl].[pipeline_execution_log]
-        WHERE pipeline_name = ? AND created_at >= DATEADD(HOUR, ?, GETDATE())
-        ORDER BY created_at DESC
+        SELECT log_id as execution_id, pipeline_name, 'N/A' as activity_name, execution_start as start_time, execution_end as end_time, 
+               status, records_processed as input_rows, records_processed as output_rows, error_message, execution_start as created_at
+        FROM [dbo].[pipeline_execution_log]
+        WHERE pipeline_name = ? AND execution_start >= DATEADD(HOUR, ?, GETDATE())
+        ORDER BY execution_start DESC
         """
         return self.execute_query(query, (pipeline_name, -hours_back))
     
@@ -285,9 +319,9 @@ class DockerE2EConnection:
         
         try:
             # ソースとシンクの情報を解析
-            source_table = source_config.get("table_name", "source_table")
+            source_table = source_config.get("table_name") or source_config.get("table", "source_table")
             source_schema = source_config.get("schema", "dbo")
-            sink_table = sink_config.get("table_name", "sink_table")
+            sink_table = sink_config.get("table_name") or sink_config.get("table", "sink_table")
             sink_schema = sink_config.get("schema", "dbo")
             
             # データコピー実行
@@ -366,11 +400,17 @@ class DockerE2EConnection:
             self.clear_table("ClientDmBx")
               # データ変換とコピー
             transformed_data = []
-            for row in source_data:
+            for i, row in enumerate(source_data, 1):
                 transformed_row = {
                     "client_id": row["client_id"],
-                    "box_id": f"BX_{row['client_id']}",  # Box IDを生成
-                    "status": "ACTIVE"  # デフォルトステータス
+                    "segment": "PREMIUM",  # セグメント情報
+                    "score": 85.0 + i,  # スコア（各行で少し変える）
+                    "last_transaction_date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    "total_amount": 1500.00 + (i * 100),  # 金額（各行で変える）
+                    "processed_date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    "data_source": "CLIENT_DM_PIPELINE",
+                    "bx_flag": 1,  # True = 1
+                    "updated_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 }
                 transformed_data.append(transformed_row)
             
@@ -640,10 +680,36 @@ class DockerE2EConnection:
         # ターゲットテーブルをクリア
         self.clear_table(sink_table, sink_schema)
         
-        # データ挿入
-        self.insert_test_data(sink_table, source_data, sink_schema)
+        # テーブル固有のデータ変換を実行
+        transformed_data = self._transform_data_for_table(source_data, source_table, sink_table)
         
-        return len(source_data)
+        # データ挿入
+        self.insert_test_data(sink_table, transformed_data, sink_schema)
+        
+        return len(transformed_data)
+    
+    def _transform_data_for_table(self, source_data: List[Dict], source_table: str, sink_table: str) -> List[Dict]:
+        """テーブル固有のデータ変換を実行"""
+        if source_table.lower() == "client_dm" and sink_table == "ClientDmBx":
+            # client_dm から ClientDmBx への変換
+            transformed_data = []
+            for i, row in enumerate(source_data, 1):
+                transformed_row = {
+                    "client_id": row["client_id"],
+                    "segment": "STANDARD",  # デフォルトセグメント
+                    "score": 75.5,  # デフォルトスコア
+                    "last_transaction_date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    "total_amount": 1000.00,  # デフォルト金額
+                    "processed_date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    "data_source": "ETL_COPY",
+                    "bx_flag": 1,  # True = 1
+                    "updated_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                }
+                transformed_data.append(transformed_row)
+            return transformed_data
+        else:
+            # 他のテーブル間のコピーはそのまま
+            return source_data
     
     def _log_pipeline_execution(self, execution_id: str, pipeline_name: str, activity_name: str, 
                                start_time: datetime, end_time: datetime, status: str,
@@ -654,44 +720,33 @@ class DockerE2EConnection:
             self._ensure_etl_log_table()
             
             log_data = [{
-                "execution_id": execution_id,
                 "pipeline_name": pipeline_name,
-                "activity_name": activity_name,
-                "start_time": start_time.strftime('%Y-%m-%d %H:%M:%S'),
-                "end_time": end_time.strftime('%Y-%m-%d %H:%M:%S'),
+                "execution_start": start_time.strftime('%Y-%m-%d %H:%M:%S'),
+                "execution_end": end_time.strftime('%Y-%m-%d %H:%M:%S'),
                 "status": status,
-                "input_rows": input_rows,
-                "output_rows": output_rows,
-                "error_message": error_message,
-                "created_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                "records_processed": input_rows,
+                "error_message": error_message
             }]
             
-            self.insert_test_data("pipeline_execution_log", log_data, "etl")
+            self.insert_test_data("pipeline_execution_log", log_data, "dbo")
             
         except Exception as e:
             logger.warning(f"Failed to log pipeline execution: {str(e)}")
     
     def _ensure_etl_log_table(self):
-        """ETLログテーブルの存在確認と作成"""
+        """ETLログテーブルの存在確認と作成（dboスキーマのみ使用）"""
         try:
-            # etlスキーマの確認・作成
-            self.execute_query("IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'etl') EXEC('CREATE SCHEMA etl')")
-            
-            # pipeline_execution_logテーブルの確認・作成
+            # pipeline_execution_logテーブルの確認・作成（dboスキーマを使用）
             create_table_sql = """
-            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='pipeline_execution_log' AND xtype='U')
-            CREATE TABLE [etl].[pipeline_execution_log] (
-                [id] INT IDENTITY(1,1) PRIMARY KEY,
-                [execution_id] NVARCHAR(100) NOT NULL,
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name='pipeline_execution_log' AND schema_id = SCHEMA_ID('dbo'))
+            CREATE TABLE [dbo].[pipeline_execution_log] (
+                [log_id] INT IDENTITY(1,1) PRIMARY KEY,
                 [pipeline_name] NVARCHAR(100) NOT NULL,
-                [activity_name] NVARCHAR(100),
-                [start_time] DATETIME2,
-                [end_time] DATETIME2,
+                [execution_start] DATETIME2 DEFAULT GETDATE(),
+                [execution_end] DATETIME2,
                 [status] NVARCHAR(20),
-                [input_rows] INT DEFAULT 0,
-                [output_rows] INT DEFAULT 0,
-                [error_message] NVARCHAR(MAX),
-                [created_at] DATETIME2 DEFAULT GETDATE()
+                [records_processed] INT,
+                [error_message] NVARCHAR(MAX)
             )
             """
             self.execute_query(create_table_sql)
@@ -714,7 +769,7 @@ class DockerE2EConnection:
         # ETLログのクリア（テスト実行分のみ）
         try:
             self.execute_query(
-                "DELETE FROM [etl].[pipeline_execution_log] WHERE created_at >= DATEADD(HOUR, -2, GETDATE())"
+                "DELETE FROM [dbo].[pipeline_execution_log] WHERE execution_start >= DATEADD(HOUR, -2, GETDATE())"
             )
         except Exception as e:
             logger.warning(f"Failed to clear ETL logs: {str(e)}")

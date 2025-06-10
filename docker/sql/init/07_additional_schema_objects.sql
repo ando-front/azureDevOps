@@ -1,69 +1,31 @@
 -- 07_additional_schema_objects.sql
--- Additional schema objects for E2E tests
+-- Additional schema objects for E2E tests - Simplified to use dbo schema only
 
 USE TGMATestDB;
 
--- Create staging schema if it doesn't exist
-IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'staging')
-BEGIN
-    EXEC('CREATE SCHEMA staging')
-END;
+-- Simplified approach: use dbo schema only to avoid schema creation issues
+-- This ensures compatibility with all SQL Server versions in Docker
 
--- Create test_data_management table
-IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'staging' AND TABLE_NAME = 'test_data_management')
-BEGIN
-    CREATE TABLE staging.test_data_management (
-        TestDataID INT IDENTITY(1,1) PRIMARY KEY,
-        TestSuite NVARCHAR(100) NOT NULL,
-        TableName NVARCHAR(100) NOT NULL,
-        RecordCount INT NOT NULL,
-        LastUpdated DATETIME2 DEFAULT GETDATE()
-    );
-END;
+-- Create test_data_management table (using dbo schema)
+CREATE TABLE dbo.test_data_management (
+    TestDataID INT IDENTITY(1,1) PRIMARY KEY,
+    TestSuite NVARCHAR(100) NOT NULL,
+    TableName NVARCHAR(100) NOT NULL,
+    RecordCount INT NOT NULL,
+    LastUpdated DATETIME2 DEFAULT GETDATE()
+);
 
-PRINT 'Staging schema and tables created successfully';
-GO
+-- Create pipeline_execution_log table for ETL tracking (using dbo schema)
+CREATE TABLE dbo.pipeline_execution_log (
+    log_id INT IDENTITY(1,1) PRIMARY KEY,
+    pipeline_name NVARCHAR(100) NOT NULL,
+    execution_start DATETIME2 DEFAULT GETDATE(),
+    execution_end DATETIME2,
+    status NVARCHAR(20),
+    records_processed INT,
+    error_message NVARCHAR(MAX)
+);
 
--- Create GetE2ETestSummary procedure
-IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'GetE2ETestSummary')
-    DROP PROCEDURE GetE2ETestSummary;
-GO
+PRINT 'Additional schema objects created successfully in dbo schema';
 
-CREATE PROCEDURE GetE2ETestSummary
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    SELECT 
-        'client_dm' as TableName,
-        COUNT(*) as TotalRecords,
-        COUNT(CASE WHEN client_id LIKE 'E2E_%' THEN 1 END) as E2ERecords
-    FROM client_dm
-    
-    UNION ALL
-    
-    SELECT 
-        'ClientDmBx' as TableName,
-        COUNT(*) as TotalRecords,
-        COUNT(CASE WHEN client_id LIKE 'E2E_%' THEN 1 END) as E2ERecords
-    FROM ClientDmBx
-    
-    UNION ALL
-    
-    SELECT 
-        'point_grant_email' as TableName,
-        COUNT(*) as TotalRecords,
-        COUNT(CASE WHEN client_id LIKE 'E2E_%' THEN 1 END) as E2ERecords
-    FROM point_grant_email
-    
-    UNION ALL
-    
-    SELECT 
-        'marketing_client_dm' as TableName,
-        COUNT(*) as TotalRecords,
-        COUNT(CASE WHEN client_id LIKE 'E2E_%' THEN 1 END) as E2ERecords
-    FROM marketing_client_dm;
-END;
-GO
-
-PRINT 'GetE2ETestSummary procedure created successfully';
+PRINT 'Additional schema objects created successfully';

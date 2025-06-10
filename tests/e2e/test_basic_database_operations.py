@@ -111,21 +111,27 @@ class TestBasicDatabaseOperations:
         VALUES (?, ?, ?, ?, ?, ?, ?)
         """
         
-        connection.execute_query(
-            insert_query,
-            test_data['client_id'],
-            test_data['email'],
-            test_data['points_granted'],
-            test_data['email_sent_date'],
-            test_data['campaign_id'],
-            test_data['status'],
-            test_data['created_at']
-        )
+        insert_query = f"""
+        INSERT INTO [dbo].[point_grant_email] 
+        (client_id, email, points_granted, email_sent_date, campaign_id, status, created_at)
+        VALUES ('{test_data["client_id"]}', '{test_data["email"]}', {test_data["points_granted"]}, 
+                '{test_data["email_sent_date"]}', '{test_data["campaign_id"]}', '{test_data["status"]}', 
+                '{test_data["created_at"]}')
+        """
+        
+        connection.execute_query(insert_query)
         
         # Verify insertion
         select_query = "SELECT COUNT(*) as count FROM point_grant_email WHERE client_id = ?"
         result = connection.execute_query(select_query, test_data['client_id'])
-        assert result[0]['count'] >= 1, "Data insertion failed"
+        
+        # Handle pyodbc.Row object
+        if hasattr(result[0], 'count'):
+            count_value = result[0].count
+        else:
+            count_value = result[0][0]
+        
+        assert count_value >= 1, "Data insertion failed"
     
     def test_database_performance_basic(self):
         """基本的なデータベースパフォーマンステスト"""
@@ -170,5 +176,5 @@ class TestBasicDatabaseOperations:
         """
         result = connection.execute_query(query)
         
-        schema_names = [row['SCHEMA_NAME'] for row in result]
+        schema_names = [row[0] for row in result]
         assert 'dbo' in schema_names, "dbo schema not found"

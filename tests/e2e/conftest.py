@@ -58,7 +58,7 @@ class ODBCDriverManager:
             f"UID={user};"
             f"PWD={password};"
             "TrustServerCertificate=yes;"
-            "Encrypt=yes;"
+            "Encrypt=no;"
         )
 
 

@@ -1,0 +1,201 @@
+# =================================================================
+# E2Eテスト用 Docker Compose ファイル（最適化版）
+# 効率的なE2Eテスト実行のための最適化設定
+# =================================================================
+
+services:
+  # E2Eテスト用データベース（軽量初期化）
+  sqlserver-test:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver-e2e-test
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong!Passw0rd123
+      - MSSQL_PID=Express
+      - MSSQL_COLLATION=Japanese_CI_AS
+    ports:
+      - "1433:1433"
+    volumes:
+      - ./docker/sql/init:/docker-entrypoint-initdb.d
+      - sqlserver_e2e_data:/var/opt/mssql
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q 'SELECT 1' -C" ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    command: >
+      sh -c "
+        echo '🚀 Starting SQL Server with minimal setup...' &&
+        /opt/mssql/bin/sqlservr
+      "
+    networks:
+      - e2e-network
+
+  # Azurite for Azure Storage emulation
+  azurite-test:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: azurite-e2e-test
+    environment:
+      - AZURITE_ACCOUNTS=devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
+    ports:
+      - "10000:10000" # Blob service
+      - "10001:10001" # Queue service
+      - "10002:10002" # Table service
+    volumes:
+      - azurite_e2e_data:/data
+    command: [ "azurite", "--blobHost", "0.0.0.0", "--queueHost", "0.0.0.0", "--tableHost", "0.0.0.0", "--location", "/data" ]
+    networks:
+      - e2e-network
+
+  # Integration Runtime Simulator（軽量化版）
+  ir-simulator:
+    build:
+      context: ./docker/ir-simulator
+      dockerfile: Dockerfile
+    container_name: ir-simulator-e2e
+    environment:
+      - SQL_SERVER_HOST=sqlserver-test
+      - SQL_SERVER_PORT=1433
+      - SQL_SERVER_USER=sa
+      - SQL_SERVER_PASSWORD=YourStrong!Passw0rd123
+      - AZURITE_HOST=azurite-test
+      - AZURITE_PORT=10000
+      - ENABLE_LOGGING=false  # ログを無効化してパフォーマンス向上
+    ports:
+      - "8080:8080"
+    depends_on:
+      sqlserver-test:
+        condition: service_healthy
+      azurite-test:
+        condition: service_started
+    volumes:
+      - ./docker/ir-simulator/config:/app/config
+      - ./tests/data:/app/test_data
+      - ./tests:/app/tests
+      - ./src:/app/src
+    networks:
+      - e2e-network
+
+  # E2Eテスト実行環境（最適化版）
+  e2e-test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: adf-e2e-test:latest
+    container_name: adf-e2e-test-runner
+    depends_on:
+      sqlserver-test:
+        condition: service_healthy
+      azurite-test:
+        condition: service_started
+      ir-simulator:
+        condition: service_started
+    environment:
+      # データベース接続設定
+      - SQL_SERVER_HOST=sqlserver-test
+      - SQL_SERVER_PORT=1433
+      - SQL_SERVER_DATABASE=master
+      - SQL_SERVER_USER=sa
+      - SQL_SERVER_PASSWORD=YourStrong!Passw0rd123
+      # Azure Storage設定
+      - AZURITE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite-test:10000/devstoreaccount1;
+      # IR Simulator設定
+      - IR_SIMULATOR_URL=http://ir-simulator:8080
+      # テスト実行設定（最適化）
+      - TEST_MODE=e2e
+      - PYTEST_MARKERS=e2e
+      - TEST_TIMEOUT=180  # タイムアウトを短縮
+      - PYTEST_CURRENT_TEST=1
+      - LOG_LEVEL=WARNING  # ログレベルを下げてパフォーマンス向上
+      # Python設定
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - PYTEST_WORKERS=2  # 並列実行を有効化
+    volumes:
+      - ./tests:/app/tests:ro
+      - ./src:/app/src:ro
+      - ./input:/app/input:ro
+      - ./output:/app/output
+      - ./config:/app/config:ro
+      - ./docker/sql/init:/app/docker/sql/init:ro
+      - ./e2e_db_auto_initializer.py:/app/e2e_db_auto_initializer.py:ro
+      - ./requirements.e2e.txt:/app/requirements.e2e.txt:ro
+      - ./pytest.ini:/app/pytest.ini:ro
+      - ./pytest.optimized.ini:/app/pytest.optimized.ini:ro
+      - e2e_test_results:/app/test_results
+    working_dir: /app
+    networks:
+      - e2e-network
+    # 最適化されたテスト実行コマンド
+    command: >
+      sh -c "
+        echo '🚀 最適化されたE2Eテスト環境の起動中...' &&
+        sleep 15 &&
+        echo '📁 テスト結果ディレクトリを作成...' &&
+        mkdir -p /app/test_results &&
+        echo '📊 基本接続テストを実行...' &&
+        python -m pytest /app/tests/e2e/test_basic_connections.py -v --tb=short --junitxml=/app/test_results/basic_connections.xml --timeout=60 &&
+        echo '🔄 Docker統合テストを実行...' &&
+        python -m pytest /app/tests/e2e/test_docker_e2e_integration.py -v --tb=short --junitxml=/app/test_results/docker_integration.xml --timeout=120 &&
+        echo '📦 ClientDMパイプラインテストを実行...' &&
+        python -m pytest /app/tests/e2e/test_docker_e2e_client_dm.py -v --tb=short --junitxml=/app/test_results/client_dm.xml --timeout=120 &&
+        echo '📧 ポイント付与メールテストを実行...' &&
+        python -m pytest /app/tests/e2e/test_docker_e2e_point_grant_email_fixed.py -v --tb=short --junitxml=/app/test_results/point_grant_email.xml --timeout=120 &&
+        echo '✅ E2Eテスト完了！' &&
+        echo '📊 テスト結果サマリー:' &&
+        find /app/test_results -name '*.xml' -exec echo 'テスト結果: {}' \\; &&
+        echo '⏰ テスト完了時刻:' $(date)
+      "
+
+  # クイックテスト実行（開発用）
+  quick-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: adf-e2e-test:latest
+    container_name: adf-quick-test
+    depends_on:
+      sqlserver-test:
+        condition: service_healthy
+      azurite-test:
+        condition: service_started
+    environment:
+      - SQL_SERVER_HOST=sqlserver-test
+      - SQL_SERVER_PORT=1433
+      - SQL_SERVER_DATABASE=master
+      - SQL_SERVER_USER=sa
+      - SQL_SERVER_PASSWORD=YourStrong!Passw0rd123
+      - AZURITE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite-test:10000/devstoreaccount1;
+      - TEST_MODE=quick
+      - LOG_LEVEL=ERROR
+      - PYTHONPATH=/app
+    volumes:
+      - ./tests:/app/tests:ro
+      - ./src:/app/src:ro
+      - e2e_test_results:/app/test_results
+    working_dir: /app
+    networks:
+      - e2e-network
+    profiles:
+      - quick
+    command: >
+      sh -c "
+        echo '⚡ クイックE2Eテスト実行中...' &&
+        sleep 10 &&
+        mkdir -p /app/test_results &&
+        python -m pytest /app/tests/e2e/test_basic_connections.py -v --tb=line --timeout=30 &&
+        echo '✅ クイックテスト完了！'
+      "
+
+networks:
+  e2e-network:
+    driver: bridge
+
+volumes:
+  sqlserver_e2e_data:
+    driver: local
+  azurite_e2e_data:
+    driver: local
+  e2e_test_results:
+    driver: local

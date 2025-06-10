@@ -226,11 +226,11 @@ class DockerE2EConnection:
     def get_pipeline_execution_logs(self, pipeline_name: str, hours_back: int = 1) -> List[Dict]:
         """パイプライン実行ログを取得"""
         query = """
-        SELECT execution_id, pipeline_name, activity_name, start_time, end_time, 
-               status, input_rows, output_rows, error_message, created_at
-        FROM [etl].[pipeline_execution_log]
-        WHERE pipeline_name = ? AND created_at >= DATEADD(HOUR, ?, GETDATE())
-        ORDER BY created_at DESC
+        SELECT log_id as execution_id, pipeline_name, 'N/A' as activity_name, execution_start as start_time, execution_end as end_time, 
+               status, records_processed as input_rows, records_processed as output_rows, error_message, execution_start as created_at
+        FROM [dbo].[pipeline_execution_log]
+        WHERE pipeline_name = ? AND execution_start >= DATEADD(HOUR, ?, GETDATE())
+        ORDER BY execution_start DESC
         """
         return self.execute_query(query, (pipeline_name, -hours_back))
     
@@ -619,7 +619,7 @@ class DockerE2EConnection:
                 "created_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }]
             
-            self.insert_test_data("pipeline_execution_log", log_data, "etl")
+            self.insert_test_data("pipeline_execution_log", log_data, "dbo")
             
         except Exception as e:
             logger.warning(f"Failed to log pipeline execution: {str(e)}")
@@ -627,24 +627,17 @@ class DockerE2EConnection:
     def _ensure_etl_log_table(self):
         """ETLログテーブルの存在確認と作成"""
         try:
-            # etlスキーマの確認・作成
-            self.execute_query("IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'etl') EXEC('CREATE SCHEMA etl')")
-            
-            # pipeline_execution_logテーブルの確認・作成
+            # pipeline_execution_logテーブルの確認・作成（dboスキーマのみ使用）
             create_table_sql = """
-            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='pipeline_execution_log' AND xtype='U')
-            CREATE TABLE [etl].[pipeline_execution_log] (
-                [id] INT IDENTITY(1,1) PRIMARY KEY,
-                [execution_id] NVARCHAR(100) NOT NULL,
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name='pipeline_execution_log' AND schema_id = SCHEMA_ID('dbo'))
+            CREATE TABLE [dbo].[pipeline_execution_log] (
+                [log_id] INT IDENTITY(1,1) PRIMARY KEY,
                 [pipeline_name] NVARCHAR(100) NOT NULL,
-                [activity_name] NVARCHAR(100),
-                [start_time] DATETIME2,
-                [end_time] DATETIME2,
+                [execution_start] DATETIME2 DEFAULT GETDATE(),
+                [execution_end] DATETIME2,
                 [status] NVARCHAR(20),
-                [input_rows] INT DEFAULT 0,
-                [output_rows] INT DEFAULT 0,
-                [error_message] NVARCHAR(MAX),
-                [created_at] DATETIME2 DEFAULT GETDATE()
+                [records_processed] INT,
+                [error_message] NVARCHAR(MAX)
             )
             """
             self.execute_query(create_table_sql)
@@ -667,7 +660,7 @@ class DockerE2EConnection:
         # ETLログのクリア（テスト実行分のみ）
         try:
             self.execute_query(
-                "DELETE FROM [etl].[pipeline_execution_log] WHERE created_at >= DATEADD(HOUR, -2, GETDATE())"
+                "DELETE FROM [dbo].[pipeline_execution_log] WHERE created_at >= DATEADD(HOUR, -2, GETDATE())"
             )
         except Exception as e:
             logger.warning(f"Failed to clear ETL logs: {str(e)}")

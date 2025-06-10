@@ -41,7 +41,7 @@ class SynapseE2EConnection:
             f"UID={username};"
             f"PWD={password};"
             "TrustServerCertificate=yes;"
-            "Encrypt=yes;"
+            "Encrypt=no;"
         )
         
         logger.info(f"E2E Connection string: {connection_string.replace(password, '***')}")
