@@ -92,6 +92,7 @@ docker-compose -f docker-compose.e2e.yml down
 # ノープロキシ版：ホストマシン実行
 docker-compose -f docker-compose.e2e.no-proxy.yml up -d
 pytest tests/e2e/ -v --tb=short
+python -m pytest tests/e2e/ -v --tb=short
 docker-compose -f docker-compose.e2e.no-proxy.yml down
 ```
 
