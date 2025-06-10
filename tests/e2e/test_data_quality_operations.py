@@ -41,8 +41,9 @@ class TestDataQualityOperations:
         
         assert len(result) > 0, "No result returned"
         data = result[0]
-        assert data['non_null_client_id'] >= 0, "Non-null client_id count should be non-negative"
-        assert data['non_null_email'] >= 0, "Non-null email count should be non-negative"
+        # タプル形式でデータが返される: (total, non_null_client_id, non_null_email)
+        assert data[1] >= 0, "Non-null client_id count should be non-negative"
+        assert data[2] >= 0, "Non-null email count should be non-negative"
     
     def test_data_type_validation(self):
         """データ型の検証テスト"""
@@ -64,8 +65,9 @@ class TestDataQualityOperations:
         
         if len(result) > 0:
             first_row = result[0]
-            assert 'client_id' in first_row, "client_id should be present"
-            assert 'points_granted' in first_row, "points_granted should be present"
+            # タプル形式でデータが返される: (client_id, points_granted, created_at)
+            assert first_row[0] is not None, "client_id should be present"
+            assert first_row[1] is not None, "points_granted should be present"
     
     def test_duplicate_detection(self):
         """重複データの検出テスト"""
@@ -100,9 +102,10 @@ class TestDataQualityOperations:
         result = connection.execute_query(query)
         
         assert len(result) > 0, "No result returned"
-        if result[0]['total_records'] > 0:
-            assert result[0]['earliest_date'] is not None, "Earliest date should not be null"
-            assert result[0]['latest_date'] is not None, "Latest date should not be null"
+        # タプル形式でデータが返される: (earliest_date, latest_date, total_records)
+        if result[0][2] > 0:  # total_records
+            assert result[0][0] is not None, "Earliest date should not be null"
+            assert result[0][1] is not None, "Latest date should not be null"
     
     def test_numeric_range_validation(self):
         """数値範囲の検証テスト"""
@@ -120,9 +123,10 @@ class TestDataQualityOperations:
         result = connection.execute_query(query)
         
         assert len(result) > 0, "No result returned"
-        if result[0]['total_records'] > 0:
-            assert result[0]['min_points'] >= 0, "Minimum points should be non-negative"
-            assert result[0]['max_points'] >= result[0]['min_points'], "Max should be >= min"
+        # タプル形式でデータが返される: (min_points, max_points, avg_points, total_records)
+        if result[0][3] > 0:  # total_records
+            assert result[0][0] >= 0, "Minimum points should be non-negative"
+            assert result[0][1] >= result[0][0], "Max should be >= min"
     
     def test_string_length_validation(self):
         """文字列長の検証テスト"""
@@ -212,4 +216,10 @@ class TestDataQualityOperations:
         
         assert len(result) > 0, "No result returned"
         # Data freshness test should complete without errors
-        assert isinstance(result[0], dict), "Result should be a dictionary"
+        # pyodbc.Row objects can be accessed like tuples
+        assert len(result[0]) == 2, "Should return 2 columns (days and count)"
+        
+        # Test the actual data structure
+        days_diff, record_count = result[0][0], result[0][1]
+        assert isinstance(days_diff, (int, float)), "Days difference should be numeric"
+        assert isinstance(record_count, int), "Record count should be integer"

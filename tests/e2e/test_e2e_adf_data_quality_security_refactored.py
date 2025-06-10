@@ -268,6 +268,17 @@ class TestADFSecurityRefactored:
     def test_e2e_access_control_validation_refactored(self, e2e_synapse_connection: SynapseE2EConnection):
         """E2E: アクセス制御検証のテスト（リファクタリング版）"""
         
+        # 既存のポリシーデータをクリア
+        e2e_synapse_connection.execute_query("DELETE FROM access_control_policies")
+        
+        # データベースの現在時刻を取得
+        db_time_result = e2e_synapse_connection.execute_query("SELECT GETDATE()")
+        db_current_time = db_time_result[0][0]
+        
+        # 確実に有効期間内に入る日時を設定（データベース時刻ベース）
+        start_time = db_current_time - timedelta(hours=1)   # 1時間前から有効
+        end_time = db_current_time + timedelta(days=365)    # 1年後まで有効
+        
         # アクセス制御ポリシーの定義
         access_policies = [
             {
@@ -277,8 +288,8 @@ class TestADFSecurityRefactored:
                 'principal_id': 'test_user@example.com',
                 'permissions': 'SELECT',
                 'conditions': 'WHERE CUSTOMER_ID LIKE USER_ID%',
-                'effective_from': datetime.now(),
-                'effective_to': datetime.now() + timedelta(days=365)
+                'effective_from': start_time,
+                'effective_to': end_time
             },
             {
                 'policy_name': 'admin_full_access',
@@ -287,8 +298,8 @@ class TestADFSecurityRefactored:
                 'principal_id': 'admin_role',
                 'permissions': 'SELECT,INSERT,UPDATE,DELETE',
                 'conditions': None,
-                'effective_from': datetime.now(),
-                'effective_to': datetime.now() + timedelta(days=365)
+                'effective_from': start_time,
+                'effective_to': end_time
             }
         ]
         
@@ -303,7 +314,7 @@ class TestADFSecurityRefactored:
                 """,
                 (policy['policy_name'], policy['resource_type'], policy['principal_type'],
                  policy['principal_id'], policy['permissions'], policy['conditions'],
-                 1, policy['effective_from'], policy['effective_to'], datetime.now())
+                 1, policy['effective_from'], policy['effective_to'], db_current_time)
             )
         
         # アクセス制御の検証
@@ -311,7 +322,6 @@ class TestADFSecurityRefactored:
             """
             SELECT COUNT(*) FROM access_control_policies 
             WHERE is_active = 1 AND effective_from <= GETDATE() AND effective_to >= GETDATE()
-from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
             """
         )
         

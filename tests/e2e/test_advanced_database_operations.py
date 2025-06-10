@@ -124,34 +124,39 @@ class TestAdvancedDatabaseOperations:
 
     def test_window_functions(self, e2e_synapse_connection: SynapseE2EConnection):
         """ウィンドウ関数のテスト"""
-        # ウィンドウ関数を使用したクエリ
+        # ウィンドウ関数を使用したクエリ（大文字小文字を統一してパーティション分割）
         result = e2e_synapse_connection.execute_query("""
             SELECT 
                 client_id,
                 segment,
                 total_amount,
-                ROW_NUMBER() OVER (PARTITION BY segment ORDER BY total_amount DESC) as rank_in_segment,
-                AVG(total_amount) OVER (PARTITION BY segment) as segment_avg
+                ROW_NUMBER() OVER (PARTITION BY UPPER(segment) ORDER BY total_amount DESC) as rank_in_segment,
+                AVG(total_amount) OVER (PARTITION BY UPPER(segment)) as segment_avg
             FROM ClientDmBx
-            WHERE segment IN ('PREMIUM', 'STANDARD')
-            ORDER BY segment, rank_in_segment
+            WHERE UPPER(segment) IN ('PREMIUM', 'STANDARD')
+            ORDER BY UPPER(segment), rank_in_segment
         """)
         
         assert len(result) >= 0, "ウィンドウ関数クエリの実行に失敗しました"
         
-        # ランキングの連続性を確認
+        # ランキングの連続性を確認（大文字小文字を統一したセグメント毎）
         if len(result) > 1:
-            current_segment = None
-            rank_counter = 0
+            segment_ranks = {}
             for row in result:
                 client_id, segment, total_amount, rank_in_segment, segment_avg = row
-                if segment != current_segment:
-                    current_segment = segment
-                    rank_counter = 1
-                else:
-                    rank_counter += 1
+                # セグメント名を大文字に統一してグループ化
+                normalized_segment = segment.upper()
                 
-                assert rank_in_segment == rank_counter, f"ランキングが不正です: 期待値{rank_counter}, 実際{rank_in_segment}"
+                # セグメント毎にランクを追跡
+                if normalized_segment not in segment_ranks:
+                    segment_ranks[normalized_segment] = []
+                segment_ranks[normalized_segment].append(rank_in_segment)
+            
+            # 各セグメント内でランクが1から連続していることを確認
+            for segment, ranks in segment_ranks.items():
+                ranks.sort()
+                for i, rank in enumerate(ranks, 1):
+                    assert rank == i, f"セグメント {segment} のランキングが不正です: 期待値{i}, 実際{rank}"
         
         print(f"ウィンドウ関数テスト成功: {len(result)}件のレコードでランキングを計算")
 
