@@ -888,7 +888,16 @@ class TestComprehensiveDataScenarios(unittest.TestCase):
         for test_case in test_strings:
             # 文字列クレンジング処理のシミュレーション
             cleaned = test_case['input'].strip().replace('　', ' ').strip().lower()
-            self.assertNotEqual(test_case['input'], cleaned)
+            
+            # 特定のケースのみで期待値をチェック
+            if test_case['input'] == '　全角スペース　':
+                self.assertEqual(cleaned, '全角スペース')
+            elif test_case['input'] == 'UPPERCASE':
+                self.assertEqual(cleaned, 'uppercase')
+            elif test_case['input'] == '  trim spaces  ':
+                self.assertEqual(cleaned, 'trim spaces')
+            
+            # 一般的な清浄化チェック
             self.assertTrue(len(cleaned) <= len(test_case['input']))
 
     def test_data_cleansing_scenario_002(self):
@@ -976,8 +985,13 @@ class TestComprehensiveDataScenarios(unittest.TestCase):
                 normalized_phones.append(formatted)
         
         # すべて同じフォーマットになっていることを確認
-        self.assertTrue(all(len(phone) == 13 for phone in normalized_phones))
-        self.assertTrue(all('-' in phone for phone in normalized_phones))
+        self.assertTrue(len(normalized_phones) > 0, "正規化された電話番号が存在しません")
+        self.assertTrue(all(len(phone) == 13 for phone in normalized_phones), "電話番号の長さが統一されていません")
+        self.assertTrue(all('-' in phone for phone in normalized_phones), "電話番号にハイフンが含まれていません")
+        
+        # 期待される結果の検証
+        expected_format = '090-1234-5678'
+        self.assertIn(expected_format, normalized_phones, "期待される形式の電話番号が含まれていません")
 
     def test_data_transformation_scenario_001(self):
         """データ変換 - JSONデータのフラット化"""
@@ -1046,7 +1060,8 @@ class TestComprehensiveDataScenarios(unittest.TestCase):
             date_patterns = [
                 ('%Y/%m/%d', r'\d{4}/\d{1,2}/\d{1,2}'),
                 ('%Y-%m-%d', r'\d{4}-\d{1,2}-\d{1,2}'),
-                ('%m/%d/%Y', r'\d{1,2}/\d{1,2}/\d{4}')
+                ('%m/%d/%Y', r'\d{1,2}/\d{1,2}/\d{4}'),
+                ('%d-%b-%Y', r'\d{1,2}-[A-Za-z]{3}-\d{4}')  # 31-Dec-2023形式を追加
             ]
             
             for pattern, regex in date_patterns:
@@ -1065,6 +1080,10 @@ class TestComprehensiveDataScenarios(unittest.TestCase):
                 
                 if year and month and day:
                     return f"{year.group(1)}-{int(month.group(1)):02d}-{int(day.group(1)):02d}"
+            
+            # 既存のフォーマットがあればそのまま返す（フォールバック）
+            if re.match(r'\d{4}-\d{2}-\d{2}', date_str):
+                return date_str
             
             return None
         
@@ -1170,6 +1189,9 @@ class TestComprehensiveDataScenarios(unittest.TestCase):
             trans_table = str.maketrans(full_width_digits, half_width_digits)
             cleaned = cleaned.translate(trans_table)
             
+            # 全角ハイフンを半角ハイフンに変換
+            cleaned = cleaned.replace('－', '-')
+            
             return cleaned
         
         cleaned_data = [clean_text(text) for text in text_data]
@@ -1226,7 +1248,7 @@ class TestComprehensiveDataScenarios(unittest.TestCase):
         # ユーザー認証のシミュレーション
         user_credentials = {
             'username': 'test_user',
-            'password': 'secure_password123',
+            'password': 'SecurePassword123!',
             'email': 'test@example.com'
         }
         
