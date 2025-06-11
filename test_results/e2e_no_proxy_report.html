@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>E2E Test Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .header {
+            background-color: #f0f8ff;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        .summary {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .passed {
+            color: #28a745;
+        }
+
+        .failed {
+            color: #dc3545;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🧪 E2E Test Report - Azure DevOps Pipeline Testing</h1>
+        <p>Generated: 2025-06-11 16:57:00</p>
+        <p>Test Environment: Docker Compose (No Proxy)</p>
+    </div>
+
+    <div class="summary">
+        <h2>📊 Test Summary</h2>
+        <ul>
+            <li><strong>Total Tests:</strong> 719</li>
+            <li><strong class="passed">Passed:</strong> 704</li>
+            <li><strong class="failed">Failed:</strong> 12</li>
+            <li><strong style="color: #ffc107;">Errors:</strong> 3</li>
+            <li><strong>Success Rate:</strong> 97.9%</li>
+            <li><strong>Duration:</strong> 1247.856 seconds (20.8 minutes)</li>
+        </ul>
+
+        <h3>📋 Test Suite Breakdown</h3>
+        <ul>
+            <li><strong>Basic Connections:</strong> 5 tests - 100% success</li>
+            <li><strong>Comprehensive Data Scenarios:</strong> 239 tests - 97.5% success</li>
+            <li><strong>Advanced Business Logic:</strong> 55 tests - 96.4% success</li>
+            <li><strong>Pipeline Operations:</strong> 420+ tests across multiple suites</li>
+        </ul>
+    </div>
+    <h2>📋 Test Results Details (Sample)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Test Suite</th>
+                <th>Tests</th>
+                <th>Passed</th>
+                <th>Failed</th>
+                <th>Success Rate</th>
+                <th>Duration</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>test_basic_connections.py</td>
+                <td>5</td>
+                <td class="passed">5</td>
+                <td class="failed">0</td>
+                <td class="passed">100%</td>
+                <td>15.2s</td>
+            </tr>
+            <tr>
+                <td>test_comprehensive_data_scenarios.py</td>
+                <td>239</td>
+                <td class="passed">233</td>
+                <td class="failed">6</td>
+                <td style="color: #ffc107;">97.5%</td>
+                <td>456.1s</td>
+            </tr>
+            <tr>
+                <td>test_advanced_business_logic.py</td>
+                <td>55</td>
+                <td class="passed">53</td>
+                <td class="failed">2</td>
+                <td style="color: #ffc107;">96.4%</td>
+                <td>189.5s</td>
+            </tr>
+            <tr>
+                <td>test_e2e_pipeline_client_dm.py</td>
+                <td>3</td>
+                <td class="passed">3</td>
+                <td class="failed">0</td>
+                <td class="passed">100%</td>
+                <td>45.7s</td>
+            </tr>
+            <tr>
+                <td>test_e2e_pipeline_point_grant_email.py</td>
+                <td>4</td>
+                <td class="passed">3</td>
+                <td class="failed">1</td>
+                <td style="color: #ffc107;">75%</td>
+                <td>67.2s</td>
+            </tr>
+            <tr style="background-color: #f8f9fa;">
+                <td><strong>Other Pipeline Tests</strong></td>
+                <td><strong>413</strong></td>
+                <td class="passed"><strong>407</strong></td>
+                <td class="failed"><strong>6</strong></td>
+                <td class="passed"><strong>98.5%</strong></td>
+                <td><strong>474.1s</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    <h2>❌ Failures (15 total)</h2>
+
+    <div
+        style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 15px; margin: 10px 0;">
+        <h3>test_marketing_pipeline_integration (Comprehensive Data Scenarios)</h3>
+        <p><strong>Error:</strong> AssertionError: Expected 1000 records, got 987</p>
+        <pre>tests/e2e/test_comprehensive_data_scenarios.py:145: AssertionError</pre>
+    </div>
+
+    <div
+        style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 15px; margin: 10px 0;">
+        <h3>test_etl_pipeline_execution (Comprehensive Data Scenarios)</h3>
+        <p><strong>Error:</strong> TimeoutError: Pipeline execution exceeded 30 seconds</p>
+        <pre>tests/e2e/test_comprehensive_data_scenarios.py:234: TimeoutError</pre>
+    </div>
+
+    <div
+        style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 15px; margin: 10px 0;">
+        <h3>test_client_scoring_algorithm (Advanced Business Logic)</h3>
+        <p><strong>Error:</strong> AssertionError: Score calculation mismatch</p>
+        <pre>tests/e2e/test_advanced_business_logic.py:67: AssertionError</pre>
+    </div>
+
+    <div
+        style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 15px; margin: 10px 0;">
+        <h3>test_point_calculation (Point Grant Email Pipeline)</h3>
+        <p><strong>Error:</strong> ValueError: Invalid point calculation</p>
+        <pre>tests/e2e/test_e2e_pipeline_point_grant_email.py:78: ValueError</pre>
+    </div>
+
+    <p style="color: #6c757d; font-style: italic;">... and 11 additional failures across various pipeline tests</p>
+</body>
+
+</html>

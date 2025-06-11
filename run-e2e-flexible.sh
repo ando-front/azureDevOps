@@ -47,12 +47,14 @@ E2E テスト実行スクリプト（プロキシ設定選択可能版）
     full               フルビルド + テスト実行（デフォルト）
     cleanup            テスト環境のクリーンアップ
     status             現在のサービス状況確認
+    results            最新のテスト結果表示
 
 例:
     $0 --no-proxy full          # プロキシなしでフル実行
     $0 -p test                  # プロキシありでテストのみ実行
     $0 -i                       # 対話的に設定選択してフル実行
     $0 cleanup                  # 環境クリーンアップ
+    $0 results                  # テスト結果のみ表示
 
 EOF
 }
@@ -260,6 +262,62 @@ cleanup_environment() {
     log_success "環境クリーンアップが完了しました"
 }
 
+# テスト結果の詳細表示
+show_test_results() {
+    if [[ -d "test_results" ]]; then
+        echo ""
+        echo "=== 📊 E2E テスト結果詳細 ==="
+        
+        # JUnit XMLファイルの分析
+        if [[ -f "test_results/e2e_no_proxy_results.xml" ]]; then
+            echo "✅ JUnit XMLレポート: test_results/e2e_no_proxy_results.xml"
+              # XMLからテスト統計を抽出（可能な場合）
+            if command -v grep >/dev/null 2>&1; then
+                local xml_content=$(cat test_results/e2e_no_proxy_results.xml)
+                if [[ $xml_content =~ tests=\"([0-9]+)\" ]]; then
+                    local total_tests="${BASH_REMATCH[1]}"
+                    echo "📝 総テスト数: $total_tests"
+                fi
+                if [[ $xml_content =~ failures=\"([0-9]+)\" ]]; then
+                    local failures="${BASH_REMATCH[1]}"
+                    echo "❌ 失敗: $failures"
+                fi
+                if [[ $xml_content =~ errors=\"([0-9]+)\" ]]; then
+                    local errors="${BASH_REMATCH[1]}"
+                    echo "⚠️ エラー: $errors"
+                fi
+                if [[ $xml_content =~ time=\"([0-9.]+)\" ]]; then
+                    local duration="${BASH_REMATCH[1]}"
+                    echo "⏱️ 実行時間: ${duration}秒"
+                fi
+                
+                # 成功率の計算
+                if [[ -n "$total_tests" && -n "$failures" && -n "$errors" ]]; then
+                    local passed=$((total_tests - failures - errors))
+                    local success_rate=$(echo "scale=1; $passed * 100 / $total_tests" | bc 2>/dev/null || echo "N/A")
+                    echo "✅ 成功: $passed"
+                    echo "📈 成功率: ${success_rate}%"
+                fi
+            fi
+        fi
+        
+        # HTMLレポートの確認
+        if [[ -f "test_results/e2e_no_proxy_report.html" ]]; then
+            echo "📄 HTMLレポート: test_results/e2e_no_proxy_report.html"
+            echo "   ブラウザで確認: file://$(pwd)/test_results/e2e_no_proxy_report.html"
+        fi
+        
+        # その他のテスト結果ファイル
+        echo ""
+        echo "📁 テスト結果ファイル一覧:"
+        ls -la test_results/ 2>/dev/null
+    else
+        echo ""
+        echo "=== テスト結果 ==="
+        echo "❌ test_resultsディレクトリが見つかりません（テスト未実行）"
+    fi
+}
+
 # サービス状況の確認
 check_status() {
     log_info "現在のサービス状況を確認中..."
@@ -276,11 +334,8 @@ check_status() {
     echo "=== Docker ボリューム ==="
     docker volume ls --filter "name=adf"
     
-    if [[ -d "test_results" ]]; then
-        echo ""
-        echo "=== テスト結果 ==="
-        ls -la test_results/ 2>/dev/null || echo "テスト結果なし"
-    fi
+    # 強化されたテスト結果表示
+    show_test_results
 }
 
 # メイン実行関数
@@ -294,29 +349,31 @@ main_execution() {
         "build")
             log_info "Docker イメージをビルド中..."
             docker-compose -f "$compose_file" build --no-cache
-            log_success "ビルドが完了しました"
-            ;;
+            log_success "ビルドが完了しました"            ;;
             
         "test")
             log_info "テストを実行中..."
+            # テスト結果ディレクトリを準備
+            mkdir -p test_results logs
             docker-compose -f "$compose_file" up --abort-on-container-exit
             log_success "テストが完了しました"
+            echo ""
+            show_test_results
             ;;
             
         "full")
             log_info "フルビルド + テスト実行中..."
+            # テスト結果ディレクトリを準備
+            mkdir -p test_results logs
             docker-compose -f "$compose_file" down --remove-orphans --volumes 2>/dev/null || true
             docker-compose -f "$compose_file" build --no-cache
             docker-compose -f "$compose_file" up --abort-on-container-exit
             log_success "フル実行が完了しました"
+            echo ""
+            show_test_results
             ;;
-            
-        "cleanup")
+              "cleanup")
             cleanup_environment
-            ;;
-            
-        "status")
-            check_status
             ;;
             
         *)
@@ -348,8 +405,7 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             show_help
             exit 0
-            ;;
-        build|test|full|cleanup|status)
+            ;;        build|test|full|cleanup|status|results)
             OPERATION="$1"
             shift
             ;;
@@ -370,7 +426,16 @@ echo ""
 select_proxy_mode
 echo ""
 
-if [[ "$OPERATION" != "cleanup" && "$OPERATION" != "status" ]]; then
+# 結果表示やステータス確認は非対話式実行をサポート
+if [[ "$OPERATION" == "results" ]]; then
+    show_test_results
+    exit 0
+elif [[ "$OPERATION" == "status" ]]; then
+    check_status
+    exit 0
+fi
+
+if [[ "$OPERATION" != "cleanup" ]]; then
     log_info "使用する Docker Compose ファイル: $(get_compose_file)"
     log_info "実行する操作: $OPERATION"
     echo ""
