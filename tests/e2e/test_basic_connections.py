@@ -11,7 +11,19 @@ from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class,
 # SQL Server接続の試行（ODBCドライバーがない場合のフォールバック付き）
 def get_database_connection_info():
     """データベース接続情報を取得し、接続可能性をチェック"""
-    db_host = os.environ.get('SQL_SERVER_HOST', 'sqlserver-test')  # CIではsqlserver-testコンテナを使用
+    max_retries = 5
+    for attempt in range(max_retries):
+        try:
+            db_host = os.environ.get('SQL_SERVER_HOST', 'sqlserver-test')
+            print(f"Attempt {attempt + 1}: Resolved sqlserver-test to {db_host}")
+            break
+        except socket.gaierror as e:
+            print(f"Attempt {attempt + 1}: Name resolution failed for sqlserver-test: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(5)
+            else:
+                pytest.fail(f"Failed to resolve sqlserver-test after {max_retries} attempts: {e}")
+
     db_port = os.environ.get('SQL_SERVER_PORT', '1433')
     db_name = os.environ.get('SQL_SERVER_DATABASE', 'master')
     db_user = os.environ.get('SQL_SERVER_USER', 'sa')
@@ -37,7 +49,7 @@ def test_database_connection():
         print("📦 pyodbc ライブラリが利用可能です")
         
         conn_str = (
-            "DRIVER={ODBC Driver 18 for SQL Server};"
+            "DRIVER={ODBC Driver for SQL Server};"
             f"SERVER={db_info['host']},{db_info['port']};"
             f"DATABASE={db_info['database']};"
             f"UID={db_info['user']};"

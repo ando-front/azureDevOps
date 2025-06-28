@@ -170,26 +170,6 @@ start_test_environment() {
     # サービスの健全性チェック
     log_step "サービスの起動を待機中..."
     
-    # SQL Serverの起動を待機
-    local max_attempts=30
-    local attempt=1
-    
-    while [[ $attempt -le $max_attempts ]]; do
-        if docker-compose -f "$COMPOSE_FILE" exec -T sqlserver-test /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q 'SELECT 1' -C >/dev/null 2>&1; then
-            log_success "SQL Serverが準備完了"
-            break
-        fi
-        
-        if [[ $attempt -eq $max_attempts ]]; then
-            log_error "SQL Serverの起動がタイムアウトしました"
-            return 1
-        fi
-        
-        echo -n "."
-        sleep 2
-        ((attempt++))
-    done
-    
     # Azuriteの起動を確認
     if curl -s http://localhost:10000/ >/dev/null 2>&1; then
         log_success "Azuriteが準備完了"
@@ -229,7 +209,7 @@ run_tests() {
             log_info "クイックテスト実行中（約1-2分）..."
             ;;
         standard)
-            test_files="/app/tests/e2e/test_basic_connections.py /app/tests/e2e/test_docker_e2e_integration.py /app/tests/e2e/test_docker_e2e_client_dm.py"
+            test_files="/app/tests/e2e/test_basic_connections.py /app/tests/e2e/test_docker_e2e_integration.py /app/tests/e2e/test_e2e_pipeline_client_dm_new.py"
             log_info "標準テスト実行中（約5-10分）..."
             ;;
         full)
@@ -247,11 +227,11 @@ run_tests() {
     docker-compose -f "$COMPOSE_FILE" exec -T e2e-test-runner mkdir -p /app/test_results 2>/dev/null || true
     
     # テストの実行
-    local test_command="python -m pytest $test_files $pytest_options"
     
-    log_info "実行コマンド: $test_command"
     
-    if docker-compose -f "$COMPOSE_FILE" run --rm e2e-test-runner sh -c "$test_command"; then
+    log_info "実行コマンド: /usr/local/bin/run_e2e_tests_in_container.sh"
+    
+    if docker-compose -f "$(cygpath -u "$COMPOSE_FILE")" run --rm e2e-test-runner bash -c "/usr/local/bin/run_e2e_tests_in_container.sh"; then
         log_success "E2Eテストが正常に完了しました"
         return 0
     else

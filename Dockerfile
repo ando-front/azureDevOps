@@ -27,7 +27,7 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV PYTHONHTTPSVERIFY=0
 
 # Microsoft ODBC ドライバーのインストール（証明書検証をスキップ）
-RUN apt-get update && apt-get install -y --allow-unauthenticated curl gnupg ca-certificates wget apt-transport-https
+RUN apt-get update && apt-get install -y --allow-unauthenticated curl gnupg ca-certificates wget apt-transport-https iputils-ping
 RUN curl -fsSL -k https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
 RUN echo "deb [trusted=yes] https://packages.microsoft.com/debian/11/prod bullseye main" > /etc/apt/sources.list.d/mssql-release.list
 RUN apt-get update
@@ -71,9 +71,12 @@ RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted
 # requirements.txtをコピーして残りの依存関係をインストール
 COPY requirements.txt .
 RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --no-cache-dir -r requirements.txt
+RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --no-cache-dir sqlalchemy pymssql pyodbc pytest-html
 
 # プロジェクトファイルをコピー
 COPY . .
+COPY docker/test-runner/run_e2e_tests_in_container.sh /usr/local/bin/run_e2e_tests_in_container.sh
+RUN chmod +x /usr/local/bin/run_e2e_tests_in_container.sh
 
 # Install pyodbc without ODBC drivers (will be mocked in tests)
 # TODO: 技術的負債 - pyodbcをコメントアウト中

@@ -50,13 +50,14 @@ class SynapseE2EConnection:
         self.connection_string = connection_string or self._get_connection_string()
         self.query_manager = E2ESQLQueryManager()
         logger.info("E2E SynapseE2EConnection initialized with SQL query manager")
+        self.wait_for_connection()
     
     def _get_connection_string(self) -> str:
         """環境変数から接続文字列を構築"""
-        server = os.getenv('E2E_SQL_SERVER', 'localhost,1433')
-        database = os.getenv('E2E_SQL_DATABASE', 'TGMATestDB')
-        username = os.getenv('E2E_SQL_USERNAME', 'sa')
-        password = os.getenv('E2E_SQL_PASSWORD', 'YourStrong!Passw0rd123')
+        server = os.getenv('SQL_SERVER_HOST', 'sqlserver-test')
+        database = os.getenv('SQL_SERVER_DATABASE', 'TGMATestDB')
+        username = os.getenv('SQL_SERVER_USER', 'sa')
+        password = os.getenv('SQL_SERVER_PASSWORD', 'YourStrong!Passw0rd123')
         driver = os.getenv('E2E_SQL_DRIVER', 'ODBC Driver 18 for SQL Server')
         
         connection_string = (
@@ -67,6 +68,7 @@ class SynapseE2EConnection:
             f"PWD={password};"
             "TrustServerCertificate=yes;"
             "Encrypt=no;"
+            "LoginTimeout=30;"
         )
         
         logger.info(f"E2E Connection string: {connection_string.replace(password, '***')}")
@@ -107,7 +109,7 @@ class SynapseE2EConnection:
             logger.error(f"E2E Query execution failed: {e}")
             raise
     
-    def wait_for_connection(self, max_retries: int = 10, delay: int = 5) -> bool:
+    def wait_for_connection(self, max_retries: int = 60, delay: int = 5) -> bool:
         """データベース接続が利用可能になるまで待機"""
         logger.info(f"E2E Waiting for database connection (max {max_retries} retries)...")
         
