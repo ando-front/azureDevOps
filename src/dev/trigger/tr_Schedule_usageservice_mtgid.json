@@ -1,0 +1,30 @@
+{
+  "name": "tr_Schedule_usageservice_mtgid",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Week",
+        "interval": 1,
+        "startTime": "2023-11-29T02:54:00",
+        "timeZone": "Tokyo Standard Time",
+        "schedule": {
+          "minutes": [
+            30
+          ],
+          "hours": [
+            22
+          ],
+          "weekDays": [
+            "Sunday"
+          ]
+        }
+      }
+    }
+  },
+  "dependsOn": []
+}

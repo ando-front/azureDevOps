@@ -1,6 +1,5 @@
 {
   "name": "omni-sharing01-d-jpe",
-  "type": "Microsoft.DataFactory/factories/integrationRuntimes",
   "properties": {
     "type": "Managed",
     "typeProperties": {
@@ -24,8 +23,5 @@
       "type": "ManagedVirtualNetworkReference",
       "referenceName": "default"
     }
-  },
-  "dependsOn": [
-    "[concat(variables('factoryId'), '/managedVirtualNetworks/default')]"
-  ]
+  }
 }

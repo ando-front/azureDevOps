@@ -1,0 +1,37 @@
+{
+  "name": "ds_Json_DAMBlob_test",
+  "type": "Microsoft.DataFactory/factories/datasets",
+  "properties": {
+    "description": "検証用",
+    "linkedServiceName": {
+      "referenceName": "li_blob_damhdinsight_container",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "directory": {
+        "type": "string"
+      },
+      "filename": {
+        "type": "string"
+      }
+    },
+    "annotations": [],
+    "type": "Json",
+    "typeProperties": {
+      "location": {
+        "type": "AzureBlobStorageLocation",
+        "fileName": {
+          "value": "@dataset().filename",
+          "type": "Expression"
+        },
+        "folderPath": "datalake/dev/OMNI/test",
+        "container": "damhdinsight-container"
+      },
+      "nullValue": "null"
+    },
+    "schema": {}
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/linkedServices/li_blob_damhdinsight_container')]"
+  ]
+}

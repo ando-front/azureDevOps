@@ -1,0 +1,19 @@
+{
+  "name": "tr_Schedule_karteS3",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Minute",
+        "interval": 15,
+        "startTime": "2023-11-08T02:55:00",
+        "timeZone": "Tokyo Standard Time"
+      }
+    }
+  },
+  "dependsOn": []
+}

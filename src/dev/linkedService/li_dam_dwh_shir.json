@@ -1,0 +1,15 @@
+{
+  "name": "li_dam_dwh_shir",
+  "properties": {
+    "description": "DAM-DB(dwh)接続用リンクサービス。\nSHIRを経由して接続する。",
+    "annotations": [],
+    "type": "AzureSqlDW",
+    "typeProperties": {
+      "connectionString": "Server=tcp:damserver.database.windows.net,1433;Database=DAM_DWH;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Default;"
+    },
+    "connectVia": {
+      "referenceName": "OmniLinkedSelfHostedIntegrationRuntime",
+      "type": "IntegrationRuntimeReference"
+    }
+  }
+}

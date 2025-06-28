@@ -1,0 +1,99 @@
+{
+    "name": "df_TGCRM_DeltaDetection",
+    "properties": {
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "dataset": {
+                        "referenceName": "DS_TGCRM_Table",
+                        "type": "DatasetReference"
+                    },
+                    "name": "tgcrmSource"
+                },
+                {
+                    "dataset": {
+                        "referenceName": "DS_Synapse_Table",
+                        "type": "DatasetReference"
+                    },
+                    "name": "synapseSource"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "joinDelta",
+                    "type": "Join",
+                    "inputs": [
+                        "tgcrmSource",
+                        "synapseSource"
+                    ],
+                    "conditions": [
+                        {
+                            "left": "tgcrmSource.id",
+                            "right": "synapseSource.id",
+                            "condition": "Equals"
+                        }
+                    ],
+                    "joinType": "LeftOuter",
+                    "outputStream": "joined"
+                },
+                {
+                    "name": "deriveFlags",
+                    "type": "DerivedColumn",
+                    "inputs": [
+                        "joined"
+                    ],
+                    "derivedColumns": [
+                        {
+                            "name": "IsNew",
+                            "expression": "isNull(synapseSource.id)"
+                        },
+                        {
+                            "name": "IsUpdated",
+                            "expression": "not(isNull(synapseSource.id)) && tgcrmSource.hash <> synapseSource.hash"
+                        }
+                    ],
+                    "outputStream": "flagged"
+                },
+                {
+                    "name": "alterRowUpsert",
+                    "type": "AlterRow",
+                    "inputs": [
+                        "flagged"
+                    ],
+                    "rules": [
+                        {
+                            "condition": "IsNew == true",
+                            "action": "insert"
+                        },
+                        {
+                            "condition": "IsUpdated == true",
+                            "action": "update"
+                        }
+                    ]
+                }
+            ],
+            "parameters": {
+                "LastModifiedDate": {
+                    "type": "String"
+                }
+            },
+            "sinks": [
+                {
+                    "dataset": {
+                        "referenceName": "DS_Synapse_Table_Upsert",
+                        "type": "DatasetReference"
+                    },
+                    "name": "sinkUpsert",
+                    "allowSchemaDrift": false,
+                    "upsertSettings": {
+                        "allowUpsert": true,
+                        "keyColumns": [
+                            "id"
+                        ]
+                    }
+                }
+            ]
+        }
+    }
+}

@@ -7,7 +7,28 @@ SQL Server connection helper for E2E testing with actual database operations
 import os
 import time
 import logging
-import pyodbc
+# pyodbcの条件付きインポート（技術的負債対応）
+try:
+    import pyodbc
+    PYODBC_AVAILABLE = True
+except ImportError:
+    # pyodbcが利用できない場合のモッククラス
+    class MockPyodbc:
+        @staticmethod
+        def connect(*args, **kwargs):
+            raise ImportError('pyodbc is not available - DB tests will be skipped')
+        
+        class Error(Exception):
+            pass
+            
+        class DatabaseError(Error):
+            pass
+            
+        class InterfaceError(Error):
+            pass
+    
+    pyodbc = MockPyodbc()
+    PYODBC_AVAILABLE = False
 from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)

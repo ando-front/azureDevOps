@@ -1,0 +1,95 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "String",
+            "defaultValue": "<Your_DataFactory_Name>",
+            "metadata": { "description": "データファクトリ名" }
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('factoryName'), '/pi_Copy_TGCRM_To_Synapse')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "dependsOn": [
+                "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+            ],
+            "properties": {
+                "description": "Pipeline from TGCRM to Synapse",
+                "parameters": {
+                    "LastModifiedDate": { "type": "String" }
+                },
+                "activities": [
+                    {
+                        "name": "at_Copy_TGCRM_To_Synapse",
+                        "type": "Copy",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "01:00:00",
+                            "retry": 1,
+                            "retryIntervalInSeconds": 30
+                        },
+                        "typeProperties": {
+                            "source": {
+                                "type": "SqlSource",
+                                "sqlReaderQuery": "SELECT * FROM dbo.YourTable"
+                            },
+                            "sink": {
+                                "type": "SqlDWTableSink",
+                                "writeBehavior": "Insert"
+                            }
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "DS_TGCRM_Table",
+                                "type": "DatasetReference"
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "DS_Synapse_Table",
+                                "type": "DatasetReference"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "df_TGCRM_DeltaDetection",
+                        "type": "DataFlow",
+                        "dependsOn": [
+                            {
+                                "activity": "at_Copy_TGCRM_To_Synapse",
+                                "dependencyConditions": [ "Succeeded" ]
+                            }
+                        ],
+                        "typeProperties": {
+                            "dataflow": {
+                                "referenceName": "df_TGCRM_DeltaDetection",
+                                "type": "DataFlowReference"
+                            },
+                            "parameters": {
+                                "LastModifiedDate": "@pipeline().parameters.LastModifiedDate"
+                            }
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "DS_Synapse_Table",
+                                "type": "DatasetReference"
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "DS_Synapse_Table_Upsert",
+                                "type": "DatasetReference"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

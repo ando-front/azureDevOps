@@ -1,0 +1,157 @@
+{
+  "name": "pi_Send_OpeningPaymentGuide",
+  "type": "Microsoft.DataFactory/factories/pipelines",
+  "properties": {
+    "description": "開栓後の支払方法のご案内",
+    "activities": [
+      {
+        "name": "at_CreateCSV_OpeningPaymentGuide",
+        "type": "Copy",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 10,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "SqlDWSource",
+            "sqlReaderQuery": "--------------------------------------------------------------------------------------------------------------\n-- MA向けリスト連携 開栓後の支払方法のご案内（開栓者全量連携） 出力 at_CreateCSV_OpeningPaymentGuide\n--------------------------------------------------------------------------------------------------------------\n\nDECLARE @today_jst datetime;\nSET @today_jst=CONVERT(DATETIME, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time');\n\nDECLARE @from20days varchar(8);\nSET @from20days=format(dateadd(day,-20, @today_jst),'yyyyMMdd'); -- 実行日JSTから20日前\n\nDECLARE @to5days varchar(8);\nSET @to5days=format(dateadd(day,-5,@today_jst),'yyyyMMdd');      -- 実行日JSTから5日前\n\n\n-- ①作業テーブル作成\nTRUNCATE TABLE [omni].[omni_ods_ma_trn_opened1x_temp];\n\nINSERT INTO [omni].[omni_ods_ma_trn_opened1x_temp]\nSELECT\n     ANKEN_NO                -- 案件番号\n    ,GASMETER_SETTI_BASYO_NO -- ガスメータ設置場所番号\n    ,SAGYO_YMD               -- 作業年月日\nFROM [omni].[omni_ods_livalit_trn_liv5_opening_basics]\nWHERE TENKEN_JUTAKU_KBN='1'                  -- TG小売り\n      AND KAISEN_JIYU_CD in ('11','12')      -- 11:代替,12新設\n      AND SAGYO_YMD>=@from20days\n      AND SAGYO_YMD<@to5days\n      AND ERROR_FOLLOW_JOTAI_CD in('0','2')  -- 0：正常,2:フォロー済\n;\n\n\n-- ②作業テーブル作成\nTRUNCATE TABLE [omni].[omni_ods_ma_trn_opening_target_temp];\n\nINSERT INTO [omni].[omni_ods_ma_trn_opening_target_temp]\nSELECT\n     temp1.*\n    ,CONVERT(VARCHAR(11), A.SYO_KYO_TRNO)  as SYO_KYO_TRNO      -- 使用者契約お客さま登録番号\n    ,CONVERT(VARCHAR(11), A.SHSY_KYO_TRNO) as SHSY_KYO_TRNO     -- 支払者契約お客さま登録番号\n    ,NULL as SIH_HUHU_SHBT    -- A.SIH_HUHU_SHBT as SIH_HUHU_SHBT    -- 支払方法種別　...出力から無くし固定のNULLとする\nFROM [omni].[omni_ods_ma_trn_opened1x_temp] temp1    -- ①作業テーブル\nINNER JOIN [omni].[omni_odm_gascstmr_trn_gaskiy] A   -- ガス契約（契約中）日次お客さま情報\n      ON temp1.GASMETER_SETTI_BASYO_NO=CONVERT(VARCHAR(11),A.MTST_NO)\n--WHERE A.SHIK_SIH_KIY_JTKB<>'00'   -- 無効ではない\n--      AND A.SIK_SVC_SHBT not in ('11','14','15','21','13')   -- (11,14,15(一括),21(分割),13(郵送一括:オーナー))ではない　...条件削除\n;\n\n\n-- ③結果出力 => 開栓後の支払方法のご案内\nSET @today_jst=CONVERT(DATETIME, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time');  -- 最新の日時\n\nSELECT\n     Bx\n    ,INDEX_ID\n    ,ANKEN_NO                   -- 案件番号\n    ,GASMETER_SETTI_BASYO_NO    -- ガスメータ設置場所番号\n    ,SAGYO_YMD                  -- 作業年月日\n    ,SYO_KYO_TRNO               -- 使用者契約お客さま登録番号\n    ,SHSY_KYO_TRNO              -- 支払者契約お客さま登録番号\n    --,SIH_HUHU_SHBT              -- 支払方法種別　...出力から無くす\n    ,format(@today_jst, 'yyyy/MM/dd HH:mm:ss') as OUTPUT_DATETIME  -- IF出力日時\nFROM(\n    SELECT\n         A.Bx\n        ,A.INDEX_ID\n        ,temp2.*\n        ,ROW_NUMBER() OVER(PARTITION BY Bx,ANKEN_NO,GASMETER_SETTI_BASYO_NO,SAGYO_YMD ORDER BY OUTPUT_DATE desc) as rown -- INDEX_IDを除くカラムごとのOUTPUT_DATEの降順\n    FROM [omni].[omni_ods_cloak_trn_usageservice] A               -- 利用サービス\n    INNER JOIN [omni].[omni_ods_ma_trn_opening_target_temp] temp2 -- ②作業テーブル\n          ON A.USER_KEY=temp2.SYO_KYO_TRNO      -- 使用者契約お客さま登録番号\n            AND A.USER_KEY_TYPE='003'   -- お客さま番号3x\n            AND A.SERVICE_TYPE ='001'   -- ガス\n            AND A.TRANSFER_TYPE='02'    -- 提供中\n)tmp\nWHERE rown=1\n;\n",
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "sink": {
+            "type": "DelimitedTextSink",
+            "storeSettings": {
+              "type": "AzureBlobStorageWriteSettings"
+            },
+            "formatSettings": {
+              "type": "DelimitedTextWriteSettings",
+              "quoteAllText": true,
+              "fileExtension": ".csv"
+            }
+          },
+          "enableStaging": false,
+          "translator": {
+            "type": "TabularTranslator",
+            "typeConversion": true,
+            "typeConversionSettings": {
+              "allowDataTruncation": true,
+              "treatBooleanAsNumber": false
+            }
+          }
+        },
+        "inputs": [
+          {
+            "referenceName": "ds_DamDwhTable_shir",
+            "type": "DatasetReference",
+            "parameters": {
+              "table": "--"
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "ds_CSV_BlobGz",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "datalake/OMNI/MA/OpeningPaymentGuide",
+              "columnDelimiter": ",",
+              "quoteChar": "\"",
+              "firstRowAsHeader": true,
+              "filename": {
+                "value": "@concat('OpeningPaymentGuide_', convertFromUtc(utcnow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "at_SendSftp_OpeningPaymentGuide",
+        "type": "Copy",
+        "dependsOn": [
+          {
+            "activity": "at_CreateCSV_OpeningPaymentGuide",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 10,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "BinarySource",
+            "storeSettings": {
+              "type": "AzureBlobStorageReadSettings",
+              "recursive": false,
+              "deleteFilesAfterCompletion": false
+            },
+            "formatSettings": {
+              "type": "BinaryReadSettings"
+            }
+          },
+          "sink": {
+            "type": "BinarySink",
+            "storeSettings": {
+              "type": "SftpWriteSettings",
+              "operationTimeout": "01:00:00",
+              "useTempFileRename": false
+            }
+          },
+          "enableStaging": false
+        },
+        "inputs": [
+          {
+            "referenceName": "ds_BlobGz",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "datalake/OMNI/MA/OpeningPaymentGuide",
+              "filename": {
+                "value": "@concat('OpeningPaymentGuide_', convertFromUtc(utcnow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "ds_Gz_Sftp",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "Import/DAM/OpeningPaymentGuide",
+              "filename": {
+                "value": "@concat('OpeningPaymentGuide_', convertFromUtc(utcnow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "policy": {
+      "elapsedTimeMetric": {}
+    },
+    "folder": {
+      "name": "SMC"
+    },
+    "annotations": [],
+    "lastPublishTime": "2024-11-25T09:05:51Z"
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/datasets/ds_DamDwhTable_shir')]",
+    "[concat(variables('factoryId'), '/datasets/ds_CSV_BlobGz')]",
+    "[concat(variables('factoryId'), '/datasets/ds_BlobGz')]",
+    "[concat(variables('factoryId'), '/datasets/ds_Gz_Sftp')]"
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "name": "tr_alert_test",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "description": "アラートテスト用",
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [
+      {
+        "pipelineReference": {
+          "referenceName": "pi_alert_test2",
+          "type": "PipelineReference"
+        },
+        "parameters": {}
+      }
+    ],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "startTime": "2023-11-24T05:25:00",
+        "timeZone": "Tokyo Standard Time",
+        "schedule": {
+          "minutes": [
+            30
+          ],
+          "hours": [
+            14
+          ]
+        }
+      }
+    }
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/pipelines/pi_alert_test2')]"
+  ]
+}

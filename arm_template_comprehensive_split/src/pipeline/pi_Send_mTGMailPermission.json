@@ -1,0 +1,314 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "factoryName": {
+      "type": "string",
+      "metadata": "データ ファクトリ名",
+      "defaultValue": "omni-df-dev"
+    },
+    "li_dam_dwh_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_secretAccessKey": {
+      "type": "secureString",
+      "metadata": "'li_Karte_AmazonS3' の 'secretAccessKey' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomni_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomni_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sqlmi_dwh2_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_sqlmi_dwh2' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sftp_password": {
+      "type": "secureString",
+      "metadata": "'li_sftp' の 'password' のセキュリティで保護された文字列"
+    },
+    "AzureSqlDatabase1_connectionString": {
+      "type": "secureString",
+      "metadata": "'AzureSqlDatabase1' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_ftp_test_password": {
+      "type": "secureString",
+      "metadata": "'li_ftp_test' の 'password' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_dam_dwh_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_damhdinsight_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_damhdinsight_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_properties_typeProperties_accessKeyId": {
+      "type": "string",
+      "defaultValue": "AKIASLGERJSDMDR3YKGF"
+    },
+    "li_sftp_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_sftp_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_ftp_test_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_ftp_test_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_dam_kv_omni_properties_typeProperties_baseUrl": {
+      "type": "string",
+      "defaultValue": "https://tgomnidevkey03.vault.azure.net/"
+    },
+    "li_blob_damhdinsight_container_akv_properties_typeProperties_sasUri_secretName": {
+      "type": "string",
+      "defaultValue": "0001damdevrgsa-damhdinsight-container"
+    },
+    "li_blob_mytokyogas_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_mytokyogas_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.Storage/storageAccounts/0001tgomnidevrgsa"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "0001tgomnidevrgsa.blob.core.windows.net"
+      ]
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Sql/servers/damd-dwh"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "sqlServer"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "damd-dwh.database.windows.net"
+      ]
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Storage/storageAccounts/0001damdevrgsa"
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "AzureSqlMI-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/43d95da1-ff6f-49ae-868b-a427c8bb161e/resourceGroups/dam2-rg-dev/providers/Microsoft.Sql/managedInstances/dam2-sqlmi-dev"
+    },
+    "AzureSqlMI-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "managedInstance"
+    },
+    "AzureSqlMI-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "dam2-sqlmi-dev.6b9b3938f4f4.database.windows.net"
+      ]
+    },
+    "tgomnidevkey03-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.KeyVault/vaults/tgomnidevkey03"
+    },
+    "tgomnidevkey03-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "vault"
+    },
+    "tgomnidevkey03-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "tgomnidevkey03.vault.azure.net"
+      ]
+    }
+  },
+  "variables": {
+    "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('factoryName'), '/pi_Send_mTGMailPermission')]",
+      "type": "Microsoft.DataFactory/factories/pipelines",
+      "apiVersion": "2018-06-01",
+      "properties": {
+        "description": "MA向けリスト連携（メール許諾）",
+        "activities": [
+          {
+            "name": "at_CreateCSV_mTGMailPermission",
+            "type": "Copy",
+            "dependsOn": [],
+            "policy": {
+              "timeout": "7.00:00:00",
+              "retry": 10,
+              "retryIntervalInSeconds": 60,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "source": {
+                "type": "SqlDWSource",
+                "sqlReaderQuery": "----------------------------------------------------------------------\n--  MA向けリスト連携 メール許諾 出力 at_CreateCSV_MailPermission\n----------------------------------------------------------------------\n\n-- 結果出力 => メール許諾\n\nDECLARE @today_jst varchar(20);\nSET @today_jst=format(CONVERT(DATETIME, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time'), 'yyyy/MM/dd HH:mm:ss');\n\nSELECT\n     cpinfo.ID_NO                     -- 会員ID\n    ,cpinfo.MAIL_ADR                  -- メールアドレス\n    ,cpinfo.SUBMAIL_ADR               -- サブメールアドレス\n    ,cpinfo.TEL_NO                    -- 電話番号\n    ,cpinfo.SUBTEL_NO                 -- 日中のご連絡先\n    ,mailsvc.SVC_CD                   -- サービスコード\n    ,mailsvc.START_YMD                -- 適用開始年月日\n    ,REPLACE(mailsvc.END_YMD, '99999999', '99991231') as END_YMD      -- 適用終了年月日\n    ,mailsvc.LOCK_FLG_CD              -- ロックフラグコード\n    ,mailsvc.REC_REG_YMD              -- レコード登録年月日\n    ,mailsvc.REC_REG_JKK              -- レコード登録時刻\n    ,mailsvc.REC_UPD_YMD              -- レコード更新年月日\n    ,mailsvc.REC_UPD_JKK              -- レコード更新時刻\n    ,@today_jst as OUTPUT_DATETIME    -- 出力日付\n    ,cpinfo.TAIKAI_FLAG               -- 退会フラグ　…追加\n    ,cpinfo.WEB_NO                    -- 8x（Web） …追加\n    ,cpinfo.TNP_CD                    -- 店舗コード …追加\n    ,cpinfo.THK_NWKSY_CD              -- THANKSネットワーク箇所コード …追加\n    ,cpinfo.ID_KBN                    -- 会員区分 …追加\n    ,cpinfo.REG_CD                    -- 会員登録経路 …追加\n    ,cpinfo.REG_COMP_FLG              -- 会員登録完了フラグ …追加\n    ,cpinfo.FIRST_MIGRATION_FLG       -- TGCRM初期移行フラグ …追加\n    ,cpinfo.FREE_ITEM01               -- 予備1 …追加\n    ,cpinfo.FREE_ITEM02               -- 予備2 …追加\n    ,cpinfo.FREE_ITEM03               -- 予備3 …追加\n    ,cpinfo.FREE_ITEM04               -- 予備4 …追加\n    ,cpinfo.FREE_ITEM05               -- 予備5 …追加\n    ,cpinfo.FREE_ITEM06               -- 予備6 …追加\n    ,cpinfo.FREE_ITEM07               -- 予備7 …追加\n    ,cpinfo.FREE_ITEM08               -- 予備8 …追加\n    ,cpinfo.FREE_ITEM09               -- 予備9 …追加\n    ,cpinfo.FREE_ITEM10               -- 予備10 …追加\nFROM [omni].[omni_ods_mytginfo_trn_cpinfo] cpinfo                     -- 会員基本情報\nLEFT OUTER JOIN [omni].[omni_ods_mytginfo_trn_mailsvc] mailsvc        -- メールサービス\n     ON cpinfo.ID_NO = mailsvc.ID_NO;                        -- 会員基本情報.会員ID=メールサービス.会員ID\n;\n",
+                "queryTimeout": "02:00:00",
+                "partitionOption": "None"
+              },
+              "sink": {
+                "type": "DelimitedTextSink",
+                "storeSettings": {
+                  "type": "AzureBlobStorageWriteSettings"
+                },
+                "formatSettings": {
+                  "type": "DelimitedTextWriteSettings",
+                  "quoteAllText": true,
+                  "fileExtension": ".csv"
+                }
+              },
+              "enableStaging": false,
+              "translator": {
+                "type": "TabularTranslator",
+                "typeConversion": true,
+                "typeConversionSettings": {
+                  "allowDataTruncation": true,
+                  "treatBooleanAsNumber": false
+                }
+              }
+            },
+            "inputs": [
+              {
+                "referenceName": "ds_DamDwhTable_shir",
+                "type": "DatasetReference",
+                "parameters": {
+                  "table": "--"
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "referenceName": "ds_CSV_BlobGz",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "datalake/OMNI/MA/mTGMailPermission",
+                  "columnDelimiter": ",",
+                  "quoteChar": "\"",
+                  "firstRowAsHeader": true,
+                  "filename": {
+                    "value": "@concat('mTGMailPermission_', convertFromUtc(utcnow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "at_SendSftp_mTGMailPermission",
+            "type": "Copy",
+            "dependsOn": [
+              {
+                "activity": "at_CreateCSV_mTGMailPermission",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "7.00:00:00",
+              "retry": 10,
+              "retryIntervalInSeconds": 60,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "source": {
+                "type": "BinarySource",
+                "storeSettings": {
+                  "type": "AzureBlobStorageReadSettings",
+                  "recursive": false,
+                  "deleteFilesAfterCompletion": false
+                },
+                "formatSettings": {
+                  "type": "BinaryReadSettings"
+                }
+              },
+              "sink": {
+                "type": "BinarySink",
+                "storeSettings": {
+                  "type": "SftpWriteSettings",
+                  "operationTimeout": "01:00:00",
+                  "useTempFileRename": false
+                }
+              },
+              "enableStaging": false
+            },
+            "inputs": [
+              {
+                "referenceName": "ds_BlobGz",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "datalake/OMNI/MA/mTGMailPermission",
+                  "filename": {
+                    "value": "@concat('mTGMailPermission_', convertFromUtc(utcnow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "referenceName": "ds_Gz_Sftp",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "Import/DAM/mTGMailPermission",
+                  "filename": {
+                    "value": "@concat('mTGMailPermission_', convertFromUtc(utcnow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "policy": {
+          "elapsedTimeMetric": {}
+        },
+        "folder": {
+          "name": "SMC"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-11-05T06:55:36Z"
+      },
+      "dependsOn": [
+        "[concat(variables('factoryId'), '/datasets/ds_DamDwhTable_shir')]",
+        "[concat(variables('factoryId'), '/datasets/ds_CSV_BlobGz')]",
+        "[concat(variables('factoryId'), '/datasets/ds_BlobGz')]",
+        "[concat(variables('factoryId'), '/datasets/ds_Gz_Sftp')]"
+      ]
+    }
+  ]
+}

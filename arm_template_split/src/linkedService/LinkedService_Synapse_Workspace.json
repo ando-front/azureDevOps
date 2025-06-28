@@ -1,0 +1,9 @@
+{
+    "name": "LS_Synapse_Workspace",
+    "properties": {
+        "type": "AzureSynapse",
+        "typeProperties": {
+            "endpoint": "@{linkedService().endpoint}"
+        }
+    }
+}

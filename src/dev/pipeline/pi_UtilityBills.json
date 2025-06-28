@@ -1,0 +1,397 @@
+{
+  "name": "pi_UtilityBills",
+  "type": "Microsoft.DataFactory/factories/pipelines",
+  "properties": {
+    "description": "mytokyogas-Blobから「料金確定のお知らせ」IFに必要なデータを抽出、gzipファイルでBLOB出力し、SFMCにSFTP連携する。",
+    "activities": [
+      {
+        "name": "at_GetFiles_UtilityBills",
+        "description": "Blobのファイル一覧取得",
+        "type": "GetMetadata",
+        "dependsOn": [
+          {
+            "activity": "SetVariable Filename",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "dataset": {
+            "referenceName": "ds_BlobFiles_mTG",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": {
+                "value": "@concat('forRcvry/',formatDateTime(variables('JST'),'yyyyMMdd'),'/DCPDA014')",
+                "type": "Expression"
+              },
+              "filename": {
+                "value": "@concat(formatDateTime(variables('JST'),'yyyyMMdd'),'_DAM_PriceConfirm.tsv')",
+                "type": "Expression"
+              }
+            }
+          },
+          "fieldList": [
+            "exists"
+          ],
+          "storeSettings": {
+            "type": "AzureBlobStorageReadSettings",
+            "recursive": true,
+            "enablePartitionDiscovery": false
+          },
+          "formatSettings": {
+            "type": "JsonReadSettings"
+          }
+        }
+      },
+      {
+        "name": "IfCondition_UtilityBills",
+        "description": "該当ファイル有無により、出力を替える",
+        "type": "IfCondition",
+        "dependsOn": [
+          {
+            "activity": "at_GetFiles_UtilityBills",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@activity('at_GetFiles_UtilityBills').output.exists",
+            "type": "Expression"
+          },
+          "ifFalseActivities": [
+            {
+              "name": "at_CreateCSV_UtilityBills_Header",
+              "description": "連携ファイルが存在しない場合のヘッダのみ出力",
+              "type": "Copy",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 10,
+                "retryIntervalInSeconds": 60,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "source": {
+                  "type": "DelimitedTextSource",
+                  "storeSettings": {
+                    "type": "AzureBlobStorageReadSettings",
+                    "recursive": false,
+                    "enablePartitionDiscovery": false
+                  },
+                  "formatSettings": {
+                    "type": "DelimitedTextReadSettings"
+                  }
+                },
+                "sink": {
+                  "type": "DelimitedTextSink",
+                  "storeSettings": {
+                    "type": "AzureBlobStorageWriteSettings"
+                  },
+                  "formatSettings": {
+                    "type": "DelimitedTextWriteSettings",
+                    "quoteAllText": true,
+                    "fileExtension": ".csv"
+                  }
+                },
+                "enableStaging": false,
+                "translator": {
+                  "type": "TabularTranslator",
+                  "typeConversion": true,
+                  "typeConversionSettings": {
+                    "allowDataTruncation": true,
+                    "treatBooleanAsNumber": false
+                  }
+                }
+              },
+              "inputs": [
+                {
+                  "referenceName": "ds_CSV_Blob",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "directory": "datalake/dev/OMNI/temp/",
+                    "columnDelimiter": ",",
+                    "quoteChar": "\"",
+                    "firstRowAsHeader": true,
+                    "filename": "header_DAM_UtilityBills.csv"
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "ds_CSV_BlobGz",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "directory": "datalake/OMNI/MA/UtilityBills",
+                    "columnDelimiter": ",",
+                    "quoteChar": "\"",
+                    "firstRowAsHeader": true,
+                    "filename": {
+                      "value": "@variables('FileName')",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "ifTrueActivities": [
+            {
+              "name": "at_CreateCSV_UtilityBills",
+              "description": "連携ファイルから必要なデータのみを抽出しcsvファイルを作成、BLOBに配置する",
+              "type": "Copy",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 10,
+                "retryIntervalInSeconds": 60,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "source": {
+                  "type": "SqlDWSource",
+                  "sqlReaderQuery": {
+                    "value": "----------------------------------------------------------------------------\n-- MA向けリスト連携 料金確定のお知らせ 出力 at_CreateCSV_UtilityBills\n----------------------------------------------------------------------------\n\n-- 作成する外部テーブル(料金確定のお知らせ_ext_temp)が存在する場合は削除する\nDECLARE @isAllEventsTemp int;\nSELECT @isAllEventsTemp=count(*) FROM sys.objects WHERE schema_id = schema_id('omni') AND name='omni_ods_mytginfo_trn_price_confirm_ext_temp';\nIF @isAllEventsTemp = 1\n    DROP EXTERNAL TABLE [omni].[omni_ods_mytginfo_trn_price_confirm_ext_temp];\n\n-- ADFによりTSVをロードする外部テーブルを作成する\n\n-- 外部テーブル作成 omni_ods_mytginfo_trn_price_confirm_ext_temp(料金確定のお知らせ_ext_temp)\nCREATE EXTERNAL TABLE [omni].[omni_ods_mytginfo_trn_price_confirm_ext_temp]\n(\n     ID_NO\tNVARCHAR(20)\tNULL\t -- 会員ID\n    ,PICTURE_MM\tNVARCHAR(2)\tNULL\t -- 画像月分\n    ,MAIL_ADR\tNVARCHAR(50)\tNULL\t -- メールアドレス\n)\nWITH (\n    DATA_SOURCE=[mytokyogas],\n    LOCATION='@{concat('/forRcvry/',convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'),'/DCPDA014/',convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'),'_DAM_PriceConfirm.tsv')}',\n    FILE_FORMAT=[TSV2],\n    REJECT_TYPE=VALUE,\n    REJECT_VALUE=0\n)\n;\n\n-- 会員IDと画像月分の組み合わせで重複削除する。重複削除するレコードはメールアドレスが最大のもの以外に行う\nSELECT ID_NO, PICTURE_MM, MAIL_ADR, '@{convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd')}'as CSV_YMD, FORMAT((GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time'),'yyyy/MM/dd HH:mm:ss') as OUTPUT_DATETIME\nFROM (\n    SELECT *\n    , DupRank = ROW_NUMBER() OVER (\n                PARTITION BY ID_NO\n                , PICTURE_MM\n                ORDER BY MAIL_ADR DESC\n                )\n    FROM omni.omni_ods_mytginfo_trn_price_confirm_ext_temp\n) as table_utilityBills\nWHERE DupRank = 1\n\n\n-- 作成した外部テーブルが存在する場合は削除行う\nSELECT @isAllEventsTemp=count(*) FROM sys.objects WHERE schema_id = schema_id('omni') AND name='omni_ods_mytginfo_trn_price_confirm_ext_temp';\nIF @isAllEventsTemp = 1\n    DROP EXTERNAL TABLE [omni].[omni_ods_mytginfo_trn_price_confirm_ext_temp];\n\n",
+                    "type": "Expression"
+                  },
+                  "queryTimeout": "02:00:00",
+                  "partitionOption": "None"
+                },
+                "sink": {
+                  "type": "DelimitedTextSink",
+                  "storeSettings": {
+                    "type": "AzureBlobStorageWriteSettings"
+                  },
+                  "formatSettings": {
+                    "type": "DelimitedTextWriteSettings",
+                    "quoteAllText": true,
+                    "fileExtension": ".csv"
+                  }
+                },
+                "enableStaging": false,
+                "translator": {
+                  "type": "TabularTranslator",
+                  "typeConversion": true,
+                  "typeConversionSettings": {
+                    "allowDataTruncation": true,
+                    "treatBooleanAsNumber": false
+                  }
+                }
+              },
+              "inputs": [
+                {
+                  "referenceName": "ds_DamDwhTable_shir",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "table": "--"
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "ds_CSV_BlobGz",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "directory": "datalake/OMNI/MA/UtilityBills",
+                    "columnDelimiter": ",",
+                    "quoteChar": "\"",
+                    "firstRowAsHeader": true,
+                    "filename": {
+                      "value": "@variables('FileName')",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "at_SendSftp_UtilityBills",
+        "description": "SMCへ送信",
+        "type": "Copy",
+        "dependsOn": [
+          {
+            "activity": "IfCondition_UtilityBills",
+            "dependencyConditions": [
+              "Skipped"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 10,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "BinarySource",
+            "storeSettings": {
+              "type": "AzureBlobStorageReadSettings",
+              "recursive": false,
+              "deleteFilesAfterCompletion": false
+            },
+            "formatSettings": {
+              "type": "BinaryReadSettings"
+            }
+          },
+          "sink": {
+            "type": "BinarySink",
+            "storeSettings": {
+              "type": "SftpWriteSettings",
+              "operationTimeout": "01:00:00",
+              "useTempFileRename": false
+            }
+          },
+          "enableStaging": false
+        },
+        "inputs": [
+          {
+            "referenceName": "ds_BlobGz",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "datalake/OMNI/MA/UtilityBills",
+              "filename": {
+                "value": "@variables('FileName')",
+                "type": "Expression"
+              }
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "ds_Gz_Sftp",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "Import/DAM/2A01b_BillingNotice",
+              "filename": {
+                "value": "@variables('FileName')",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "SetVariable JST",
+        "description": "トリガーの実行日時をJSTに変換する",
+        "type": "SetVariable",
+        "dependsOn": [],
+        "policy": {
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "variableName": "JST",
+          "value": {
+            "value": "@convertFromUtc(pipeline().parameters.executionStartDateTimeUTC,'Tokyo Standard Time')",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "SetVariable AMPM",
+        "description": "木曜日はPM、その他の曜日はAMを設定\nする",
+        "type": "SetVariable",
+        "dependsOn": [
+          {
+            "activity": "SetVariable JST",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "variableName": "AMPM",
+          "value": {
+            "value": "@concat(substring('PPPPAPP',dayOfWeek(variables('JST')),1), 'M')",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "SetVariable Filename",
+        "description": "ファイル名を設定する",
+        "type": "SetVariable",
+        "dependsOn": [
+          {
+            "activity": "SetVariable AMPM",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "variableName": "FileName",
+          "value": {
+            "value": "@concat('UtilityBills_', variables('AMPM') , formatDateTime(variables('JST'),'yyyyMMdd') , '.csv.gz')",
+            "type": "Expression"
+          }
+        }
+      }
+    ],
+    "policy": {
+      "elapsedTimeMetric": {}
+    },
+    "parameters": {
+      "executionStartDateTimeUTC": {
+        "type": "string",
+        "defaultValue": "@trigger().startTime"
+      }
+    },
+    "variables": {
+      "JST": {
+        "type": "String"
+      },
+      "AMPM": {
+        "type": "String"
+      },
+      "FileName": {
+        "type": "String"
+      }
+    },
+    "folder": {
+      "name": "検電"
+    },
+    "annotations": [],
+    "lastPublishTime": "2025-05-14T01:58:51Z"
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/datasets/ds_BlobFiles_mTG')]",
+    "[concat(variables('factoryId'), '/datasets/ds_BlobGz')]",
+    "[concat(variables('factoryId'), '/datasets/ds_Gz_Sftp')]",
+    "[concat(variables('factoryId'), '/datasets/ds_CSV_Blob')]",
+    "[concat(variables('factoryId'), '/datasets/ds_CSV_BlobGz')]",
+    "[concat(variables('factoryId'), '/datasets/ds_DamDwhTable_shir')]"
+  ]
+}

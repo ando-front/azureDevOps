@@ -1,0 +1,40 @@
+{
+  "name": "ds_BlobGz",
+  "type": "Microsoft.DataFactory/factories/datasets",
+  "properties": {
+    "description": "Blobのgzipファイルを取得する",
+    "linkedServiceName": {
+      "referenceName": "li_blob_damhdinsight_container",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "directory": {
+        "type": "string",
+        "defaultValue": "datalake/dev/OMNI"
+      },
+      "filename": {
+        "type": "string",
+        "defaultValue": "test.gz"
+      }
+    },
+    "annotations": [],
+    "type": "Binary",
+    "typeProperties": {
+      "location": {
+        "type": "AzureBlobStorageLocation",
+        "fileName": {
+          "value": "@dataset().filename",
+          "type": "Expression"
+        },
+        "folderPath": {
+          "value": "@dataset().directory",
+          "type": "Expression"
+        },
+        "container": "damhdinsight-container"
+      }
+    }
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/linkedServices/li_blob_damhdinsight_container')]"
+  ]
+}

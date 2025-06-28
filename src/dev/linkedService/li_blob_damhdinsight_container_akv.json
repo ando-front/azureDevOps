@@ -1,0 +1,22 @@
+{
+  "name": "li_blob_damhdinsight_container_akv",
+  "properties": {
+    "description": "DAM-Blobへの接続\nAKVでのキー管理用※ADF移行時に試験的に作成したものであるため未使用",
+    "annotations": [],
+    "type": "AzureBlobStorage",
+    "typeProperties": {
+      "sasUri": {
+        "type": "AzureKeyVaultSecret",
+        "store": {
+          "referenceName": "li_dam_kv_omni",
+          "type": "LinkedServiceReference"
+        },
+        "secretName": "damhdinsight-container-sas-uri"
+      }
+    },
+    "connectVia": {
+      "referenceName": "omni-sharing01-d-jpe",
+      "type": "IntegrationRuntimeReference"
+    }
+  }
+}

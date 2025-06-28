@@ -1,0 +1,25 @@
+{
+  "name": "ds_DamDwhTable_shir",
+  "properties": {
+    "description": "ソースとなるDBの定義。\nSHIR経由のリンクサービスを使用する。",
+    "linkedServiceName": {
+      "referenceName": "li_dam_dwh_shir",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "table": {
+        "type": "string"
+      }
+    },
+    "annotations": [],
+    "type": "AzureSqlDWTable",
+    "schema": [],
+    "typeProperties": {
+      "schema": "omni",
+      "table": {
+        "value": "@dataset().table",
+        "type": "Expression"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "li_sqlmi_dwh2",
+  "properties": {
+    "annotations": [],
+    "type": "AzureSqlMI",
+    "typeProperties": {
+      "connectionString": "Server=tcp:sqlmi-server.database.windows.net,1433;Database=SqlMIDatabase;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Default;"
+    },
+    "connectVia": {
+      "referenceName": "omni-sharing01-d-jpe",
+      "type": "IntegrationRuntimeReference"
+    }
+  }
+}

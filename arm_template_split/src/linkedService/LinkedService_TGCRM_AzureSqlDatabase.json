@@ -1,0 +1,9 @@
+{
+    "name": "LS_TGCRM_AzureSqlDatabase",
+    "properties": {
+        "type": "AzureSqlDatabase",
+        "typeProperties": {
+            "connectionString": "@{linkedService().connectionString}"
+        }
+    }
+}

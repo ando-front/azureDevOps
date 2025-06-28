@@ -1,0 +1,112 @@
+{
+  "name": "DoUntilPipeline",
+  "type": "Microsoft.DataFactory/factories/pipelines",
+  "properties": {
+    "activities": [
+      {
+        "name": "Lookup1",
+        "type": "Lookup",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "SqlDWSource",
+            "sqlReaderQuery": {
+              "value": "SELECT count(*)as count0, count(*)/@{pipeline().parameters.countLoop} as span0 from [omni].[omni_ods_marketing_trn_client_dm];",
+              "type": "Expression"
+            },
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "dataset": {
+            "referenceName": "ds_DamDwhTable",
+            "type": "DatasetReference",
+            "parameters": {
+              "table": "omni_ods_marketing_trn_client_dm"
+            }
+          }
+        }
+      },
+      {
+        "name": "set_countRecords",
+        "type": "SetVariable",
+        "dependsOn": [
+          {
+            "activity": "Lookup1",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "variableName": "countRecords",
+          "value": {
+            "value": "@activity('Lookup1').output.firstRow.count0",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "set span",
+        "type": "SetVariable",
+        "dependsOn": [
+          {
+            "activity": "set_countRecords",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "variableName": "span",
+          "value": {
+            "value": "@activity('Lookup1').output.firstRow.span0",
+            "type": "Expression"
+          }
+        }
+      }
+    ],
+    "policy": {
+      "elapsedTimeMetric": {}
+    },
+    "parameters": {
+      "countLoop": {
+        "type": "int",
+        "defaultValue": 5
+      }
+    },
+    "variables": {
+      "countRecords": {
+        "type": "Integer",
+        "defaultValue": 0
+      },
+      "span": {
+        "type": "Integer",
+        "defaultValue": 0
+      }
+    },
+    "folder": {
+      "name": "IT"
+    },
+    "annotations": [],
+    "lastPublishTime": "2024-05-20T08:19:39Z"
+  },
+  "dependsOn": []
+}

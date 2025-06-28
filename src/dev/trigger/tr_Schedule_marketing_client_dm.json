@@ -1,0 +1,30 @@
+{
+  "name": "tr_Schedule_marketing_client_dm",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Week",
+        "interval": 1,
+        "startTime": "2024-01-28T01:00:00",
+        "timeZone": "Tokyo Standard Time",
+        "schedule": {
+          "minutes": [
+            0
+          ],
+          "hours": [
+            21
+          ],
+          "weekDays": [
+            "Saturday"
+          ]
+        }
+      }
+    }
+  },
+  "dependsOn": []
+}

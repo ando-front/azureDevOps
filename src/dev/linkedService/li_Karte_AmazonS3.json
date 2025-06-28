@@ -1,0 +1,21 @@
+{
+  "name": "li_Karte_AmazonS3",
+  "properties": {
+    "description": "KARTE用リンクサービス",
+    "annotations": [],
+    "type": "AmazonS3",
+    "typeProperties": {
+      "serviceUrl": "https://s3-ap-northeast-1.amazonaws.com",
+      "accessKeyId": "PLACEHOLDER_ACCESS_KEY",
+      "secretAccessKey": {
+        "type": "SecureString",
+        "value": "PLACEHOLDER_SECRET_KEY"
+      },
+      "authenticationType": "AccessKey"
+    },
+    "connectVia": {
+      "referenceName": "omni-sharing01-d-jpe",
+      "type": "IntegrationRuntimeReference"
+    }
+  }
+}

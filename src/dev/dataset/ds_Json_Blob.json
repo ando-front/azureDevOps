@@ -1,0 +1,34 @@
+{
+  "name": "ds_Json_Blob",
+  "properties": {
+    "linkedServiceName": {
+      "referenceName": "li_blob_tgomnidevrgsa_container",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "directory": {
+        "type": "string"
+      },
+      "filename": {
+        "type": "string"
+      }
+    },
+    "annotations": [],
+    "type": "Json",
+    "typeProperties": {
+      "location": {
+        "type": "AzureBlobStorageLocation",
+        "fileName": {
+          "value": "@dataset().filename",
+          "type": "Expression"
+        },
+        "folderPath": {
+          "value": "@dataset().directory",
+          "type": "Expression"
+        },
+        "container": "tgomni"
+      }
+    },
+    "schema": {}
+  }
+}

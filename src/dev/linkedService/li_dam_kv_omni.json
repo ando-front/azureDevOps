@@ -1,0 +1,14 @@
+{
+  "name": "li_dam_kv_omni",
+  "properties": {
+    "annotations": [],
+    "type": "AzureKeyVault",
+    "typeProperties": {
+      "baseUrl": "https://omni-keyvault.vault.azure.net/"
+    },
+    "connectVia": {
+      "referenceName": "omni-sharing01-d-jpe",
+      "type": "IntegrationRuntimeReference"
+    }
+  }
+}

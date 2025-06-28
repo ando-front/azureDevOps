@@ -97,27 +97,127 @@ def blob_service_client(pytestconfig):
 # パイプライン読み込み用フィクスチャ
 @pytest.fixture(scope="module")
 def pipeline_copy_marketing_client_dm():
-    path = os.path.join("src", "dev", "pipeline", "pi_Copy_marketing_client_dm.json")
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    # Dockerコンテナ内とローカル環境の両方に対応
+    import os
+    print(f"[DEBUG] Current working directory: {os.getcwd()}")
+    print(f"[DEBUG] Directory contents: {os.listdir('.')}")
+    
+    base_paths = [
+        # Dockerイメージ内のコピーされたファイル（優先）
+        os.path.join("/app", "src", "dev", "pipeline", "pi_Copy_marketing_client_dm.json"),
+        os.path.join("src", "dev", "pipeline", "pi_Copy_marketing_client_dm.json"),
+        # マウントされたファイル
+        os.path.join("/tests", "src", "dev", "pipeline", "pi_Copy_marketing_client_dm.json"),
+        # 相対パス候補
+        os.path.join("..", "src", "dev", "pipeline", "pi_Copy_marketing_client_dm.json"),
+        os.path.join(".", "src", "dev", "pipeline", "pi_Copy_marketing_client_dm.json"),
+        # 直接アクセス
+        "/tests/src/dev/pipeline/pi_Copy_marketing_client_dm.json",
+        "/app/src/dev/pipeline/pi_Copy_marketing_client_dm.json"
+    ]
+    for i, path in enumerate(base_paths):
+        print(f"[DEBUG] Checking path {i+1}: {path}")
+        if os.path.exists(path):
+            print(f"[DEBUG] ✓ Found pipeline file at: {path}")
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+        else:
+            print(f"[DEBUG] ✗ Not found: {path}")
+    
+    # デバッグ情報の追加出力
+    try:
+        print(f"[DEBUG] Checking /app directory: {os.path.exists('/app')}")
+        if os.path.exists("/app"):
+            print(f"[DEBUG] /app contents: {os.listdir('/app')}")
+        if os.path.exists("/app/src"):
+            print(f"[DEBUG] /app/src contents: {os.listdir('/app/src')}")
+        if os.path.exists("/app/src/dev"):
+            print(f"[DEBUG] /app/src/dev contents: {os.listdir('/app/src/dev')}")
+        if os.path.exists("/tests"):
+            print(f"[DEBUG] /tests contents: {os.listdir('/tests')}")
+        if os.path.exists("/tests/src"):
+            print(f"[DEBUG] /tests/src contents: {os.listdir('/tests/src')}")
+        if os.path.exists("/tests/src/dev"):
+            print(f"[DEBUG] /tests/src/dev contents: {os.listdir('/tests/src/dev')}")
+        if os.path.exists("/tests/src/dev/pipeline"):
+            print(f"[DEBUG] /tests/src/dev/pipeline contents: {os.listdir('/tests/src/dev/pipeline')}")
+    except Exception as e:
+        print(f"[DEBUG] Error exploring directories: {e}")
+    
+    raise FileNotFoundError(f"Pipeline file not found in any of these paths: {base_paths}")
 
 @pytest.fixture(scope="module")
 def pipeline_insert_clientdm_bx():
-    path = os.path.join("src", "dev", "pipeline", "pi_Insert_ClientDmBx.json")
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    # Dockerコンテナ内とローカル環境の両方に対応
+    base_paths = [
+        # 相対パス候補
+        os.path.join("src", "dev", "pipeline", "pi_Insert_ClientDmBx.json"),
+        os.path.join("..", "src", "dev", "pipeline", "pi_Insert_ClientDmBx.json"),
+        os.path.join(".", "src", "dev", "pipeline", "pi_Insert_ClientDmBx.json"),
+        # 絶対パス候補
+        os.path.join("/tests", "src", "dev", "pipeline", "pi_Insert_ClientDmBx.json"),
+        os.path.join("/app", "src", "dev", "pipeline", "pi_Insert_ClientDmBx.json"),
+        # 直接アクセス
+        "/tests/src/dev/pipeline/pi_Insert_ClientDmBx.json",        "/app/src/dev/pipeline/pi_Insert_ClientDmBx.json"
+    ]
+    
+    for i, path in enumerate(base_paths):
+        print(f"[DEBUG] ClientDmBx - Checking path {i+1}: {path}")
+        if os.path.exists(path):
+            print(f"[DEBUG] ✓ Found ClientDmBx pipeline file at: {path}")
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+        else:
+            print(f"[DEBUG] ✗ ClientDmBx Not found: {path}")
+    
+    print(f"[ERROR] ClientDmBx Pipeline file not found.")
+    raise FileNotFoundError(f"Pipeline file not found in any of these paths: {base_paths}")
 
 @pytest.fixture(scope="module")
 def pipeline_send_actionpoint():
-    path = os.path.join("src", "dev", "pipeline", "pi_Send_ActionPointCurrentMonthEntryList.json")
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    # Dockerコンテナ内とローカル環境の両方に対応
+    base_paths = [
+        # 相対パス候補
+        os.path.join("src", "dev", "pipeline", "pi_Send_ActionPointCurrentMonthEntryList.json"),
+        os.path.join("..", "src", "dev", "pipeline", "pi_Send_ActionPointCurrentMonthEntryList.json"),
+        os.path.join(".", "src", "dev", "pipeline", "pi_Send_ActionPointCurrentMonthEntryList.json"),
+        # 絶対パス候補
+        os.path.join("/tests", "src", "dev", "pipeline", "pi_Send_ActionPointCurrentMonthEntryList.json"),
+        os.path.join("/app", "src", "dev", "pipeline", "pi_Send_ActionPointCurrentMonthEntryList.json"),
+        # 直接アクセス
+        "/tests/src/dev/pipeline/pi_Send_ActionPointCurrentMonthEntryList.json",
+        "/app/src/dev/pipeline/pi_Send_ActionPointCurrentMonthEntryList.json"
+    ]
+    
+    for path in base_paths:
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+    
+    raise FileNotFoundError(f"Pipeline file not found in any of these paths: {base_paths}")
 
 @pytest.fixture(scope="module")
 def pipeline_point_grant_email():
-    path = os.path.join("src", "dev", "pipeline", "pi_PointGrantEmail.json")
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    # Dockerコンテナ内とローカル環境の両方に対応
+    base_paths = [
+        # 相対パス候補
+        os.path.join("src", "dev", "pipeline", "pi_PointGrantEmail.json"),
+        os.path.join("..", "src", "dev", "pipeline", "pi_PointGrantEmail.json"),
+        os.path.join(".", "src", "dev", "pipeline", "pi_PointGrantEmail.json"),
+        # 絶対パス候補
+        os.path.join("/tests", "src", "dev", "pipeline", "pi_PointGrantEmail.json"),
+        os.path.join("/app", "src", "dev", "pipeline", "pi_PointGrantEmail.json"),
+        # 直接アクセス
+        "/tests/src/dev/pipeline/pi_PointGrantEmail.json",
+        "/app/src/dev/pipeline/pi_PointGrantEmail.json"
+    ]
+    
+    for path in base_paths:
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+    
+    raise FileNotFoundError(f"Pipeline file not found in any of these paths: {base_paths}")
 
 # E2Eテスト用のfixture
 @pytest.fixture(scope="module")

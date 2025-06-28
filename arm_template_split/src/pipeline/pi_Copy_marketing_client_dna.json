@@ -1,0 +1,122 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "factoryName": {
+      "type": "string",
+      "metadata": "データ ファクトリ名",
+      "defaultValue": "omni-df-dev"
+    }
+  },
+  "variables": {
+    "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('factoryName'), '/pi_Copy_marketing_client_dna')]",
+      "type": "Microsoft.DataFactory/factories/pipelines",
+      "apiVersion": "2018-06-01",
+      "properties": {
+        "description": "Marketingスキーマの顧客DNAを全量コピーする",
+        "activities": [
+          {
+            "name": "at_Copy_marketing_ClientDNA_temp",
+            "description": "Marketingスキーマのシノニムであるomin.顧客DNA_推定DMから作業テーブルに全量コピーする",
+            "type": "Copy",
+            "dependsOn": [],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 0,
+              "retryIntervalInSeconds": 30,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "source": {
+                "type": "SqlMISource",
+                "sqlReaderQuery": "----------------------------------------------------------------------\n-- omni.顧客DNA_tempからomni.顧客DNAへ全量コピーする\n-- \n-- 2023/11/16　新規作成\n-- 2024/05/02　削除対象カラムをNULLに置き換えとする暫定対応\n-- 2024/08/07　Maketingスキーマ.顧客DNA_推定DMからomni.顧客DNA_推定DMに参照先を変更\n-- 2024/12/13　レイアウト変更に伴う、カラム追加、削除\n----------------------------------------------------------------------\n\n-- Maketingスキーマのomni.顧客DNA_推定DMから、omniスキーマの顧客DNA_tempにデータを全量コピー\nSELECT [顧客キー]                                        AS CLIENT_KEY\n      ,[LIV0EU_ガスメータ設置場所番号＿１ｘ]             AS LIV0EU_1X\n      ,[LIV0EU_使用契約番号＿４ｘ]                       AS LIV0EU_4X\n      ,[LIV0EU_カスタマ番号＿８ｘ]                       AS LIV0EU_8X\n      ,[電力CIS契約情報_お客様登録番号_3x]               AS DNRK_CIS_CNTRCT_3X\n      ,[電力CIS契約情報_電灯_電力契約番号]               AS DNRK_CIS_CNTRCT_DT_SA_ID\n      ,[電力CIS契約情報_動力_電力契約番号]               AS DNRK_CIS_CNTRCT_DR_SA_ID\n      ,[LIV0EU_建物番号]                                 AS LIV0EU_BLD_NO\n      ,[顧客セグメント]                                  AS CLIENT_SG\n--    2024/12/13 カラム「PV推定スコア」削除\n      ,[PVスコア_電力]                                   AS PV_SCORE_POWER   -- 2024/12/13 追加\n      ,[PVスコアランク_電力]                             AS PV_SCORE_RANK_POWER   -- 2024/12/13 追加\n      ,[PVスコア_ガス]                                   AS PV_SCORE_GAS   -- 2024/12/13 追加\n      ,[推定PV保有フラグ_ガス]                           AS ESTIMATED_PV_HOLDINGS_FLAG_GAS   -- 2024/12/13 追加\n      ,[デモグラフィック情報_世帯主年代_0-29歳]          AS DG_STN_AGE_0_29\n      ,[デモグラフィック情報_世帯主年代_30-39歳]         AS DG_STN_AGE_30_39\n      ,[デモグラフィック情報_世帯主年代_40-49歳]         AS DG_STN_AGE_40_49\n      ,[デモグラフィック情報_世帯主年代_50-59歳]         AS DG_STN_AGE_50_59\n      ,[デモグラフィック情報_世帯主年代_60-69歳]         AS DG_STN_AGE_60_69\n      ,[デモグラフィック情報_世帯主年代_70-99歳]         AS DG_STN_AGE_70_99\n      ,[デモグラフィック情報_推定世帯主年代]             AS DG_SITI_STNS_AGE\n      ,[デモグラフィック情報_世帯人数_1人世帯]           AS DG_ST_NUM_1\n      ,[デモグラフィック情報_世帯人数_2人世帯]           AS DG_ST_NUM_2\n      ,[デモグラフィック情報_世帯人数_3人世帯]           AS DG_ST_NUM_3\n      ,[デモグラフィック情報_世帯人数_4人以上世帯]       AS DG_ST_NUM_4\n      ,[デモグラフィック情報_推定世帯人数]               AS DG_SITI_ST_NUM\n      ,[デモグラフィック情報_未就学児の有無]             AS DG_MSGJ_UM\n      ,[デモグラフィック情報_小中学生の有無]             AS DG_SCGS_UM\n      ,[デモグラフィック情報_高大専門学生の有無]         AS DG_KDSNMNGS_UM\n      ,[デモグラフィック情報_その他の子供の有無]         AS DG_SNTKDM_UM\n      ,[デモグラフィック情報_世帯主または配偶者の親の有無] AS DG_STN_OR_HGS_PRNT\n      ,[デモグラフィック情報_ペットの有無]               AS DG_PET\n      ,[デモグラフィック情報_世帯年収_400万円未満]       AS DG_STNS_4MLON_LESS\n      ,[デモグラフィック情報_世帯年収_1000万円以上]      AS DG_STNS_10MLON_OVER\n      ,[デモグラフィック情報_推定電力使用量]             AS DG_SITI_DNRKSYO\n      ,[ライフスタイル_電気使用傾向_電灯_大分類]         AS LFS_DNRKSY_DT_DBRI\n      ,[ライフスタイル_電気使用傾向_電灯_小分類]         AS LFS_DNRKSY_DT_SBRI\n      ,[ライフスタイル_電気使用傾向_動力_大分類]         AS LFS_DNRKSY_DR_DBRI\n      ,[ライフスタイル_電気使用傾向_動力_小分類]         AS LFS_DNRKSY_DR_SBRI\n      ,[ライフスタイル_接電スコア]                       AS LFS_STDNSCR\n      ,[ライフスタイル_家を空けやすい]                   AS LFS_ESY_LVE_HOME\n      ,[ライフスタイル_朝型]                             AS LFS_MONG_TYP\n      ,[ライフスタイル_夜型]                             AS LFS_NGT_TYP\n      ,[ライフスタイル_共働き]                           AS LFS_DUAL_TYP\n      ,[ライフスタイル_在宅勤務または自宅店舗経営]       AS LFS_ZITK_OR_JTKIEI\n      ,[利用外部サービス_ハウスクリーニング]             AS RYGSV_HSCLNG\n      ,[利用外部サービス_家電・機器修理保証サービス]     AS RYGSV_KNKSR_SV\n      ,[購買傾向_低価格志向]                             AS KBKK_TIKKSK\n      ,[購買傾向_高級志向・見栄型]                       AS KBKK_KKYSK_MIE\n      ,[購買傾向_高級志向・お金持ち型]                   AS KBKK_KKYSK_MNY\n      ,[支払心の痛さ_リフォーム]                         AS SHRI_KKRITS_RFM\n      ,[支払心の痛さ_ハウスクリーニング]                 AS SHRI_KKRITS_HSCLNG\n      ,[支払心の痛さ_家電・機器修理保証サービス]         AS SHRI_KKRITS_KNKSR_SV\n      ,[支払心の痛さ_子どもの見守りサービス]             AS SHRI_KKRITS_KDMMMMR_SV\n      ,[支払心の痛さ_ホームセキュリティー]               AS SHRI_KKRITS_HMSCRTY\n      ,[支払心の痛さ_HEMS]                               AS SHRI_PAIN_HEMS\n      ,[転居予測_2か月以内]                              AS TNKYSK_2MONTH   -- 2024/12/13 追加\n      ,[転居予測_転居予測_1年以内]                       AS TNKYSK_1YEAR\n      ,[価値観_電気切替時重視点_安定志向]                AS KTKN_DKKRKEJUSTN_ANTISKO\n      ,[価値観_電気切替時重視点_環境志向]                AS KTKN_DKKRKEJUSTN_KNKSKO\n      ,[価値観_電気切替時重視点_ポイント愛好家]          AS KTKN_DKKRKEJUSTN_POINT\n      ,[価値観_電気切替時重視点_価格志向・無関心]        AS KTKN_DKKRKEJUSTN_KKSKO_MKS\n      ,[価値観_電気切替時重視点_よくばりさん]            AS KTKN_DKKRKEJUSTN_YKBR\n      ,[価値観_推定電気切替時重視点]                     AS KTKN_SITI_DKKRKEJUSTN\n      ,[価値観_電気切替時情報源_DM]                      AS KTKN_DKKRKEJHGN_DM\n      ,[価値観_電気切替時情報源_Web]                     AS KTKN_DKKRKEJHGN_WEB\n      ,[価値観_電気切替時情報源_マス]                    AS KTKN_DKKRKEJHGN_MS\n      ,[価値観_電気切替時情報源_営業マン]                AS KTKN_DKKRKEJHGN_EGYMN\n      ,[価値観_電気切替時情報源_知人友人]                AS KTKN_DKKRKEJHGN_CJNYJN\n      ,[価値観_推定電気切替時情報源]                     AS KTKN_SITIELEKRKEJHGN\n      ,[価値観_健康意識]                                 AS KTKN_KNKISK\n      ,[価値観_ダイエット意識]                           AS KTKN_DIETISK\n      ,[価値観_疲労回復]                                 AS KTKN_HRKHK\n      ,[価値観_レトルト好き]                             AS KTKN_RTRTSK\n      ,[価値観_高品質食品]                               AS KTKN_KHSSYKHN\n      ,[価値観_料理好き]                                 AS KTKN_RYRSK\n      ,[価値観_外食好き]                                 AS KTKN_GSSK\n      ,[商材_ガス脱落スコア_直近3ヶ月]                   AS SYZI_GS_DTRKSCR_MONTH03\n      ,[商材_ガス脱落スコア_直近1年]                     AS SYZI_GS_DTRKSCR_YEAR01\n      ,[商材_電気脱落スコア_直近3ヶ月]                   AS SYZI_DK_DTRKSCR_MONTH03\n      ,[商材_電気脱落スコア_直近1年]                     AS SYZI_DK_DTRKSCR_YEAR01\n      ,[商材_脱落スコア算出モデル種別]                   AS SYZI_DTRKSCR_SNSTMDR_SHBT\n      ,[商材_スイッチバックスコア]                       AS SYZI_SWCBK_SCR\n      ,[商材_総合設備_テーブルコンロ]                    AS SYZI_SGSTB_TBLKNR\n      ,[商材_総合設備_ビルトインコンロ]                  AS SYZI_SGSTB_BLTINKNR\n      ,[商材_総合設備_TES]                               AS SYZI_SGSTB_TES\n      ,[商材_総合設備_風呂給]                            AS SYZI_SGSTB_HRK\n      ,[商材_総合設備_大湯]                              AS SYZI_SGSTB_OY\n      ,[商材_総合設備_ファンヒーター]                    AS SYZI_SGSTB_FNHT\n      ,[商材_総合設備_ガス式衣類乾燥機]                  AS SYZI_SGSTB_GSKNSK\n      ,[商材_サービス_くらし見守りサービス]              AS SYZI_SV_KRSMMMR_SV\n      ,[商材_サービス_ガス機器SS]                        AS SYZI_SV_GSKK_SS\n      ,[DM施策_電気申込書DMスコア]                       AS DM_DKMSKM_DM_SCR\n      ,[DM施策_電気WebDMスコア]                          AS DM_DKWEB_DM_SCR\n      ,[DM施策_ガス機器SSDMスコア]                       AS DM_GSKK_SSDM_SCR\n      ,[チャネル_電気申込経路WEB]                        AS CNL_DKMSKMKR_WEB\n      ,[チャネル_メール開封]                             AS CNL_MLKH\n      ,[チャネル_メール添付URLクリック]                  AS CNL_MLTMPURL_CLC\n      ,[商材_電気WEB]                                    AS SYZI_DK_WEB\n      ,[商材_総合設備_ビルトインコンロ_買替有無]         AS SYZI_SGSTB_BLTINKNR_KIKE\n      ,[商材_総合設備_ビルトインコンロ_プレミアム]       AS SYZI_SGSTB_BLTINKNR_PRM\n      ,[商材_総合設備_ビルトインコンロ_ハイグレード]     AS SYZI_SGSTB_BLTINKNR_HIGRD\n      ,[商材_総合設備_ビルトインコンロ_スタンダード]     AS SYZI_SGSTB_BLTINKNR_STD\n      ,[レコード作成日時]                                AS REC_REG_YMD\n      ,[レコード更新日時]                                AS REC_UPD_YMD\n\n  FROM [omni].[顧客DNA_推定DM]\n  ;",
+                "partitionOption": "None"
+              },
+              "sink": {
+                "type": "SqlDWSink",
+                "preCopyScript": "TRUNCATE TABLE [omni].[omni_ods_marketing_trn_client_dna_temp];",
+                "writeBehavior": "Insert",
+                "sqlWriterUseTableLock": false,
+                "disableMetricsCollection": false
+              },
+              "enableStaging": false,
+              "translator": {
+                "type": "TabularTranslator",
+                "typeConversion": true,
+                "typeConversionSettings": {
+                  "allowDataTruncation": true,
+                  "treatBooleanAsNumber": false
+                }
+              }
+            },
+            "inputs": [
+              {
+                "referenceName": "ds_sqlmi",
+                "type": "DatasetReference",
+                "parameters": {}
+              }
+            ],
+            "outputs": [
+              {
+                "referenceName": "ds_DamDwhTable",
+                "type": "DatasetReference",
+                "parameters": {
+                  "table": "omni_ods_marketing_trn_client_dna_temp"
+                }
+              }
+            ]
+          },
+          {
+            "name": "at_Copy_temp_ClientDNA",
+            "description": "omni.顧客DNA_tempからomni.顧客DNAへ全量コピーする",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Copy_marketing_ClientDNA_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 0,
+              "retryIntervalInSeconds": 30,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "----------------------------------------------------------------------\r\n-- omni.顧客DNA_tempからomni.顧客DNAへ全量コピーする\r\n-- \r\n-- 2024/08/07　新規作成\r\n-- 2024/12/13　レイアウト変更に伴う、カラム追加、削除\r\n----------------------------------------------------------------------\r\n\r\n-- omni.顧客DNAからデータを全て削除\r\nTRUNCATE TABLE [omni].[omni_ods_marketing_trn_client_dna]\r\n;\r\n\r\n-- omni.顧客DNA_tempからomni.顧客DNAへ全量をコピー\r\nINSERT INTO [omni].[omni_ods_marketing_trn_client_dna]\r\nSELECT CLIENT_KEY\r\n    , LIV0EU_1X\r\n    , LIV0EU_4X\r\n    , LIV0EU_8X\r\n    , DNRK_CIS_CNTRCT_3X\r\n    , DNRK_CIS_CNTRCT_DT_SA_ID\r\n    , DNRK_CIS_CNTRCT_DR_SA_ID\r\n    , LIV0EU_BLD_NO\r\n    , CLIENT_SG\r\n--    2024/12/13 カラム「PV_SITI_SCR」削除\r\n    , PV_SCORE_POWER   -- 2024/12/13 追加\r\n    , PV_SCORE_RANK_POWER   -- 2024/12/13 追加\r\n    , PV_SCORE_GAS   -- 2024/12/13 追加\r\n    , ESTIMATED_PV_HOLDINGS_FLAG_GAS   -- 2024/12/13 追加\r\n    , DG_STN_AGE_0_29\r\n    , DG_STN_AGE_30_39\r\n    , DG_STN_AGE_40_49\r\n    , DG_STN_AGE_50_59\r\n    , DG_STN_AGE_60_69\r\n    , DG_STN_AGE_70_99\r\n    , DG_SITI_STNS_AGE\r\n    , DG_ST_NUM_1\r\n    , DG_ST_NUM_2\r\n    , DG_ST_NUM_3\r\n    , DG_ST_NUM_4\r\n    , DG_SITI_ST_NUM\r\n    , DG_MSGJ_UM\r\n    , DG_SCGS_UM\r\n    , DG_KDSNMNGS_UM\r\n    , DG_SNTKDM_UM\r\n    , DG_STN_OR_HGS_PRNT\r\n    , DG_PET\r\n    , DG_STNS_4MLON_LESS\r\n    , DG_STNS_10MLON_OVER\r\n    , DG_SITI_DNRKSYO\r\n    , LFS_DNRKSY_DT_DBRI\r\n    , LFS_DNRKSY_DT_SBRI\r\n    , LFS_DNRKSY_DR_DBRI\r\n    , LFS_DNRKSY_DR_SBRI\r\n    , LFS_STDNSCR\r\n    , LFS_ESY_LVE_HOME\r\n    , LFS_MONG_TYP\r\n    , LFS_NGT_TYP\r\n    , LFS_DUAL_TYP\r\n    , LFS_ZITK_OR_JTKIEI\r\n    , RYGSV_HSCLNG\r\n    , RYGSV_KNKSR_SV\r\n    , KBKK_TIKKSK\r\n    , KBKK_KKYSK_MIE\r\n    , KBKK_KKYSK_MNY\r\n    , SHRI_KKRITS_RFM\r\n    , SHRI_KKRITS_HSCLNG\r\n    , SHRI_KKRITS_KNKSR_SV\r\n    , SHRI_KKRITS_KDMMMMR_SV\r\n    , SHRI_KKRITS_HMSCRTY\r\n    , SHRI_PAIN_HEMS\r\n    , TNKYSK_2MONTH   -- 2024/12/13 追加\r\n    , TNKYSK_1YEAR\r\n    , KTKN_DKKRKEJUSTN_ANTISKO\r\n    , KTKN_DKKRKEJUSTN_KNKSKO\r\n    , KTKN_DKKRKEJUSTN_POINT\r\n    , KTKN_DKKRKEJUSTN_KKSKO_MKS\r\n    , KTKN_DKKRKEJUSTN_YKBR\r\n    , KTKN_SITI_DKKRKEJUSTN\r\n    , KTKN_DKKRKEJHGN_DM\r\n    , KTKN_DKKRKEJHGN_WEB\r\n    , KTKN_DKKRKEJHGN_MS\r\n    , KTKN_DKKRKEJHGN_EGYMN\r\n    , KTKN_DKKRKEJHGN_CJNYJN\r\n    , KTKN_SITIELEKRKEJHGN\r\n    , KTKN_KNKISK\r\n    , KTKN_DIETISK\r\n    , KTKN_HRKHK\r\n    , KTKN_RTRTSK\r\n    , KTKN_KHSSYKHN\r\n    , KTKN_RYRSK\r\n    , KTKN_GSSK\r\n    , SYZI_GS_DTRKSCR_MONTH03\r\n    , SYZI_GS_DTRKSCR_YEAR01\r\n    , SYZI_DK_DTRKSCR_MONTH03\r\n    , SYZI_DK_DTRKSCR_YEAR01\r\n    , SYZI_DTRKSCR_SNSTMDR_SHBT\r\n    , SYZI_SWCBK_SCR\r\n    , SYZI_SGSTB_TBLKNR\r\n    , SYZI_SGSTB_BLTINKNR\r\n    , SYZI_SGSTB_TES\r\n    , SYZI_SGSTB_HRK\r\n    , SYZI_SGSTB_OY\r\n    , SYZI_SGSTB_FNHT\r\n    , SYZI_SGSTB_GSKNSK\r\n    , SYZI_SV_KRSMMMR_SV\r\n    , SYZI_SV_GSKK_SS\r\n    , DM_DKMSKM_DM_SCR\r\n    , DM_DKWEB_DM_SCR\r\n    , DM_GSKK_SSDM_SCR\r\n    , CNL_DKMSKMKR_WEB\r\n    , CNL_MLKH\r\n    , CNL_MLTMPURL_CLC\r\n    , SYZI_DK_WEB\r\n    , SYZI_SGSTB_BLTINKNR_KIKE\r\n    , SYZI_SGSTB_BLTINKNR_PRM\r\n    , SYZI_SGSTB_BLTINKNR_HIGRD\r\n    , SYZI_SGSTB_BLTINKNR_STD\r\n    , REC_REG_YMD\r\n    , REC_UPD_YMD\r\n\r\n  FROM [omni].[omni_ods_marketing_trn_client_dna_temp]\r\n  ;"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          }
+        ],
+        "policy": {
+          "elapsedTimeMetric": {}
+        },
+        "folder": {
+          "name": "TGContractScore"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-12-13T01:52:45Z"
+      },
+      "dependsOn": []
+    }
+  ]
+}

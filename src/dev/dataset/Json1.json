@@ -1,0 +1,40 @@
+{
+  "name": "Json1",
+  "type": "Microsoft.DataFactory/factories/datasets",
+  "properties": {
+    "linkedServiceName": {
+      "referenceName": "li_blob_damhdinsight_container",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "directory": {
+        "type": "string",
+        "defaultValue": "datalake/dev/OMNI"
+      },
+      "filename": {
+        "type": "string",
+        "defaultValue": "test.csv"
+      }
+    },
+    "annotations": [],
+    "type": "Json",
+    "typeProperties": {
+      "location": {
+        "type": "AzureBlobStorageLocation",
+        "fileName": {
+          "value": "@dataset().filename",
+          "type": "Expression"
+        },
+        "folderPath": {
+          "value": "@dataset().directory",
+          "type": "Expression"
+        },
+        "container": "damhdinsight-container"
+      }
+    },
+    "schema": {}
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/linkedServices/li_blob_damhdinsight_container')]"
+  ]
+}

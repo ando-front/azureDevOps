@@ -1,5 +1,17 @@
-# 超軽量Dockerfile - モック版（ODBC不要）
+# 超軽量Dockerfile - モック版（プロキシ対応、ODBC無し）
 FROM python:3.9-slim
+
+# プロキシ設定（ARGで受け取り）
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
+ENV HTTP_PROXY=${HTTP_PROXY}
+ENV HTTPS_PROXY=${HTTPS_PROXY}
+ENV NO_PROXY=${NO_PROXY}
+ENV http_proxy=${HTTP_PROXY}
+ENV https_proxy=${HTTPS_PROXY}
+ENV no_proxy=${NO_PROXY}
 
 # 環境変数の設定
 ENV PYTHONUNBUFFERED=1
@@ -21,12 +33,41 @@ RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted
 # 段階2: 基本的なライブラリを追加
 RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --no-cache-dir requests==2.31.0 python-dotenv==1.0.0
 
+# ODBC無しで軽量に進む - pyodbc は使わずモックで代替
+# TODO: 技術的負債 - pyodbc + ODBC Driver 18のサポート
+# 現在は軽量化のためODBCドライバーを除外しているが、完全なDB統合テストには以下が必要:
+# 1. Microsoft ODBC Driver 18 for SQL Server のインストール
+# 2. pyodbcライブラリの追加
+# 注意: プロキシ問題は run-e2e-flexible.sh で解決済み（--proxy オプション対応）
+# 軽量版では条件付きスキップで対応中だが、本格的なCI/CDには完全版も検討が必要
+# Install minimal required packages only if needed (without ODBC)
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#     gcc \
+#     g++ \
+#     unixodbc-dev \
+#     curl \
+#     gnupg \
+#     && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+#     && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+#     && apt-get update \
+#     && ACCEPT_EULA=Y apt-get install -y msodbcsql18 \
+#     && rm -rf /var/lib/apt/lists/*
+
 # requirements.txtをコピーして残りの依存関係をインストール
 COPY requirements.txt .
 RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --no-cache-dir -r requirements.txt
 
 # プロジェクトファイルをコピー
 COPY . .
+
+# Install pyodbc without ODBC drivers (will be mocked in tests)
+# TODO: 技術的負債 - pyodbcをコメントアウト中
+# 現在はpyodbc非依存の軽量版だが、完全なDB統合テストには pyodbc の復活が必要
+# pyodbcを有効化する場合は上記のODBCドライバーインストールも同時に必要
+# RUN pip install --no-cache-dir pyodbc
+
+# スクリプトファイルに実行権限を付与
+RUN chmod +x /app/docker/init-pipeline-paths.sh
 
 # デフォルトコマンド
 CMD ["python", "-m", "pytest", "tests/", "--tb=short", "-v", "-x"]

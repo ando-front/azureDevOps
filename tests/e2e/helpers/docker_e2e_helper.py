@@ -6,13 +6,45 @@ Azure Data Factory パイプラインのE2E統合テストをサポート
 import os
 import logging
 import requests
-import pyodbc
-import pandas as pd
-from typing import Dict, List, Optional, Any
-from datetime import datetime
 import json
 import time
+from typing import Dict, List, Optional, Any
+from datetime import datetime
 from azure.storage.blob import BlobServiceClient
+
+# pyodbcの条件付きインポート（技術的負債対応）
+try:
+    import pyodbc
+    PYODBC_AVAILABLE = True
+except ImportError:
+    # pyodbcが利用できない場合のモッククラス
+    class MockPyodbc:
+        @staticmethod
+        def connect(*args, **kwargs):
+            raise ImportError("pyodbc is not available - DB tests will be skipped")
+        
+        class Error(Exception):
+            pass
+            
+        class DatabaseError(Error):
+            pass
+            
+        class InterfaceError(Error):
+            pass
+    
+    pyodbc = MockPyodbc()
+    PYODBC_AVAILABLE = False
+
+# pandasの条件付きインポート（軽量化対応）
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    # pandasが利用できない場合のモック
+    class MockPandas:
+        DataFrame = dict  # 簡易的な代替
+    pd = MockPandas()
+    PANDAS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -874,13 +906,13 @@ class E2ETestHelper:
             point_data = [
                 {
                     "client_id": "E2E_CLIENT_001",
-                    "email_address": "e2e_test1@example.com",
+                    "email": "e2e_test1@example.com",
                     "points": 1500,
                     "grant_date": "2023-12-01"
                 },
                 {
                     "client_id": "E2E_CLIENT_002",
-                    "email_address": "e2e_test2@example.com", 
+                    "email": "e2e_test2@example.com", 
                     "points": 2000,
                     "grant_date": "2023-12-02"
                 }
@@ -905,13 +937,13 @@ class E2ETestHelper:
             test_data = [
                 {
                     "client_id": "POINT_TEST_001",
-                    "email_address": "point1@test.com",
+                    "email": "point1@test.com",
                     "points": 1000,
                     "grant_date": "2023-12-01"
                 },
                 {
                     "client_id": "POINT_TEST_002",
-                    "email_address": "point2@test.com",
+                    "email": "point2@test.com",
                     "points": 1500,
                     "grant_date": "2023-12-02"
                 }

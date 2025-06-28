@@ -1,0 +1,159 @@
+{
+  "name": "pi_Send_Cpkiyk",
+  "type": "Microsoft.DataFactory/factories/pipelines",
+  "properties": {
+    "description": "DAM-DB「本人特定契約」IFに必要なデータを抽出、gzipファイルでBLOB出力し、SFMCにSFTP連携する。",
+    "activities": [
+      {
+        "name": "at_CreateCSV_Cpkiyk",
+        "description": "DBから「本人特定契約」IFに必要なデータを抽出、gzipファイルでBLOB出力",
+        "type": "Copy",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 120,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "SqlDWSource",
+            "sqlReaderQuery": "--------------------------------------------------------------------------\n-- 本人特定契約_IF連携＞ADF整備\n--------------------------------------------------------------------------\n\n-- テーブル「本人特定契約」からMA向けの項目を抽出する\nDECLARE @today_jst datetime;\nSET @today_jst=CONVERT(DATETIME, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time');  -- 最新の日時\nDECLARE @outDT varchar(20);\nSET @outDT=format(@today_jst, 'yyyy/MM/dd HH:mm:ss')\n\n----------------------------------------------------------------------------\n\nSELECT\n     MTGID          -- 会員ID\n    ,EDA_NO         -- 枝番\n    ,GMT_SET_NO     -- ガスメータ設置場所番号\n    ,SYOKY_NO       -- 使用契約番号\n    ,CST_REG_NO     -- お客さま登録番号\n    ,SHRKY_NO       -- 支払契約番号\n    ,HJ_CST_NAME    -- 表示名称\n    ,YUSEN_JNJ_NO   -- 優先順位\n    ,TKTIYMD        -- 特定年月日\n    ,TRKSBTCD       -- 種別コード\n    ,CST_NO         -- 表示用お客さま番号\n    ,INTRA_TRK_ID   -- イントラ登録ID\n    ,SND_UM_CD      -- ホスト送信有無コード\n    ,TRK_SBT_CD     -- 登録種別コード\n    ,REC_REG_YMD    -- レコード登録年月日\n    ,REC_REG_JKK    -- レコード登録時刻\n    ,REC_UPD_YMD    -- レコード更新年月日\n    ,REC_UPD_JKK    -- レコード更新時刻\n    ,TAIKAI_FLAG    -- 退会フラグ\n\n    ,@outDT as OUTPUT_DATETIME -- 出力日付\nFROM [omni].[omni_ods_mytginfo_trn_cpkiyk] -- 本人特定契約\n;\n",
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "sink": {
+            "type": "DelimitedTextSink",
+            "storeSettings": {
+              "type": "AzureBlobStorageWriteSettings"
+            },
+            "formatSettings": {
+              "type": "DelimitedTextWriteSettings",
+              "quoteAllText": true,
+              "fileExtension": ".csv"
+            }
+          },
+          "enableStaging": false,
+          "translator": {
+            "type": "TabularTranslator",
+            "typeConversion": true,
+            "typeConversionSettings": {
+              "allowDataTruncation": true,
+              "treatBooleanAsNumber": false
+            }
+          }
+        },
+        "inputs": [
+          {
+            "referenceName": "ds_DamDwhTable_shir",
+            "type": "DatasetReference",
+            "parameters": {
+              "table": "--"
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "ds_CSV_BlobGz",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "datalake/OMNI/MA/Cpkiyk",
+              "columnDelimiter": ",",
+              "quoteChar": "\"",
+              "firstRowAsHeader": true,
+              "filename": {
+                "value": "@concat('Cpkiyk_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "at_SendSftp_Cpkiyk",
+        "description": "Blobに出力されたgzipファイルをSFMCにSFTP連携",
+        "type": "Copy",
+        "dependsOn": [
+          {
+            "activity": "at_CreateCSV_Cpkiyk",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "BinarySource",
+            "storeSettings": {
+              "type": "AzureBlobStorageReadSettings",
+              "recursive": false,
+              "deleteFilesAfterCompletion": false
+            },
+            "formatSettings": {
+              "type": "BinaryReadSettings"
+            }
+          },
+          "sink": {
+            "type": "BinarySink",
+            "storeSettings": {
+              "type": "SftpWriteSettings",
+              "operationTimeout": "01:30:00",
+              "useTempFileRename": false
+            }
+          },
+          "enableStaging": false
+        },
+        "inputs": [
+          {
+            "referenceName": "ds_BlobGz",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "datalake/OMNI/MA/Cpkiyk",
+              "filename": {
+                "value": "@concat('Cpkiyk_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "ds_Gz_Sftp",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "Import/DAM/Cpkiyk",
+              "filename": {
+                "value": "@concat('Cpkiyk_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "policy": {
+      "elapsedTimeMetric": {}
+    },
+    "folder": {
+      "name": "SMC"
+    },
+    "annotations": [],
+    "lastPublishTime": "2025-05-09T02:34:48Z"
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/datasets/ds_DamDwhTable_shir')]",
+    "[concat(variables('factoryId'), '/datasets/ds_CSV_BlobGz')]",
+    "[concat(variables('factoryId'), '/datasets/ds_BlobGz')]",
+    "[concat(variables('factoryId'), '/datasets/ds_Gz_Sftp')]"
+  ]
+}

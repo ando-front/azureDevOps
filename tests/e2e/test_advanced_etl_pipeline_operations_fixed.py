@@ -12,6 +12,13 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Tuple
 import logging
 
+# pyodbc conditionally imported for ODBC-dependent tests
+try:
+    import pyodbc
+    PYODBC_AVAILABLE = True
+except ImportError:
+    PYODBC_AVAILABLE = False
+
 # テスト環境のセットアップ
 from tests.helpers.reproducible_e2e_helper import (
     setup_reproducible_test_class, 
@@ -29,6 +36,7 @@ class TestAdvancedETLPipelineOperations:
     def setup_class(cls):
         """再現可能テスト環境のセットアップ"""
         setup_reproducible_test_class()
+        cls._pyodbc_available = PYODBC_AVAILABLE
         
         # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
@@ -55,18 +63,23 @@ class TestAdvancedETLPipelineOperations:
             (1004, 'customer', '{"id": 2, "name": "Jane Smith", "email": "jane@example.com", "status": "inactive"}', '2024-01-02 09:00:00'),
             (1005, 'order', '{"order_id": 102, "customer_id": 2, "amount": 75.25, "status": "pending"}', '2024-01-02 10:00:00')
         ]
+          # IDENTITY_INSERTを有効にしてデータを挿入
+        # Skip DB operations if pyodbc is not available
+        if not hasattr(self, '_pyodbc_available') or not self._pyodbc_available:
+            pytest.skip("pyodbc not available - skipping DB-dependent test")
         
-        # IDENTITY_INSERTを有効にしてデータを挿入
-        connection.execute_query("SET IDENTITY_INSERT raw_data_source ON")
-        
+        conn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=sqlserver-test,1433;DATABASE=TGMATestDB;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes')
+        cur = conn.cursor()
+        cur.execute("SET IDENTITY_INSERT raw_data_source ON")
         for record_id, source_type, data_json, created_at in source_data:
-            connection.execute_query(f"""
-                INSERT INTO raw_data_source (id, source_type, data_json, created_at) 
-                VALUES ({record_id}, '{source_type}', '{data_json}', '{created_at}')
-            """)
-        
-        # IDENTITY_INSERTを無効にする
-        connection.execute_query("SET IDENTITY_INSERT raw_data_source OFF")
+            cur.execute(
+                "INSERT INTO raw_data_source (id, source_type, data_json, created_at) VALUES (?, ?, ?, ?)",
+                record_id, source_type, data_json, created_at
+            )
+        cur.execute("SET IDENTITY_INSERT raw_data_source OFF")
+        conn.commit()
+        cur.close()
+        conn.close()
         
         # データ抽出処理のシミュレーション - シンプルで確実な構造
         extraction_results = connection.execute_query("""
@@ -184,21 +197,26 @@ class TestAdvancedETLPipelineOperations:
             (3002, 'order', '{"order_id": 301, "customer_id": 301, "amount": 250.75, "status": "completed"}', '2024-01-04 11:00:00'),
             (3003, 'product', '{"product_id": 401, "name": "Test Product 401", "price": 129.99, "category": "electronics"}', '2024-01-04 12:00:00')
         ]
-        
-        # 既存の増分処理テストデータを削除（もしあれば）
+          # 既存の増分処理テストデータを削除（もしあれば）
         connection.execute_query("DELETE FROM raw_data_source WHERE id >= 3000")
         
         # IDENTITY_INSERTを有効にしてテストデータを挿入
-        connection.execute_query("SET IDENTITY_INSERT raw_data_source ON")
+        # Skip DB operations if pyodbc is not available
+        if not hasattr(self, '_pyodbc_available') or not self._pyodbc_available:
+            pytest.skip("pyodbc not available - skipping DB-dependent test")
         
+        conn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=sqlserver-test,1433;DATABASE=TGMATestDB;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes')
+        cur = conn.cursor()
+        cur.execute("SET IDENTITY_INSERT raw_data_source ON")
         for record_id, source_type, data_json, created_at in test_source_data:
-            connection.execute_query(f"""
-                INSERT INTO raw_data_source (id, source_type, data_json, created_at) 
-                VALUES ({record_id}, '{source_type}', '{data_json}', '{created_at}')
-            """)
-        
-        # IDENTITY_INSERTを無効にする
-        connection.execute_query("SET IDENTITY_INSERT raw_data_source OFF")
+            cur.execute(
+                "INSERT INTO raw_data_source (id, source_type, data_json, created_at) VALUES (?, ?, ?, ?)",
+                record_id, source_type, data_json, created_at
+            )
+        cur.execute("SET IDENTITY_INSERT raw_data_source OFF")
+        conn.commit()
+        cur.close()
+        conn.close()
         
         # 増分処理用のウォーターマークテーブル確認（data_watermarksは既存）
         watermark_check = connection.execute_query("""

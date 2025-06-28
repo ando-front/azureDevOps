@@ -1,0 +1,28 @@
+{
+  "name": "tr_Schedule_mTGCustomerMaster",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "description": "mTG会員契約マスタ(mTGCustomerMaster)用トリガー",
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "startTime": "2025-03-28T03:00:00",
+        "timeZone": "Tokyo Standard Time",
+        "schedule": {
+          "minutes": [
+            0
+          ],
+          "hours": [
+            4
+          ]
+        }
+      }
+    }
+  },
+  "dependsOn": []
+}

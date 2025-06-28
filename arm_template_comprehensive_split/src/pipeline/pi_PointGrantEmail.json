@@ -1,0 +1,468 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "factoryName": {
+      "type": "string",
+      "metadata": "データ ファクトリ名",
+      "defaultValue": "omni-df-dev"
+    },
+    "li_dam_dwh_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_secretAccessKey": {
+      "type": "secureString",
+      "metadata": "'li_Karte_AmazonS3' の 'secretAccessKey' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomni_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomni_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sqlmi_dwh2_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_sqlmi_dwh2' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sftp_password": {
+      "type": "secureString",
+      "metadata": "'li_sftp' の 'password' のセキュリティで保護された文字列"
+    },
+    "AzureSqlDatabase1_connectionString": {
+      "type": "secureString",
+      "metadata": "'AzureSqlDatabase1' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_ftp_test_password": {
+      "type": "secureString",
+      "metadata": "'li_ftp_test' の 'password' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_dam_dwh_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_damhdinsight_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_damhdinsight_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_properties_typeProperties_accessKeyId": {
+      "type": "string",
+      "defaultValue": "AKIASLGERJSDMDR3YKGF"
+    },
+    "li_sftp_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_sftp_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_ftp_test_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_ftp_test_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_dam_kv_omni_properties_typeProperties_baseUrl": {
+      "type": "string",
+      "defaultValue": "https://tgomnidevkey03.vault.azure.net/"
+    },
+    "li_blob_damhdinsight_container_akv_properties_typeProperties_sasUri_secretName": {
+      "type": "string",
+      "defaultValue": "0001damdevrgsa-damhdinsight-container"
+    },
+    "li_blob_mytokyogas_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_mytokyogas_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.Storage/storageAccounts/0001tgomnidevrgsa"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "0001tgomnidevrgsa.blob.core.windows.net"
+      ]
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Sql/servers/damd-dwh"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "sqlServer"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "damd-dwh.database.windows.net"
+      ]
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Storage/storageAccounts/0001damdevrgsa"
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "AzureSqlMI-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/43d95da1-ff6f-49ae-868b-a427c8bb161e/resourceGroups/dam2-rg-dev/providers/Microsoft.Sql/managedInstances/dam2-sqlmi-dev"
+    },
+    "AzureSqlMI-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "managedInstance"
+    },
+    "AzureSqlMI-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "dam2-sqlmi-dev.6b9b3938f4f4.database.windows.net"
+      ]
+    },
+    "tgomnidevkey03-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.KeyVault/vaults/tgomnidevkey03"
+    },
+    "tgomnidevkey03-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "vault"
+    },
+    "tgomnidevkey03-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "tgomnidevkey03.vault.azure.net"
+      ]
+    }
+  },
+  "variables": {
+    "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('factoryName'), '/pi_PointGrantEmail')]",
+      "type": "Microsoft.DataFactory/factories/pipelines",
+      "apiVersion": "2018-06-01",
+      "properties": {
+        "description": "mytokyogas-Blobから「ポイント付与メール」IFに必要なデータを抽出、gzipファイルでBLOB出力し、SFMCにSFTP連携する。",
+        "activities": [
+          {
+            "name": "at_GetFiles_PointGrantEmail",
+            "description": "Blobのファイル一覧取得",
+            "type": "GetMetadata",
+            "dependsOn": [],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 0,
+              "retryIntervalInSeconds": 30,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "dataset": {
+                "referenceName": "ds_BlobFiles_mTG",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": {
+                    "value": "@concat('forRcvry/',convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'),'/DCPDA016')",
+                    "type": "Expression"
+                  },
+                  "filename": {
+                    "value": "@concat(convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'),'_DAM_PointAdd.tsv')",
+                    "type": "Expression"
+                  }
+                }
+              },
+              "fieldList": [
+                "exists"
+              ],
+              "storeSettings": {
+                "type": "AzureBlobStorageReadSettings",
+                "recursive": true,
+                "enablePartitionDiscovery": false
+              },
+              "formatSettings": {
+                "type": "JsonReadSettings"
+              }
+            }
+          },
+          {
+            "name": "at_SendSftp_PointGrantEmail",
+            "description": "SMCへ送信",
+            "type": "Copy",
+            "dependsOn": [
+              {
+                "activity": "IfCondition_PointGrantEmail",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "7.00:00:00",
+              "retry": 10,
+              "retryIntervalInSeconds": 60,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "source": {
+                "type": "BinarySource",
+                "storeSettings": {
+                  "type": "AzureBlobStorageReadSettings",
+                  "recursive": false,
+                  "deleteFilesAfterCompletion": false
+                },
+                "formatSettings": {
+                  "type": "BinaryReadSettings"
+                }
+              },
+              "sink": {
+                "type": "BinarySink",
+                "storeSettings": {
+                  "type": "SftpWriteSettings",
+                  "operationTimeout": "01:00:00",
+                  "useTempFileRename": false
+                }
+              },
+              "enableStaging": false
+            },
+            "inputs": [
+              {
+                "referenceName": "ds_BlobGz",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "datalake/OMNI/MA/PointGrantEmail",
+                  "filename": {
+                    "value": "@concat('PointGrantEmail_', convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "referenceName": "ds_Gz_Sftp",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "Import/DAM/3A01b_PointAddition",
+                  "filename": {
+                    "value": "@concat('PointGrantEmail_', convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "IfCondition_PointGrantEmail",
+            "description": "該当ファイル有無により、出力を替える",
+            "type": "IfCondition",
+            "dependsOn": [
+              {
+                "activity": "at_GetFiles_PointGrantEmail",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "userProperties": [],
+            "typeProperties": {
+              "expression": {
+                "value": "@activity('at_GetFiles_PointGrantEmail').output.exists",
+                "type": "Expression"
+              },
+              "ifFalseActivities": [
+                {
+                  "name": "at_CreateCSV_PointGrantEmail_Header",
+                  "description": "連携ファイルが存在しない場合のヘッダのみ出力",
+                  "type": "Copy",
+                  "dependsOn": [],
+                  "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 10,
+                    "retryIntervalInSeconds": 60,
+                    "secureOutput": false,
+                    "secureInput": false
+                  },
+                  "userProperties": [],
+                  "typeProperties": {
+                    "source": {
+                      "type": "DelimitedTextSource",
+                      "storeSettings": {
+                        "type": "AzureBlobStorageReadSettings",
+                        "recursive": false,
+                        "enablePartitionDiscovery": false
+                      },
+                      "formatSettings": {
+                        "type": "DelimitedTextReadSettings"
+                      }
+                    },
+                    "sink": {
+                      "type": "DelimitedTextSink",
+                      "storeSettings": {
+                        "type": "AzureBlobStorageWriteSettings"
+                      },
+                      "formatSettings": {
+                        "type": "DelimitedTextWriteSettings",
+                        "quoteAllText": true,
+                        "fileExtension": ".csv"
+                      }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                      "type": "TabularTranslator",
+                      "typeConversion": true,
+                      "typeConversionSettings": {
+                        "allowDataTruncation": true,
+                        "treatBooleanAsNumber": false
+                      }
+                    }
+                  },
+                  "inputs": [
+                    {
+                      "referenceName": "ds_CSV_Blob",
+                      "type": "DatasetReference",
+                      "parameters": {
+                        "directory": "datalake/dev/OMNI/temp/",
+                        "columnDelimiter": ",",
+                        "quoteChar": "\"",
+                        "firstRowAsHeader": true,
+                        "filename": "header_DAM_PointGrantEmail.csv"
+                      }
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "referenceName": "ds_CSV_BlobGz",
+                      "type": "DatasetReference",
+                      "parameters": {
+                        "directory": "datalake/OMNI/MA/PointGrantEmail",
+                        "columnDelimiter": ",",
+                        "quoteChar": "\"",
+                        "firstRowAsHeader": true,
+                        "filename": {
+                          "value": "@concat('PointGrantEmail_', convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "ifTrueActivities": [
+                {
+                  "name": "at_CreateCSV_PointGrantEmail",
+                  "description": "連携ファイルから必要なデータのみを抽出しcsvファイルを作成、BLOBに配置する",
+                  "type": "Copy",
+                  "dependsOn": [],
+                  "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 10,
+                    "retryIntervalInSeconds": 60,
+                    "secureOutput": false,
+                    "secureInput": false
+                  },
+                  "userProperties": [],
+                  "typeProperties": {
+                    "source": {
+                      "type": "SqlDWSource",
+                      "sqlReaderQuery": {
+                        "value": "----------------------------------------------------------------------------\n-- MA向けリスト連携 ポイント付与メール 出力 at_CreateCSV_PointGrantEmail\n-- 2023/02/28　初版\n-- 2023/10/05　重複削除条件修正\n----------------------------------------------------------------------------\n\n-- 作成する外部テーブル(ポイント付与メール_ext_temp)が存在する場合は削除する\nDECLARE @isAllEventsTemp int;\nSELECT @isAllEventsTemp=count(*) FROM sys.objects WHERE schema_id = schema_id('omni') AND name='omni_ods_mytginfo_trn_point_add_ext_temp';\nIF @isAllEventsTemp = 1\n    DROP EXTERNAL TABLE [omni].[omni_ods_mytginfo_trn_point_add_ext_temp];\n\n-- ADFによりTSVをロードする外部テーブルを作成する\n\n-- 外部テーブル作成 omni_ods_mytginfo_trn_point_add_ext_temp(ポイント付与メール_ext_temp)\nCREATE EXTERNAL TABLE [omni].[omni_ods_mytginfo_trn_point_add_ext_temp]\n(\n     ID_NO\tNVARCHAR(20)\tNULL\t -- 会員ID\n    ,PNT_TYPE_CD\tNVARCHAR(4)\tNULL\t -- ポイント種別\n    ,MAIL_ADR\tNVARCHAR(50)\tNULL\t -- メールアドレス\n    ,PICTURE_MM\tNVARCHAR(2)\tNULL\t -- 画像月分\n)\nWITH (\n    DATA_SOURCE=[mytokyogas],\n    LOCATION='@{concat('/forRcvry/',convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'),'/DCPDA016/',convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'),'_DAM_PointAdd.tsv')}',\n    FILE_FORMAT=[TSV2],\n    REJECT_TYPE=VALUE,\n    REJECT_VALUE=0\n)\n;\n\n-- 会員IDと画像月分の組み合わせで重複削除する。重複削除するレコードはメールアドレスが最大のもの以外に行う\nSELECT ID_NO,PNT_TYPE_CD,MAIL_ADR,PICTURE_MM, '@{convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd')}'as CSV_YMD ,FORMAT((GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time'),'yyyy/MM/dd HH:mm:ss')as OUTPUT_DATETIME\nFROM (\nSELECT *\n, DupRank = ROW_NUMBER() OVER (\n              PARTITION BY ID_NO,PNT_TYPE_CD,PICTURE_MM\n              ORDER BY MAIL_ADR DESC\n            )\nFROM omni.omni_ods_mytginfo_trn_point_add_ext_temp\n) as table_pointGrantEmail\nWHERE DupRank = 1\n\n\n-- 作成した外部テーブルが存在する場合は削除行う\nSELECT @isAllEventsTemp=count(*) FROM sys.objects WHERE schema_id = schema_id('omni') AND name='omni_ods_mytginfo_trn_point_add_ext_temp';\nIF @isAllEventsTemp = 1\n    DROP EXTERNAL TABLE [omni].[omni_ods_mytginfo_trn_point_add_ext_temp];\n",
+                        "type": "Expression"
+                      },
+                      "queryTimeout": "02:00:00",
+                      "partitionOption": "None"
+                    },
+                    "sink": {
+                      "type": "DelimitedTextSink",
+                      "storeSettings": {
+                        "type": "AzureBlobStorageWriteSettings"
+                      },
+                      "formatSettings": {
+                        "type": "DelimitedTextWriteSettings",
+                        "quoteAllText": true,
+                        "fileExtension": ".csv"
+                      }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                      "type": "TabularTranslator",
+                      "typeConversion": true,
+                      "typeConversionSettings": {
+                        "allowDataTruncation": true,
+                        "treatBooleanAsNumber": false
+                      }
+                    }
+                  },
+                  "inputs": [
+                    {
+                      "referenceName": "ds_DamDwhTable_shir",
+                      "type": "DatasetReference",
+                      "parameters": {
+                        "table": "--"
+                      }
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "referenceName": "ds_CSV_BlobGz",
+                      "type": "DatasetReference",
+                      "parameters": {
+                        "directory": "datalake/OMNI/MA/PointGrantEmail",
+                        "columnDelimiter": ",",
+                        "quoteChar": "\"",
+                        "firstRowAsHeader": true,
+                        "filename": {
+                          "value": "@concat('PointGrantEmail_', convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "policy": {
+          "elapsedTimeMetric": {}
+        },
+        "parameters": {
+          "executionStartDateTimeUTC": {
+            "type": "string",
+            "defaultValue": "@trigger().startTime"
+          }
+        },
+        "folder": {
+          "name": "検電"
+        },
+        "annotations": [],
+        "lastPublishTime": "2025-04-15T10:51:29Z"
+      },
+      "dependsOn": [
+        "[concat(variables('factoryId'), '/datasets/ds_BlobFiles_mTG')]",
+        "[concat(variables('factoryId'), '/datasets/ds_BlobGz')]",
+        "[concat(variables('factoryId'), '/datasets/ds_Gz_Sftp')]",
+        "[concat(variables('factoryId'), '/datasets/ds_CSV_Blob')]",
+        "[concat(variables('factoryId'), '/datasets/ds_CSV_BlobGz')]",
+        "[concat(variables('factoryId'), '/datasets/ds_DamDwhTable_shir')]"
+      ]
+    }
+  ]
+}

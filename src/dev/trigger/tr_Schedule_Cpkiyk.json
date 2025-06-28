@@ -1,0 +1,28 @@
+{
+  "name": "tr_Schedule_Cpkiyk",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "description": "本人特定契約(Cpkiyk)用トリガー",
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "startTime": "2024-08-16T11:00:00",
+        "timeZone": "Tokyo Standard Time",
+        "schedule": {
+          "minutes": [
+            15
+          ],
+          "hours": [
+            0
+          ]
+        }
+      }
+    }
+  },
+  "dependsOn": []
+}

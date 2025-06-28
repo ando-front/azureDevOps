@@ -1,0 +1,28 @@
+{
+  "name": "tr_Schedule_CustmNoRegistComp",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "description": "お客さま番号登録完了のお知らせ(CustmNoRegistComp)用のトリガー",
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "startTime": "2025-03-07T08:56:00",
+        "timeZone": "Tokyo Standard Time",
+        "schedule": {
+          "minutes": [
+            0
+          ],
+          "hours": [
+            3
+          ]
+        }
+      }
+    }
+  },
+  "dependsOn": []
+}

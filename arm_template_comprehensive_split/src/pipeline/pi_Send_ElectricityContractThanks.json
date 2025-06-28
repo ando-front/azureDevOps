@@ -1,0 +1,315 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "factoryName": {
+      "type": "string",
+      "metadata": "データ ファクトリ名",
+      "defaultValue": "omni-df-dev"
+    },
+    "li_dam_dwh_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_secretAccessKey": {
+      "type": "secureString",
+      "metadata": "'li_Karte_AmazonS3' の 'secretAccessKey' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomni_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomni_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sqlmi_dwh2_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_sqlmi_dwh2' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sftp_password": {
+      "type": "secureString",
+      "metadata": "'li_sftp' の 'password' のセキュリティで保護された文字列"
+    },
+    "AzureSqlDatabase1_connectionString": {
+      "type": "secureString",
+      "metadata": "'AzureSqlDatabase1' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_ftp_test_password": {
+      "type": "secureString",
+      "metadata": "'li_ftp_test' の 'password' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_dam_dwh_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_damhdinsight_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_damhdinsight_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_properties_typeProperties_accessKeyId": {
+      "type": "string",
+      "defaultValue": "AKIASLGERJSDMDR3YKGF"
+    },
+    "li_sftp_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_sftp_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_ftp_test_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_ftp_test_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_dam_kv_omni_properties_typeProperties_baseUrl": {
+      "type": "string",
+      "defaultValue": "https://tgomnidevkey03.vault.azure.net/"
+    },
+    "li_blob_damhdinsight_container_akv_properties_typeProperties_sasUri_secretName": {
+      "type": "string",
+      "defaultValue": "0001damdevrgsa-damhdinsight-container"
+    },
+    "li_blob_mytokyogas_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_mytokyogas_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.Storage/storageAccounts/0001tgomnidevrgsa"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "0001tgomnidevrgsa.blob.core.windows.net"
+      ]
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Sql/servers/damd-dwh"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "sqlServer"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "damd-dwh.database.windows.net"
+      ]
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Storage/storageAccounts/0001damdevrgsa"
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "AzureSqlMI-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/43d95da1-ff6f-49ae-868b-a427c8bb161e/resourceGroups/dam2-rg-dev/providers/Microsoft.Sql/managedInstances/dam2-sqlmi-dev"
+    },
+    "AzureSqlMI-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "managedInstance"
+    },
+    "AzureSqlMI-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "dam2-sqlmi-dev.6b9b3938f4f4.database.windows.net"
+      ]
+    },
+    "tgomnidevkey03-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.KeyVault/vaults/tgomnidevkey03"
+    },
+    "tgomnidevkey03-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "vault"
+    },
+    "tgomnidevkey03-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "tgomnidevkey03.vault.azure.net"
+      ]
+    }
+  },
+  "variables": {
+    "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('factoryName'), '/pi_Send_ElectricityContractThanks')]",
+      "type": "Microsoft.DataFactory/factories/pipelines",
+      "apiVersion": "2018-06-01",
+      "properties": {
+        "description": "DAM-DBから「電気契約Thanks」IFに必要なデータを抽出、gzipファイルでBLOB出力し、SFMCにSFTP連携する。",
+        "activities": [
+          {
+            "name": "at_CreateCSV_ElectricityContractThanks",
+            "description": "",
+            "type": "Copy",
+            "dependsOn": [],
+            "policy": {
+              "timeout": "7.00:00:00",
+              "retry": 0,
+              "retryIntervalInSeconds": 30,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "source": {
+                "type": "SqlDWSource",
+                "sqlReaderQuery": "--------------------------------------------------------------------------\n-- MA向けリスト連携（電気契約Thanksシナリオ）\n-- 2023/07 新規作成\n-- 2024/10 出力カラム「契約タイプ」追加、抽出条件変更、mTGID取得「本人特定契約」に変更\n--------------------------------------------------------------------------\n\nDECLARE @today_jst DATETIME;        -- 実行日\nSET @today_jst=CONVERT(DATETIME, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time')\n\nDECLARE @targetDate varchar(8);     -- 抽出対象日=実行日-1日\nSET @targetDate=format(DATEADD(DAY,-1,@today_jst),'yyyyMMdd');\n\n\n------------------------------------------------------------------\n----① 中間①に出力する\nTRUNCATE TABLE [omni].[omni_ods_ma_trn_new_electricity_contract_temp];\n\nINSERT INTO [omni].[omni_ods_ma_trn_new_electricity_contract_temp]\nSELECT distinct\n     c.KEY_1X                     -- ガスメータ設置場所番号\n    ,c.KEY_3X                     -- お客さま登録番号\n    ,c.GAS_4X                     -- ガス使用契約番号\n    ,c.EL_4X                      -- 電力使用契約番号\n    ,c.KEY_8X                     -- カスタマ番号\n    ,c.SUPPLY_POINT_ID            -- 供給地点特定番号\n    ,c.SA_ID                      -- 電力契約番号\n    ,c.GAS_START_DT as START_DATE -- 使用開始日　契約\n    ,o.APPLICATION_DT             -- 申込日　指図\n    ,c.SA_TYPE_CD                 -- 契約タイプ　2024/10 追加\nFROM [omni].[omni_ods_epcis_trn_contract] c              -- 電力ＣＩＳ契約情報\nINNER JOIN [omni].[omni_ods_epcis_trn_operation_order] o -- 電力ＣＩＳ指図情報\n        ON c.SA_ID=o.SA_ID                                       -- 「電力契約番号」が一致\n            AND o.OO_STATUS_FLG='800' AND o.OO_TYPE_CD='ESST'    -- 開始作業完了\n\nWHERE c.UPD_DIVISION='A'               -- 更新区分=A:追加\n\n    AND c.REC_REG_YMD=@targetDate      -- 登録日(ジョブの実行日)=ADFの実行日-1日\n\n    -- and c.SA_TYPE_CD in('ESLVY','ESOLY')     -- 契約タイプ=合算　削除 2024/10\n\n    AND EXISTS (\n        SELECT 1 FROM (\n            SELECT\n                count(distinct ct.SA_ID) as count    -- 「電力契約番号」の数\n            FROM [omni].[omni_ods_epcis_trn_contract] ct   -- 電力ＣＩＳ契約情報\n            WHERE ct.SUPPLY_POINT_ID=c.SUPPLY_POINT_ID    -- 「供給地点特定番号」が一致し、「お客さま登録番号、お客さま名、電話番号」のいずれか一致\n                AND ( ct.KEY_3X=c.KEY_3X                  -- お客さま登録番号\n                    OR ct.PER_NAME=c.PER_NAME             -- お客さま名＿漢字\n                    OR ct.PER_NAME_KANA=c.PER_NAME_KANA   -- お客さま名＿カナ\n                    OR ct.PHONE=c.PHONE                   -- 電話番号\n                )\n        )tmp\n        WHERE count=1\n    )  -- 「供給地点特定番号、お客さま登録番号」ごとの最初の契約\n;\n\n\n--------------------------------------------------------------------\n----② 中間②に出力する　削除 2024/10\n\n\n--------------------------------------------------------------------\n----③ 電気契約Thanks履歴に出力する\nDECLARE @runYMD varchar(8);   -- 実行日\nSET @runYMD=format(@today_jst,'yyyyMMdd');\n\nINSERT INTO [omni].[omni_ods_ma_trn_electricity_thanks_history]\nSELECT distinct\n    --Bx                       -- Bx　削除 2024/10\n    --MTGID                    -- mTGID　削除 2024/10\n    --INDEX_ID                 -- インデックス番号　削除 2024/10\n     KEY_1X                   -- ガスメータ設置場所番号\n    ,KEY_3X                   -- お客さま登録番号\n    ,GAS_4X                   -- ガス使用契約番号\n    ,EL_4X                    -- 電力使用契約番号\n    ,KEY_8X                   -- カスタマ番号\n    ,SUPPLY_POINT_ID          -- 供給地点特定番号\n    ,SA_ID                    -- 電力契約番号\n    ,START_DATE               -- 使用開始日\n    ,APPLICATION_DT           -- 申込日\n    --,USAGESERVICE_OUTPUT_DATE -- 利用サービス出力日　削除 2024/10\n    --,''                       -- 初回請求確定出力日　削除 2024/10\n    ,SA_TYPE_CD               -- 契約タイプ　2024/10 追加\n\t,@runYMD\nFROM [omni].[omni_ods_ma_trn_new_electricity_contract_temp] ct         -- 中間①\nWHERE not EXISTS(\n    SELECT 1 FROM [omni].[omni_ods_ma_trn_electricity_thanks_history] th -- 電気契約Thanks履歴\n    WHERE ct.SUPPLY_POINT_ID=th.SUPPLY_POINT_ID AND ct.KEY_3X=th.KEY_3X\n)  -- 電気契約Thanks履歴に同一の「供給地点特定番号、お客さま登録番号」が存在しない場合に挿入する\n;\n\n\n------------------------------------------------------------------\n--④ MA向けに出力する\nDECLARE @targetDate30 varchar(8);   -- 抽出対象日=実行日-30日\nSET @targetDate30=format(DATEADD(DAY,-30,@today_jst),'yyyyMMdd');\n\nDECLARE @targetDate25 varchar(8);   -- 抽出対象日=実行日-25日\nSET @targetDate25=format(DATEADD(DAY,-25,@today_jst),'yyyyMMdd');\n\nDECLARE @outputDT varchar(20);   -- IF出力日時\nSET @outputDT=format(CONVERT(DATETIME, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time'),'yyyy/MM/dd HH:mm:ss');\n\nSELECT\n    --Bx                        -- Bx　削除 2024/10\n     MTGID                    -- mTGID\n    --,INDEX_ID                 -- インデックス番号　削除 2024/10\n    ,KEY_1X                   -- ガスメータ設置場所番号\n    ,KEY_3X                   -- お客さま登録番号\n    ,GAS_4X                   -- ガス使用契約番号\n    ,EL_4X                    -- 電力使用契約番号\n    ,KEY_8X                   -- カスタマ番号\n    ,SUPPLY_POINT_ID          -- 供給地点特定番号\n    ,SA_ID                    -- 電力契約番号\n    ,START_DATE               -- 使用開始日\n    ,APPLICATION_DT           -- 申込日\n    ,SA_TYPE_CD               -- 契約タイプ　追加 2024/10\n    ,TRKSBTCD                 -- 種別コード　追加 2024/10\n    ,@outputDT as OUTPUT_DATETIME  -- IF出力日時\nFROM(\n    SELECT\n         cpkiyk.MTGID\n        ,txhis.KEY_1X                   -- ガスメータ設置場所番号\n        ,txhis.KEY_3X                   -- お客さま登録番号\n        ,txhis.GAS_4X                   -- ガス使用契約番号\n        ,txhis.EL_4X                    -- 電力使用契約番号\n        ,txhis.KEY_8X                   -- カスタマ番号\n        ,txhis.SUPPLY_POINT_ID          -- 供給地点特定番号\n        ,txhis.SA_ID                    -- 電力契約番号\n        ,txhis.START_DATE               -- 使用開始日\n        ,txhis.APPLICATION_DT           -- 申込日\n        ,txhis.SA_TYPE_CD               -- 契約タイプ　追加 2024/10\n        ,cpkiyk.TRKSBTCD                -- 種別コード　追加 2024/10\n--        ,ROW_NUMBER() OVER(PARTITION BY cpkiyk.MTGID ORDER BY cpkiyk.CSV_YMD desc)  as rownum   -- MTGIDが一意になるようにする　削除 2024/10\n    FROM [omni].[omni_ods_ma_trn_electricity_thanks_history] txhis -- 電気契約Thanks履歴\n    INNER JOIN [omni].[omni_ods_mytginfo_trn_cpkiyk] cpkiyk        -- 本人特定契約　変更 2024/10\n           ON cpkiyk.CST_REG_NO=txhis.KEY_3X AND cpkiyk.TAIKAI_FLAG=0\n    WHERE @targetDate30<=txhis.START_DATE AND txhis.START_DATE<=@targetDate25  -- 実行日-30日<=使用開始日<=実行日-25日\n)tmp\n;\n",
+                "queryTimeout": "02:00:00",
+                "partitionOption": "None"
+              },
+              "sink": {
+                "type": "DelimitedTextSink",
+                "storeSettings": {
+                  "type": "AzureBlobStorageWriteSettings"
+                },
+                "formatSettings": {
+                  "type": "DelimitedTextWriteSettings",
+                  "quoteAllText": true,
+                  "fileExtension": ".csv"
+                }
+              },
+              "enableStaging": false,
+              "translator": {
+                "type": "TabularTranslator",
+                "typeConversion": true,
+                "typeConversionSettings": {
+                  "allowDataTruncation": true,
+                  "treatBooleanAsNumber": false
+                }
+              }
+            },
+            "inputs": [
+              {
+                "referenceName": "ds_DamDwhTable_shir",
+                "type": "DatasetReference",
+                "parameters": {
+                  "table": "--"
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "referenceName": "ds_CSV_BlobGz",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "datalake/OMNI/MA/ElectricityContractThanks",
+                  "columnDelimiter": ",",
+                  "quoteChar": "\"",
+                  "firstRowAsHeader": true,
+                  "filename": {
+                    "value": "@concat('ElectricityContractThanks_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "at_SendSftp_ElectricityContractThanks",
+            "type": "Copy",
+            "dependsOn": [
+              {
+                "activity": "at_CreateCSV_ElectricityContractThanks",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "7.00:00:00",
+              "retry": 0,
+              "retryIntervalInSeconds": 30,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "source": {
+                "type": "BinarySource",
+                "storeSettings": {
+                  "type": "AzureBlobStorageReadSettings",
+                  "recursive": false,
+                  "deleteFilesAfterCompletion": false
+                },
+                "formatSettings": {
+                  "type": "BinaryReadSettings"
+                }
+              },
+              "sink": {
+                "type": "BinarySink",
+                "storeSettings": {
+                  "type": "SftpWriteSettings",
+                  "operationTimeout": "01:00:00",
+                  "useTempFileRename": false
+                }
+              },
+              "enableStaging": false
+            },
+            "inputs": [
+              {
+                "referenceName": "ds_BlobGz",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "datalake/OMNI/MA/ElectricityContractThanks",
+                  "filename": {
+                    "value": "@concat('ElectricityContractThanks_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "referenceName": "ds_Gz_Sftp",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "Import/DAM/ElectricityContractThanks",
+                  "filename": {
+                    "value": "@concat('ElectricityContractThanks_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "policy": {
+          "elapsedTimeMetric": {}
+        },
+        "folder": {
+          "name": "SMC"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-11-28T10:56:23Z"
+      },
+      "dependsOn": [
+        "[concat(variables('factoryId'), '/datasets/ds_DamDwhTable_shir')]",
+        "[concat(variables('factoryId'), '/datasets/ds_CSV_BlobGz')]",
+        "[concat(variables('factoryId'), '/datasets/ds_BlobGz')]",
+        "[concat(variables('factoryId'), '/datasets/ds_Gz_Sftp')]"
+      ]
+    }
+  ]
+}

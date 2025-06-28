@@ -1,0 +1,30 @@
+{
+  "name": "tr_Schedule_marketing_client_dna",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Week",
+        "interval": 1,
+        "startTime": "2023-11-29T02:54:00",
+        "timeZone": "Tokyo Standard Time",
+        "schedule": {
+          "minutes": [
+            0
+          ],
+          "hours": [
+            4
+          ],
+          "weekDays": [
+            "Sunday"
+          ]
+        }
+      }
+    }
+  },
+  "dependsOn": []
+}

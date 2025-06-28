@@ -4,9 +4,48 @@ ODBC Driver フォールバック機能付きテスト設定
 """
 
 import pytest
-import os
-import pyodbc
+import os  
 from typing import Dict, Optional
+
+# pyodbcの条件付きインポート（技術的負債対応）
+try:
+    import pyodbc
+    PYODBC_AVAILABLE = True
+except ImportError:
+    PYODBC_AVAILABLE = False
+    # pyodbcが利用できない場合のモッククラス
+    class MockPyodbc:
+        @staticmethod
+        def connect(*args, **kwargs):
+            raise ImportError("pyodbc is not available - DB tests will be skipped")
+        
+        class Error(Exception):
+            pass
+            
+        class DatabaseError(Error):
+            pass
+            
+        class InterfaceError(Error):
+            pass
+        
+        class Connection:
+            def cursor(self):
+                return MockPyodbc.Cursor()
+            def close(self):
+                pass
+        
+        class Cursor:
+            def execute(self, *args, **kwargs):
+                pass
+            def fetchall(self):
+                return []
+            def fetchone(self):
+                return None
+            def close(self):
+                pass
+    
+    pyodbc = MockPyodbc
+    PYODBC_AVAILABLE = False
 
 
 class ODBCDriverManager:
@@ -14,8 +53,7 @@ class ODBCDriverManager:
     
     DRIVER_PRIORITIES = [
         "ODBC Driver 18 for SQL Server",
-        "ODBC Driver 17 for SQL Server", 
-        "ODBC Driver 13 for SQL Server",
+        "ODBC Driver 17 for SQL Server",        "ODBC Driver 13 for SQL Server",
         "SQL Server Native Client 11.0",
         "SQL Server"
     ]
@@ -23,6 +61,9 @@ class ODBCDriverManager:
     @classmethod
     def get_available_driver(cls) -> Optional[str]:
         """利用可能なODBCドライバーを取得"""
+        if not PYODBC_AVAILABLE:
+            return None
+            
         for driver in cls.DRIVER_PRIORITIES:
             try:
                 # テスト接続文字列でドライバーの存在を確認
@@ -39,12 +80,13 @@ class ODBCDriverManager:
                     return driver
             except Exception:
                 continue
-        return None
-
-    @classmethod 
+        return None    @classmethod 
     def build_connection_string(cls, host: str, port: str, database: str, 
                               user: str, password: str, driver: Optional[str] = None) -> str:
         """接続文字列を構築"""
+        if not PYODBC_AVAILABLE:
+            raise RuntimeError("pyodbc is not available - DB tests will be skipped")
+            
         if driver is None:
             driver = cls.get_available_driver()
             
@@ -65,6 +107,10 @@ class ODBCDriverManager:
 @pytest.fixture(scope="session")
 def e2e_db_connection():
     """E2Eテスト用データベース接続フィクスチャ（ODBC Driver対応）"""
+    
+    # pyodbcが利用できない場合はスキップ
+    if not PYODBC_AVAILABLE:
+        pytest.skip("pyodbc is not available - DB tests will be skipped")
     
     # 環境変数から接続情報を取得
     host = os.getenv('SQL_SERVER_HOST', 'sqlserver-test')

@@ -1,6 +1,5 @@
 {
   "name": "pi_PointGrantEmail",
-  "type": "Microsoft.DataFactory/factories/pipelines",
   "properties": {
     "description": "mytokyogas-Blobから「ポイント付与メール」IFに必要なデータを抽出、gzipファイルでBLOB出力し、SFMCにSFTP連携する。",
     "activities": [
@@ -285,9 +284,6 @@
         }
       }
     ],
-    "policy": {
-      "elapsedTimeMetric": {}
-    },
     "parameters": {
       "executionStartDateTimeUTC": {
         "type": "string",
@@ -300,12 +296,5 @@
     "annotations": [],
     "lastPublishTime": "2025-04-15T10:51:29Z"
   },
-  "dependsOn": [
-    "[concat(variables('factoryId'), '/datasets/ds_BlobFiles_mTG')]",
-    "[concat(variables('factoryId'), '/datasets/ds_BlobGz')]",
-    "[concat(variables('factoryId'), '/datasets/ds_Gz_Sftp')]",
-    "[concat(variables('factoryId'), '/datasets/ds_CSV_Blob')]",
-    "[concat(variables('factoryId'), '/datasets/ds_CSV_BlobGz')]",
-    "[concat(variables('factoryId'), '/datasets/ds_DamDwhTable_shir')]"
-  ]
+  "type": "Microsoft.DataFactory/factories/pipelines"
 }

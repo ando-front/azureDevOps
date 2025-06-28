@@ -3,9 +3,39 @@
 """
 
 import pytest
-import pyodbc
 import requests
 import os
+
+# pyodbc conditionally imported for ODBC-dependent tests
+try:
+    import pyodbc
+    PYODBC_AVAILABLE = True
+except ImportError:
+    PYODBC_AVAILABLE = False
+    class MockPyodbc:
+        """Mock pyodbc module for environments without ODBC drivers"""
+        @staticmethod
+        def connect(*args, **kwargs):
+            raise ImportError("pyodbc not available - skipping ODBC-dependent tests")
+        
+        class Connection:
+            def cursor(self):
+                return MockPyodbc.Cursor()
+            def close(self):
+                pass
+        
+        class Cursor:
+            def execute(self, *args, **kwargs):
+                pass
+            def fetchall(self):
+                return []
+            def fetchone(self):
+                return None
+            def close(self):
+                pass
+    
+    pyodbc = MockPyodbc
+
 from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
 
 
@@ -16,13 +46,13 @@ class TestE2EWorking:
     def setup_class(cls):
         """再現可能テスト環境のセットアップ"""
         setup_reproducible_test_class()
+        cls._pyodbc_available = PYODBC_AVAILABLE
         
         # Disable proxy settings for tests
         for var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
             if var in os.environ:
                 del os.environ[var]
 
-    
     @classmethod 
     def teardown_class(cls):
         """再現可能テスト環境のクリーンアップ"""
@@ -38,14 +68,30 @@ class TestE2EWorking:
         """データベース接続テスト - 動作確認済み"""
         conn_str = (
             "DRIVER={ODBC Driver 18 for SQL Server};"
-            "SERVER=localhost,1433;"
+            "SERVER=sqlserver-test,1433;"  # CIではsqlserver-testコンテナを使用
             "DATABASE=TGMATestDB;"
             "UID=sa;"
             "PWD=YourStrong!Passw0rd123;"
             "TrustServerCertificate=yes;"
+            "Connection Timeout=60;"
+            "Command Timeout=60;"
         )
         
-        conn = pyodbc.connect(conn_str, timeout=10)
+        # リトライ機能付きの接続
+        max_retries = 3
+        conn = None
+        for attempt in range(max_retries):
+            try:
+                conn = pyodbc.connect(conn_str, timeout=60)
+                break
+            except Exception as e:
+                print(f"Connection attempt {attempt + 1} failed: {e}")
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(5)
+                else:
+                    raise
+        
         cursor = conn.cursor()
         
         # データベース名確認
@@ -81,8 +127,7 @@ class TestE2EWorking:
         """Azurite基本テスト"""
         try:
             session = self._get_no_proxy_session()
-            response = session.get("http://localhost:10000/devstoreaccount1", timeout=10)
-            # 400でも接続は成功（認証不正だが接続成功）
+            response = session.get("http://localhost:10000/devstoreaccount1", timeout=10)            # 400でも接続は成功（認証不正だが接続成功）
             assert response.status_code in [200, 400]
         except requests.exceptions.ConnectionError:
             pytest.skip("Azurite not accessible")
@@ -94,14 +139,30 @@ class TestE2EWorking:
         """テーブル操作テスト"""
         conn_str = (
             "DRIVER={ODBC Driver 18 for SQL Server};"
-            "SERVER=localhost,1433;"
+            "SERVER=sqlserver-test,1433;"  # CIではsqlserver-testコンテナを使用
             "DATABASE=TGMATestDB;"
             "UID=sa;"
             "PWD=YourStrong!Passw0rd123;"
             "TrustServerCertificate=yes;"
+            "Connection Timeout=60;"
+            "Command Timeout=60;"
         )
         
-        conn = pyodbc.connect(conn_str, timeout=10)
+        # リトライ機能付きの接続
+        max_retries = 3
+        conn = None
+        for attempt in range(max_retries):
+            try:
+                conn = pyodbc.connect(conn_str, timeout=60)
+                break
+            except Exception as e:
+                print(f"Connection attempt {attempt + 1} failed: {e}")
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(5)
+                else:
+                    raise
+        
         cursor = conn.cursor()
         
         # テストデータ操作

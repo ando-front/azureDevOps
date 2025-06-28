@@ -4,11 +4,19 @@
 import pytest
 import time
 
+# pyodbcの条件付きインポート
+try:
+    import pyodbc
+    PYODBC_AVAILABLE = True
+except ImportError:
+    PYODBC_AVAILABLE = False
+
 from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
 
 class TestSimpleETL:
     """シンプルなETLテスト"""
     
+    @pytest.mark.skipif(not PYODBC_AVAILABLE, reason="pyodbc not available")
     def test_data_extraction_simple(self):
         """シンプルなデータ抽出テスト"""
         connection = SynapseE2EConnection()
@@ -37,6 +45,7 @@ class TestSimpleETL:
         
         print("✅ データ抽出テスト成功")
 
+    @pytest.mark.skipif(not PYODBC_AVAILABLE, reason="pyodbc not available")
     def test_data_transformation_simple(self):
         """シンプルなデータ変換テスト"""
         connection = SynapseE2EConnection()
@@ -54,8 +63,7 @@ class TestSimpleETL:
         """)
         
         print(f"変換結果: {results}")
-        
-        # 変換品質チェック
+          # 変換品質チェック
         for result in results:
             source_type = result[0]
             record_count = result[1]
@@ -66,6 +74,7 @@ class TestSimpleETL:
         
         print("✅ データ変換テスト成功")
 
+    @pytest.mark.skipif(not PYODBC_AVAILABLE, reason="pyodbc not available")
     def test_data_loading_simple(self):
         """シンプルなデータローディングテスト"""
         connection = SynapseE2EConnection()
@@ -81,17 +90,16 @@ class TestSimpleETL:
         """)
         
         print(f"ローディング結果: {results}")
-        
-        # ローディング品質チェック
+          # ローディング品質チェック
         result = results[0]
         total_records = result[0]
         source_types = result[1]
-        
         assert total_records > 0, "ローディングされたレコードがありません"
         assert source_types >= 3, f"期待: 3以上のソースタイプ, 実際: {source_types}"
         
         print("✅ データローディングテスト成功")
 
+    @pytest.mark.skipif(not PYODBC_AVAILABLE, reason="pyodbc not available")
     def test_incremental_processing_simple(self):
         """シンプルな増分処理テスト"""
         connection = SynapseE2EConnection()

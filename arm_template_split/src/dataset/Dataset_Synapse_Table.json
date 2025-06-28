@@ -1,0 +1,13 @@
+{
+    "name": "DS_Synapse_Table",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_Synapse_Workspace",
+            "type": "LinkedServiceReference"
+        },
+        "type": "AzureSqlDWTable",
+        "typeProperties": {
+            "tableName": "<Your_Synapse_TableName>"
+        }
+    }
+}

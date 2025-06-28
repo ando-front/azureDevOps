@@ -1,0 +1,196 @@
+{
+  "name": "pi_Send_UsageServices",
+  "type": "Microsoft.DataFactory/factories/pipelines",
+  "properties": {
+    "description": "MA向けリスト連携（利用サービス）",
+    "activities": [
+      {
+        "name": "LoadUsageServicesQuery",
+        "description": "Load Usage Services SQL query from external file",
+        "type": "Lookup",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "SqlDWSource",
+            "sqlReaderQuery": "SELECT query_content FROM OPENROWSET(BULK 'external_sql/usage_services_main_query.sql', DATA_SOURCE = 'sql_queries_storage', SINGLE_CLOB) AS [query_file]",
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "dataset": {
+            "referenceName": "ds_azuredw_generic",
+            "type": "DatasetReference"
+          },
+          "firstRowOnly": true
+        }
+      },
+      {
+        "name": "at_CreateCSV_UsageServices",
+        "description": "",
+        "type": "Copy",
+        "dependsOn": [
+          {
+            "activity": "LoadUsageServicesQuery",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 10,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "SqlDWSource",
+            "sqlReaderQuery": {
+              "value": "@{string(outputs('LoadUsageServicesQuery').body)}",
+              "type": "Expression"
+            },
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "sink": {
+            "type": "DelimitedTextSink",
+            "storeSettings": {
+              "type": "AzureBlobStorageWriteSettings"
+            },
+            "formatSettings": {
+              "type": "DelimitedTextWriteSettings",
+              "quoteAllText": true,
+              "fileExtension": ".csv"
+            }
+          },
+          "enableStaging": false,
+          "translator": {
+            "type": "TabularTranslator",
+            "typeConversion": true,
+            "typeConversionSettings": {
+              "allowDataTruncation": true,
+              "treatBooleanAsNumber": false
+            }
+          }
+        },
+        "inputs": [
+          {
+            "referenceName": "ds_DamDwhTable_shir",
+            "type": "DatasetReference",
+            "parameters": {
+              "table": "--"
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "ds_CSV_BlobGz",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "datalake/OMNI/MA/UsageServices",
+              "columnDelimiter": ",",
+              "quoteChar": "\"",
+              "firstRowAsHeader": true,
+              "filename": {
+                "value": "@concat('UsageServices_', convertFromUtc(utcnow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "at_SendSftp_UsageServices",
+        "description": "MA向けリスト連携（利用サービス）sftp送出",
+        "type": "Copy",
+        "dependsOn": [
+          {
+            "activity": "at_CreateCSV_UsageServices",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 10,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "BinarySource",
+            "storeSettings": {
+              "type": "AzureBlobStorageReadSettings",
+              "recursive": false,
+              "deleteFilesAfterCompletion": false
+            },
+            "formatSettings": {
+              "type": "BinaryReadSettings"
+            }
+          },
+          "sink": {
+            "type": "BinarySink",
+            "storeSettings": {
+              "type": "SftpWriteSettings",
+              "operationTimeout": "08:00:00",
+              "useTempFileRename": false
+            }
+          },
+          "enableStaging": false
+        },
+        "inputs": [
+          {
+            "referenceName": "ds_BlobGz",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "datalake/OMNI/MA/UsageServices",
+              "filename": {
+                "value": "@concat('UsageServices_', convertFromUtc(utcnow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "ds_Gz_Sftp",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "Import/DAM/UsageServices",
+              "filename": {
+                "value": "@concat('UsageServices_', convertFromUtc(utcnow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "policy": {
+      "elapsedTimeMetric": {}
+    },
+    "folder": {
+      "name": "SMC"
+    },
+    "annotations": [],
+    "lastPublishTime": "2024-11-05T06:55:36Z"
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/datasets/ds_DamDwhTable_shir')]",
+    "[concat(variables('factoryId'), '/datasets/ds_CSV_BlobGz')]",
+    "[concat(variables('factoryId'), '/datasets/ds_BlobGz')]",
+    "[concat(variables('factoryId'), '/datasets/ds_Gz_Sftp')]"
+  ]
+}

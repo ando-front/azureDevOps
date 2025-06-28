@@ -1,0 +1,15 @@
+{
+  "name": "li_dam_dwh",
+  "properties": {
+    "description": "DAM-DB接続用リンクサービス",
+    "annotations": [],
+    "type": "AzureSqlDW",
+    "typeProperties": {
+      "connectionString": "Server=tcp:damserver.database.windows.net,1433;Database=DAM_DWH;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Default;"
+    },
+    "connectVia": {
+      "referenceName": "omni-sharing01-d-jpe",
+      "type": "IntegrationRuntimeReference"
+    }
+  }
+}

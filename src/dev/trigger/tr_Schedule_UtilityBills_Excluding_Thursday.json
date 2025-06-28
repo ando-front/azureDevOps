@@ -1,0 +1,36 @@
+{
+  "name": "tr_Schedule_UtilityBills_Excluding_Thursday",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "description": "料金確定のお知らせ(UtilityBills)の木曜日を除く曜日用トリガー",
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Week",
+        "interval": 1,
+        "startTime": "2024-09-20T01:00:00",
+        "timeZone": "Tokyo Standard Time",
+        "schedule": {
+          "minutes": [
+            30
+          ],
+          "hours": [
+            16
+          ],
+          "weekDays": [
+            "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Friday",
+            "Saturday"
+          ]
+        }
+      }
+    }
+  },
+  "dependsOn": []
+}

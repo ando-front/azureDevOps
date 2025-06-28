@@ -1,0 +1,316 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "factoryName": {
+      "type": "string",
+      "metadata": "データ ファクトリ名",
+      "defaultValue": "omni-df-dev"
+    },
+    "li_dam_dwh_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_secretAccessKey": {
+      "type": "secureString",
+      "metadata": "'li_Karte_AmazonS3' の 'secretAccessKey' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomni_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomni_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sqlmi_dwh2_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_sqlmi_dwh2' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sftp_password": {
+      "type": "secureString",
+      "metadata": "'li_sftp' の 'password' のセキュリティで保護された文字列"
+    },
+    "AzureSqlDatabase1_connectionString": {
+      "type": "secureString",
+      "metadata": "'AzureSqlDatabase1' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_ftp_test_password": {
+      "type": "secureString",
+      "metadata": "'li_ftp_test' の 'password' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_dam_dwh_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_damhdinsight_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_damhdinsight_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_properties_typeProperties_accessKeyId": {
+      "type": "string",
+      "defaultValue": "AKIASLGERJSDMDR3YKGF"
+    },
+    "li_sftp_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_sftp_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_ftp_test_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_ftp_test_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_dam_kv_omni_properties_typeProperties_baseUrl": {
+      "type": "string",
+      "defaultValue": "https://tgomnidevkey03.vault.azure.net/"
+    },
+    "li_blob_damhdinsight_container_akv_properties_typeProperties_sasUri_secretName": {
+      "type": "string",
+      "defaultValue": "0001damdevrgsa-damhdinsight-container"
+    },
+    "li_blob_mytokyogas_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_mytokyogas_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.Storage/storageAccounts/0001tgomnidevrgsa"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "0001tgomnidevrgsa.blob.core.windows.net"
+      ]
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Sql/servers/damd-dwh"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "sqlServer"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "damd-dwh.database.windows.net"
+      ]
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Storage/storageAccounts/0001damdevrgsa"
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "AzureSqlMI-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/43d95da1-ff6f-49ae-868b-a427c8bb161e/resourceGroups/dam2-rg-dev/providers/Microsoft.Sql/managedInstances/dam2-sqlmi-dev"
+    },
+    "AzureSqlMI-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "managedInstance"
+    },
+    "AzureSqlMI-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "dam2-sqlmi-dev.6b9b3938f4f4.database.windows.net"
+      ]
+    },
+    "tgomnidevkey03-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.KeyVault/vaults/tgomnidevkey03"
+    },
+    "tgomnidevkey03-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "vault"
+    },
+    "tgomnidevkey03-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "tgomnidevkey03.vault.azure.net"
+      ]
+    }
+  },
+  "variables": {
+    "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('factoryName'), '/pi_Send_LIMSettlementBreakdownRepair')]",
+      "type": "Microsoft.DataFactory/factories/pipelines",
+      "apiVersion": "2018-06-01",
+      "properties": {
+        "description": "DAM-DBから「ガス機器・水まわり修理 関連商材訴求」IFに必要なデータを抽出、gzipファイルでBLOB出力し、SFMCにSFTP連携する。",
+        "activities": [
+          {
+            "name": "at_CreateCSV_LIMSettlementBreakdownRepair",
+            "description": "DBから「ガス機器・水まわり修理 関連商材訴求」IFに必要なデータを抽出、gzipファイルでBLOB出力",
+            "type": "Copy",
+            "dependsOn": [],
+            "policy": {
+              "timeout": "7.00:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "source": {
+                "type": "SqlDWSource",
+                "sqlReaderQuery": "--------------------------------------------------------------------------\n-- MA向けリスト連携（ガス機器・水まわり修理）\n--------------------------------------------------------------------------\n\nDECLARE @today_jst DATETIME;        -- 実行日\nSET @today_jst = CONVERT(DATETIME, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time')\n\nDECLARE @targetDate varchar(8);     -- 抽出対象日=実行日-21日\nSET @targetDate = format(DATEADD(DAY,-21,@today_jst),'yyyyMMdd');\n\n------------------------------------------------------------------\n--① 中間①に出力する\nTRUNCATE TABLE [omni].[omni_ods_ma_trn_lim_settlement_breakdown_repair_temp];\n\nINSERT INTO [omni].[omni_ods_ma_trn_lim_settlement_breakdown_repair_temp]\n\nSELECT\n      GMT_SET_NO                                                                                           --ガスメータ設置場所番号\n     ,WORK_COMPLETION_DATE                                                                                 --作業完了年月日\n     ,MAX(CASE WHEN WORK_SUBJECT_CATEGORY_CODE = '11' THEN '1'ELSE '0' END) AS GAS_APPLIANCES_REPAIR_FLAG  --ガス機器修理フラグ\n     ,MAX(CASE WHEN WORK_SUBJECT_CATEGORY_CODE = '1A' THEN '1'ELSE '0' END) AS WET_AREA_REPAIR_FLAG        --水まわり修理フラグ\nFROM [omni].[omni_ods_livalit_trn_lim_settlement_breakdown_repair]  --ＬＩＭ精算用故障修理データ\nWHERE  GMT_SET_NO <> '00000000000'                      --ガスメータ設置場所番号が無い(00000000000)レコード以外抽出する\n       AND TG_ACCEPTANCE_INSPECTION_DATE <> '00000000'  --TG検収年月日が無い(00000000)レコード以外を抽出する\n       AND WORK_COMPLETION_DATE >= @targetDate          --実行日から21日以内のお客様を抽出する\n       AND FIELD_WORK_DETAIL_CATEGORY_CODE = '0301'       --フィールド業務詳細区分コード が0301(一般機器)を抽出する\n       AND WORK_SUBJECT_CATEGORY_CODE IN ('11','1A')    --作業対象区分コードが11(一般機器)か1A(水まわり修理(加入なし))を抽出する\nGROUP BY GMT_SET_NO,WORK_COMPLETION_DATE \n\n;\n------------------------------------------------------------------\n\n-- 中間①のうち対象外のレコードを削除する\nDELETE FROM [omni].[omni_ods_ma_trn_lim_settlement_breakdown_repair_temp]\nWHERE GMT_SET_NO in(\n    SELECT\n         KEY_1X\n    FROM (\n        SELECT Bx\n              ,SERVICE_KEY1 AS KEY_1X    -- ガスメータ設置場所番号\n        FROM [omni].[omni_ods_cloak_trn_usageservice]\n        WHERE TRANSFER_TYPE = '02'  --異動種別=02(提供中)\n          AND SERVICE_KEY_TYPE1 = '001'\n        UNION \n        SELECT Bx\n              ,SERVICE_KEY2 AS KEY_1X    -- ガスメータ設置場所番号\n        FROM [omni].[omni_ods_cloak_trn_usageservice]\n        WHERE TRANSFER_TYPE = '02'  --異動種別=02(提供中)\n          AND SERVICE_KEY_TYPE2 = '001'\n        UNION \n        SELECT Bx\n              ,SERVICE_KEY3 AS KEY_1X    -- ガスメータ設置場所番号\n        FROM [omni].[omni_ods_cloak_trn_usageservice]\n        WHERE TRANSFER_TYPE = '02'  --異動種別=02(提供中)\n          AND SERVICE_KEY_TYPE3 = '001'\n    ) tmp\n    GROUP BY KEY_1X\n    HAVING count(*)>1   -- 1x:Bx=1:n -- 出力対象外\n)\n;\n\n------------------------------------------------------------------\n--② MA向けに出力する\nDECLARE @outputDT varchar(20);   -- IF出力日時\nSET @outputDT = format(CONVERT(DATETIME, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time'),'yyyy/MM/dd HH:mm:ss');\n\nSELECT      \n     Bx                            --Bx\n    ,myTGID AS mTGID               --myTGID\n    ,INDEX_ID                      --インデックス番号\n    ,GMT_SET_NO                    --ガスメータ設置場所番号\n    ,WORK_COMPLETION_DATE          --作業完了年月日\n    ,GAS_APPLIANCES_REPAIR_FLAG    --ガス機器修理フラグ\n    ,WET_AREA_REPAIR_FLAG          --水まわり修理フラグ\n    ,@outputDT AS OUTPUT_DATETIME  --IF出力日時\nFROM(\n    SELECT\n           us.Bx                           --Bx\n          ,us.myTGID                       --myTGID\n          ,us.INDEX_ID                     --インデックス番号\n          ,rep.GMT_SET_NO                  --ガスメータ設置場所番号\n          ,WORK_COMPLETION_DATE            --作業完了年月日\n          ,rep.GAS_APPLIANCES_REPAIR_FLAG  --ガス機器修理フラグ\n          ,rep.WET_AREA_REPAIR_FLAG        --水まわり修理フラグ\n          ,ROW_NUMBER() OVER(PARTITION BY us.Bx,rep.GMT_SET_NO,rep.WORK_COMPLETION_DATE  ORDER BY OUTPUT_DATE desc)  as rownum -- 同一「Bx,ガスメータ設置場所番号,作業完了年月日」に異なる「INDEX_ID」が存在する場合は「OUTPUT_DATE」が新しいレコードを抽出する\n    FROM [omni].[omni_ods_ma_trn_lim_settlement_breakdown_repair_temp] rep  --中間①\n    INNER JOIN [omni].[omni_ods_cloak_trn_usageservice] us                  -- 利用サービス\n            ON rep.GMT_SET_NO in(us.SERVICE_KEY1,us.SERVICE_KEY2,us.SERVICE_KEY3)\n           AND TRANSFER_TYPE = '02'  --異動種別が02(提供中)のレコードを抽出する\n)tmp\nWHERE rownum = 1\n;\n",
+                "queryTimeout": "02:00:00",
+                "partitionOption": "None"
+              },
+              "sink": {
+                "type": "DelimitedTextSink",
+                "storeSettings": {
+                  "type": "AzureBlobStorageWriteSettings"
+                },
+                "formatSettings": {
+                  "type": "DelimitedTextWriteSettings",
+                  "quoteAllText": true,
+                  "fileExtension": ".csv"
+                }
+              },
+              "enableStaging": false,
+              "translator": {
+                "type": "TabularTranslator",
+                "typeConversion": true,
+                "typeConversionSettings": {
+                  "allowDataTruncation": true,
+                  "treatBooleanAsNumber": false
+                }
+              }
+            },
+            "inputs": [
+              {
+                "referenceName": "ds_DamDwhTable_shir",
+                "type": "DatasetReference",
+                "parameters": {
+                  "table": "--"
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "referenceName": "ds_CSV_BlobGz",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "datalake/OMNI/MA/LIMSettlementBreakdownRepair",
+                  "columnDelimiter": ",",
+                  "quoteChar": "\"",
+                  "firstRowAsHeader": true,
+                  "filename": {
+                    "value": "@concat('LIMSettlementBreakdownRepair_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "at_SendSftp_LIMSettlementBreakdownRepair",
+            "description": "Blobに出力されたgzipファイルをSFMCにSFTP連携",
+            "type": "Copy",
+            "dependsOn": [
+              {
+                "activity": "at_CreateCSV_LIMSettlementBreakdownRepair",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "7.00:00:00",
+              "retry": 0,
+              "retryIntervalInSeconds": 30,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "source": {
+                "type": "BinarySource",
+                "storeSettings": {
+                  "type": "AzureBlobStorageReadSettings",
+                  "recursive": false,
+                  "deleteFilesAfterCompletion": false
+                },
+                "formatSettings": {
+                  "type": "BinaryReadSettings"
+                }
+              },
+              "sink": {
+                "type": "BinarySink",
+                "storeSettings": {
+                  "type": "SftpWriteSettings",
+                  "operationTimeout": "01:00:00",
+                  "useTempFileRename": false
+                }
+              },
+              "enableStaging": false
+            },
+            "inputs": [
+              {
+                "referenceName": "ds_BlobGz",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "datalake/OMNI/MA/LIMSettlementBreakdownRepair",
+                  "filename": {
+                    "value": "@concat('LIMSettlementBreakdownRepair_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "referenceName": "ds_Gz_Sftp",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "Import/DAM/LIMSettlementBreakdownRepair",
+                  "filename": {
+                    "value": "@concat('LIMSettlementBreakdownRepair_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "policy": {
+          "elapsedTimeMetric": {}
+        },
+        "folder": {
+          "name": "SMC"
+        },
+        "annotations": [],
+        "lastPublishTime": "2025-05-09T02:11:11Z"
+      },
+      "dependsOn": [
+        "[concat(variables('factoryId'), '/datasets/ds_DamDwhTable_shir')]",
+        "[concat(variables('factoryId'), '/datasets/ds_CSV_BlobGz')]",
+        "[concat(variables('factoryId'), '/datasets/ds_BlobGz')]",
+        "[concat(variables('factoryId'), '/datasets/ds_Gz_Sftp')]"
+      ]
+    }
+  ]
+}

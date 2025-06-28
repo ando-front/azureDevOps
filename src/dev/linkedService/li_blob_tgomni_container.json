@@ -1,0 +1,14 @@
+{
+  "name": "li_blob_tgomni_container",
+  "properties": {
+    "annotations": [],
+    "type": "AzureBlobStorage",
+    "typeProperties": {
+      "connectionString": "DefaultEndpointsProtocol=https;AccountName=tgomnicontainer;EndpointSuffix=core.windows.net;AccountKey=PLACEHOLDER"
+    },
+    "connectVia": {
+      "referenceName": "omni-sharing01-d-jpe",
+      "type": "IntegrationRuntimeReference"
+    }
+  }
+}

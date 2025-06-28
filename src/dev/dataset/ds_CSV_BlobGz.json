@@ -1,0 +1,66 @@
+{
+  "name": "ds_CSV_BlobGz",
+  "type": "Microsoft.DataFactory/factories/datasets",
+  "properties": {
+    "description": "CSVを作成し、gzipに圧縮して、Blob出力する\n",
+    "linkedServiceName": {
+      "referenceName": "li_blob_damhdinsight_container",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "directory": {
+        "type": "string",
+        "defaultValue": "datalake/dev/OMNI"
+      },
+      "columnDelimiter": {
+        "type": "string",
+        "defaultValue": ","
+      },
+      "quoteChar": {
+        "type": "string",
+        "defaultValue": "\""
+      },
+      "firstRowAsHeader": {
+        "type": "bool",
+        "defaultValue": false
+      },
+      "filename": {
+        "type": "string",
+        "defaultValue": "test.csv"
+      }
+    },
+    "annotations": [],
+    "type": "DelimitedText",
+    "typeProperties": {
+      "location": {
+        "type": "AzureBlobStorageLocation",
+        "fileName": {
+          "value": "@dataset().filename",
+          "type": "Expression"
+        },
+        "folderPath": {
+          "value": "@dataset().directory",
+          "type": "Expression"
+        },
+        "container": "damhdinsight-container"
+      },
+      "columnDelimiter": {
+        "value": "@dataset().columnDelimiter",
+        "type": "Expression"
+      },
+      "rowDelimiter": "\n",
+      "compressionCodec": "gzip",
+      "compressionLevel": "Optimal",
+      "escapeChar": "\\",
+      "firstRowAsHeader": {
+        "value": "@dataset().firstRowAsHeader",
+        "type": "Expression"
+      },
+      "quoteChar": ""
+    },
+    "schema": []
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/linkedServices/li_blob_damhdinsight_container')]"
+  ]
+}

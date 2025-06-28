@@ -1,0 +1,28 @@
+{
+  "name": "tr_Schedule_LINEIDLinkInfo",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "description": "LINEID連携情報(LINEIDLinkInfo)用トリガー",
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "startTime": "2023-12-09T01:00:00",
+        "timeZone": "Tokyo Standard Time",
+        "schedule": {
+          "minutes": [
+            30
+          ],
+          "hours": [
+            6
+          ]
+        }
+      }
+    }
+  },
+  "dependsOn": []
+}

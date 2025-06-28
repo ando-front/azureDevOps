@@ -1,0 +1,136 @@
+{
+  "name": "df_json_data",
+  "type": "Microsoft.DataFactory/factories/dataflows",
+  "properties": {
+    "type": "MappingDataFlow",
+    "typeProperties": {
+      "sources": [
+        {
+          "dataset": {
+            "referenceName": "ds_contract_score",
+            "type": "DatasetReference"
+          },
+          "name": "dataimport",
+          "description": "ds_contract_scoreからデータをインポートします"
+        }
+      ],
+      "sinks": [
+        {
+          "dataset": {
+            "referenceName": "ds_KarteS3",
+            "type": "DatasetReference"
+          },
+          "name": "dataexportkarte"
+        },
+        {
+          "dataset": {
+            "referenceName": "ds_Json_Blob",
+            "type": "DatasetReference"
+          },
+          "name": "dataexportblob"
+        }
+      ],
+      "transformations": [
+        {
+          "name": "contractscoreColumn",
+          "description": "TG契約情報をJSON形式に変換しています"
+        }
+      ],
+      "scriptLines": [
+        "parameters{",
+        "     filename as string (\"test.json\")",
+        "}",
+        "source(output(",
+        "          HASHED_MTGID as string,",
+        "          INTERNAL_AREA_GAS as string,",
+        "          INTERNAL_AREA_GAS_MENU as string,",
+        "          EXTERNAL_AREA_GAS as string,",
+        "          EXTERNAL_AREA_GAS_MENU as string,",
+        "          POWER as string,",
+        "          POWER_MENU as string,",
+        "          PV_SITI_SCR as decimal(6,5),",
+        "          DG_STN_AGE_0_29 as decimal(5,2),",
+        "          DG_STN_AGE_30_39 as decimal(5,2),",
+        "          DG_STN_AGE_40_49 as decimal(5,2),",
+        "          DG_STN_AGE_50_59 as decimal(5,2),",
+        "          DG_STN_AGE_60_69 as decimal(5,2),",
+        "          DG_STN_AGE_70_99 as decimal(5,2),",
+        "          DG_STNS_4MLON_LESS as decimal(5,2),",
+        "          DG_STNS_10MLON_OVER as decimal(5,2),",
+        "          TNKYSK_1YEAR as decimal(5,2),",
+        "          SYZI_GS_DTRKSCR_MONTH03 as decimal(5,2),",
+        "          SYZI_GS_DTRKSCR_YEAR01 as decimal(5,2),",
+        "          SYZI_DK_DTRKSCR_MONTH03 as decimal(5,2),",
+        "          SYZI_DK_DTRKSCR_YEAR01 as decimal(5,2),",
+        "          SYZI_SGSTB_TBLKNR as decimal(5,2),",
+        "          SYZI_SGSTB_BLTINKNR as decimal(5,2),",
+        "          SYZI_SGSTB_TES as decimal(5,2),",
+        "          SYZI_SGSTB_HRK as decimal(5,2),",
+        "          SYZI_SGSTB_OY as decimal(5,2),",
+        "          SYZI_SGSTB_FNHT as decimal(5,2),",
+        "          SYZI_SGSTB_GSKNSK as decimal(5,2),",
+        "          SYZI_SV_GSKK_SS as decimal(5,2),",
+        "          SYZI_DK_WEB as decimal(5,2)",
+        "     ),",
+        "     allowSchemaDrift: false,",
+        "     validateSchema: false,",
+        "     isolationLevel: 'READ_UNCOMMITTED',",
+        "     format: 'table',",
+        "     staged: false) ~> dataimport",
+        "dataimport derive(user_id = HASHED_MTGID,",
+        "          contract = @(internal_area_gas=toBoolean(INTERNAL_AREA_GAS),",
+        "          internal_area_gas_menu=INTERNAL_AREA_GAS_MENU,",
+        "          external_area_gas=toBoolean(EXTERNAL_AREA_GAS),",
+        "          external_area_gas_menu=EXTERNAL_AREA_GAS_MENU,",
+        "          power=toBoolean(POWER),",
+        "          power_menu=POWER_MENU),",
+        "          score = @(pv_siti_scr=PV_SITI_SCR,",
+        "          dg_stn_age_0_29=DG_STN_AGE_0_29,",
+        "          dg_stn_age_30_39=DG_STN_AGE_30_39,",
+        "          dg_stn_age_40_49=DG_STN_AGE_40_49,",
+        "          dg_stn_age_50_59=DG_STN_AGE_50_59,",
+        "          dg_stn_age_60_69=DG_STN_AGE_60_69,",
+        "          dg_stn_age_70_99=DG_STN_AGE_70_99,",
+        "          dg_stns_4mlon_less=DG_STNS_4MLON_LESS,",
+        "          dg_stns_10mlon_over=DG_STNS_10MLON_OVER,",
+        "          tnkysk_1year=TNKYSK_1YEAR,",
+        "          syzi_gs_dtrkscr_month03=SYZI_GS_DTRKSCR_MONTH03,",
+        "          syzi_gs_dtrkscr_year01=SYZI_GS_DTRKSCR_YEAR01,",
+        "          syzi_dk_dtrkscr_month03=SYZI_DK_DTRKSCR_MONTH03,",
+        "          syzi_dk_dtrkscr_year01=SYZI_DK_DTRKSCR_YEAR01,",
+        "          syzi_sgstb_tblknr=SYZI_SGSTB_TBLKNR,",
+        "          syzi_sgstb_bltinknr=SYZI_SGSTB_BLTINKNR,",
+        "          syzi_sgstb_tes=SYZI_SGSTB_TES,",
+        "          syzi_sgstb_hrk=SYZI_SGSTB_HRK,",
+        "          syzi_sgstb_oy=SYZI_SGSTB_OY,",
+        "          syzi_sgstb_fnht=SYZI_SGSTB_FNHT,",
+        "          syzi_sgstb_gsknsk=SYZI_SGSTB_GSKNSK,",
+        "          syzi_sv_gskk_ss=SYZI_SV_GSKK_SS,",
+        "          syzi_dk_web=SYZI_DK_WEB)) ~> contractscoreColumn",
+        "contractscoreColumn sink(allowSchemaDrift: true,",
+        "     validateSchema: false,",
+        "     partitionFileNames:[($filename)],",
+        "     mapColumn(",
+        "          user_id,",
+        "          contract,",
+        "          score",
+        "     ),",
+        "     partitionBy('hash', 1)) ~> dataexportkarte",
+        "contractscoreColumn sink(allowSchemaDrift: true,",
+        "     validateSchema: false,",
+        "     partitionFileNames:['$filename'],",
+        "     mapColumn(",
+        "          user_id,",
+        "          contract,",
+        "          score",
+        "     ),",
+        "     partitionBy('hash', 1)) ~> dataexportblob"
+      ]
+    }
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/datasets/ds_contract_score')]",
+    "[concat(variables('factoryId'), '/datasets/ds_KarteS3')]",
+    "[concat(variables('factoryId'), '/datasets/ds_Json_Blob')]"
+  ]
+}

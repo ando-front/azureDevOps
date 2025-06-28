@@ -1,0 +1,60 @@
+================================================================================
+包括的テーブル構造検証レポート
+================================================================================
+検証実行日時: 2025-06-12 15:14:10
+
+【検証サマリー】
+総テーブル数: 7
+検証成功: 0
+検証失敗: 7
+成功率: 0.0%
+
+【Marketing Client DM 460列構造テーブル】
+テーブル名: omni.omni_ods_marketing_trn_client_dm
+検証結果: ❌ 失敗
+カラム数: 0 (期待範囲: 460-470)
+不足カラム: CLIENT_KEY_AX, REC_REG_YMD, REC_UPD_YMD
+不足パターン: LIV0EU_*, TESHSMC_*, TESHSEQ_*, EPCISCRT_*, WEBHIS_*
+エラー: テーブル omni.omni_ods_marketing_trn_client_dm が存在しません
+
+【基本顧客情報テーブル】
+テーブル名: dbo.client_dm
+検証結果: ❌ 失敗
+カラム数: 0 (期待範囲: 5-15)
+不足カラム: client_id, client_name, status
+エラー: テーブル dbo.client_dm が存在しません
+
+【顧客データマート（BXフラグ付き）】
+テーブル名: dbo.ClientDmBx
+検証結果: ❌ 失敗
+カラム数: 0 (期待範囲: 10-20)
+不足カラム: client_id, segment, score
+エラー: テーブル dbo.ClientDmBx が存在しません
+
+【ポイント付与メール管理テーブル】
+テーブル名: dbo.point_grant_email
+検証結果: ❌ 失敗
+カラム数: 0 (期待範囲: 8-15)
+不足カラム: client_id, email, points_granted
+エラー: テーブル dbo.point_grant_email が存在しません
+
+【データ品質結果管理テーブル】
+テーブル名: dbo.data_quality_results
+検証結果: ❌ 失敗
+カラム数: 0 (期待範囲: 10-15)
+不足カラム: rule_name, execution_time, quality_score
+エラー: テーブル dbo.data_quality_results が存在しません
+
+【データ系譜追跡テーブル】
+テーブル名: dbo.data_lineage_tracking
+検証結果: ❌ 失敗
+カラム数: 0 (期待範囲: 8-15)
+不足カラム: pipeline_name, source_table, target_table
+エラー: テーブル dbo.data_lineage_tracking が存在しません
+
+【E2Eテスト実行ログテーブル】
+テーブル名: etl.e2e_test_execution_log
+検証結果: ❌ 失敗
+カラム数: 0 (期待範囲: 6-10)
+不足カラム: TestName, ExecutionTime, Status
+エラー: テーブル etl.e2e_test_execution_log が存在しません

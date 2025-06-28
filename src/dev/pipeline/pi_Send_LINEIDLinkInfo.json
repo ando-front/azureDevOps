@@ -1,0 +1,154 @@
+{
+  "name": "pi_Send_LINEIDLinkInfo",
+  "type": "Microsoft.DataFactory/factories/pipelines",
+  "properties": {
+    "description": "MA向けリスト連携（LINEID連携情報）",
+    "activities": [
+      {
+        "name": "at_CreateCSV_LINEIDLinkInfo",
+        "description": "DBから「LINEID連携情報」IFに必要なデータを抽出、gzipファイルでBLOB出力",
+        "type": "Copy",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 10,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "SqlDWSource",
+            "sqlReaderQuery": "------------------------------------------------------------------------\n-- MA向けリスト連携 LINEID連携情報 出力 at_CreateCSV_LINEIDLinkInfo\n------------------------------------------------------------------------\n\nDECLARE @today_jst datetime;\nSET @today_jst=CONVERT(DATETIME, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time');  -- 最新の日時\n\nDECLARE @outDT varchar(20);\nSET @outDT=format(@today_jst, 'yyyy/MM/dd HH:mm:ss');\n\n----------------------------------------------------------------------------\nSELECT [ID_NO]                   -- 会員ID\n      ,[LINE_U_ID]               -- LINE_uID\n      ,[IDCS_U_ID]               -- IDCS_uID\n      ,format([LINE_RNK_DTTM], 'yyyy/MM/dd HH:mm:ss') as LINE_RNK_DTTM    -- LINE連携日時\n      ,[KJ_FLG]                  -- 解除フラグ\n      ,format([LINE_RNK_KJ_DTTM],'yyyy/MM/dd') as LINE_RNK_KJ_DTTM        -- LINE連携解除日時\n      ,@outDT as OUTPUT_DATETIME\nFROM [mytg].[mytg_ods_line_mst_line_id_all] -- LINEID連携累積情報\n;\n",
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "sink": {
+            "type": "DelimitedTextSink",
+            "storeSettings": {
+              "type": "AzureBlobStorageWriteSettings"
+            },
+            "formatSettings": {
+              "type": "DelimitedTextWriteSettings",
+              "quoteAllText": true,
+              "fileExtension": ".csv"
+            }
+          },
+          "enableStaging": false,
+          "translator": {
+            "type": "TabularTranslator",
+            "typeConversion": true,
+            "typeConversionSettings": {
+              "allowDataTruncation": true,
+              "treatBooleanAsNumber": false
+            }
+          }
+        },
+        "inputs": [
+          {
+            "referenceName": "ds_DamDwhTable_shir",
+            "type": "DatasetReference",
+            "parameters": {
+              "table": "--"
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "ds_CSV_BlobGz",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "datalake/OMNI/MA/LINEIDLinkInfo",
+              "columnDelimiter": ",",
+              "quoteChar": "\"",
+              "firstRowAsHeader": true,
+              "filename": {
+                "value": "@concat('LINEIDLinkInfo_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "at_SendSftp_LINEIDLinkInfo",
+        "description": "Blobに出力されたgzipファイルをSFMCにSFTP連携",
+        "type": "Copy",
+        "dependsOn": [
+          {
+            "activity": "at_CreateCSV_LINEIDLinkInfo",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 10,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "BinarySource",
+            "storeSettings": {
+              "type": "AzureBlobStorageReadSettings",
+              "recursive": false,
+              "deleteFilesAfterCompletion": false
+            },
+            "formatSettings": {
+              "type": "BinaryReadSettings"
+            }
+          },
+          "sink": {
+            "type": "BinarySink",
+            "storeSettings": {
+              "type": "SftpWriteSettings",
+              "operationTimeout": "01:00:00",
+              "useTempFileRename": false
+            }
+          },
+          "enableStaging": false
+        },
+        "inputs": [
+          {
+            "referenceName": "ds_BlobGz",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "datalake/OMNI/MA/LINEIDLinkInfo",
+              "filename": {
+                "value": "@concat('LINEIDLinkInfo_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "ds_Gz_Sftp",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "Import/DAM/LINEIDLinkInfo",
+              "filename": {
+                "value": "@concat('LINEIDLinkInfo_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "policy": {
+      "elapsedTimeMetric": {}
+    },
+    "folder": {
+      "name": "SMC"
+    },
+    "annotations": [],
+    "lastPublishTime": "2025-04-16T04:42:54Z"
+  },
+  "dependsOn": []
+}

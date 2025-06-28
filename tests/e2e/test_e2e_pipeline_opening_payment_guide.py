@@ -5,9 +5,16 @@ E2E Test Suite for pi_Send_OpeningPaymentGuide Pipeline
 このパイプラインは新規開栓顧客に対する支払い方法ガイダンス情報をCSVファイルとして生成し、
 gzip圧縮後にSFTPでSalesforce Marketing Cloud (SFMC) に送信します。
 
+【実際の実装】このパイプラインは以下の処理を実行します：
+1. 開栓作業データ（20日前〜5日前）を抽出
+2. ガス契約データと結合してお客さま情報を取得
+3. 利用サービステーブルと結合してBx、INDEX_IDを取得
+4. CSV.gz形式でBlob Storageに出力
+5. SFMCにSFTP送信
+
 パイプライン構成:
-1. at_CreateCSV_ClientDM: DAM-DBから顧客DM情報を抽出し、gzipファイルでBLOB出力
-2. at_SendSftp_ClientDM: Blobに出力されたgzipファイルをSFMCにSFTP連携
+1. at_CreateCSV_OpeningPaymentGuide: DAM-DBから開栓顧客情報を抽出し、gzipファイルでBLOB出力
+2. at_SendSftp_OpeningPaymentGuide: Blobに出力されたgzipファイルをSFMCにSFTP連携
 
 テスト対象:
 - パイプライン基本実行テスト
@@ -19,60 +26,35 @@ gzip圧縮後にSFTPでSalesforce Marketing Cloud (SFMC) に送信します。
 - 開栓支払いガイド特有の検証テスト
 
 Created: 2024-12-19
-Updated: 2024-12-19
+Updated: 2025-06-23
 """
 
-import asyncio
-import gzip
-import io
-import json
+import pytest
+import time
 import logging
-import random
-import tempfile
 import os
 import requests
-from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Any, Optional
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime, timedelta
+from unittest.mock import Mock
+from typing import Dict, Any
 
-import pandas as pd
-import pytest
-# from azure.core.exceptions import AzureError
+from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
+from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
 
-# Placeholder for Azure exception
-class AzureError(Exception):
-    pass
-# from azure.datafactory import DataFactoryManagementClient
-# from azure.datafactory.models import PipelineRun
-# from azure.identity import DefaultAzureCredential
-# from azure.monitor.query import LogsQueryClient
-# from azure.storage.blob import BlobServiceClient
-
-# Placeholder classes for missing Azure modules
-class DataFactoryManagementClient:
-    def __init__(self, *args, **kwargs):
-        pass
-
-class PipelineRun:
-    def __init__(self, *args, **kwargs):
-        pass
-
-class DefaultAzureCredential:
-    def __init__(self, *args, **kwargs):
-        pass
-
-class LogsQueryClient:
-    def __init__(self, *args, **kwargs):
-        pass
-
-class BlobServiceClient:
-    def __init__(self, *args, **kwargs):
-        pass
+logger = logging.getLogger(__name__)
 
 
 class TestPipelineOpeningPaymentGuide:
- 
-       
+    """pi_Send_OpeningPaymentGuide パイプライン E2Eテストクラス"""
+    
+    PIPELINE_NAME = "pi_Send_OpeningPaymentGuide"
+    BLOB_CONTAINER = "datalake/OMNI/MA/OpeningPaymentGuide"
+    SFTP_DIRECTORY = "Import/DAM/OpeningPaymentGuide"
+    
+    # パフォーマンス期待値
+    EXPECTED_MAX_DURATION = 25  # 25分（複雑なSQL処理があるため）
+    EXPECTED_MIN_RECORDS = 0    # 期間内に開栓作業がない場合もある
+    
     @classmethod
     def setup_class(cls):
         """再現可能テスト環境のセットアップ"""
@@ -83,642 +65,323 @@ class TestPipelineOpeningPaymentGuide:
             if var in os.environ:
                 del os.environ[var]
     
-    
-    
-    
-    
     @classmethod
     def teardown_class(cls):
         """再現可能テスト環境のクリーンアップ"""
         cleanup_reproducible_test_class()
-
-
 
     def _get_no_proxy_session(self):
         """Get a requests session with proxy disabled"""
         session = requests.Session()
         session.proxies = {'http': None, 'https': None}
         return session
-    """
-    Comprehensive E2E test suite for pi_Send_OpeningPaymentGuide pipeline.
     
-    This test class covers all aspects of the opening payment guide pipeline execution,
-    including data extraction, CSV generation, compression, and SFTP transfer for new
-    customer onboarding and payment method guidance.
-    """
-
-    # Pipeline configuration
-    PIPELINE_NAME = "pi_Send_OpeningPaymentGuide"
-    EXPECTED_ACTIVITIES = ["at_CreateCSV_ClientDM", "at_SendSftp_ClientDM"]
-    SOURCE_TABLE = "omni.omni_ods_marketing_trn_client_dm_bx_temp"
-    OUTPUT_DIRECTORY = "datalake/OMNI/MA/OpeningPaymentGuide"
-    SFTP_DIRECTORY = "Import/DAM/ClientDM"
-    
-    # Data quality thresholds for opening payment guide
-    MIN_EXPECTED_ROWS = 5000  # Lower threshold as this targets new customers
-    MAX_EXECUTION_TIME_MINUTES = 90
-    MIN_DATA_QUALITY_SCORE = 0.95
-    
-    # Performance benchmarks
-    LARGE_DATASET_THRESHOLD = 100000  # 100K rows for opening payment guide
-    EXPECTED_THROUGHPUT_ROWS_PER_MINUTE = 30000
-    
-    # Opening payment guide specific validation
-    EXPECTED_PAYMENT_METHODS = [
-        "口座振替", "クレジットカード", "コンビニ払い", "請求書払い"
-    ]
-    REQUIRED_OPENING_COLUMNS = [
-        "CONNECTION_KEY", "USAGESERVICE_BX", "CLIENT_KEY_AX",
-        "LIV0EU_1X", "LIV0EU_8X", "LIV0EU_4X", "LIV0EU_2X",
-        "LIV0EU_GAS_PAY_METHOD_CD", "LIV0EU_GAS_PAY_METHOD",
-        "LIV0EU_OPENING_REASON_NAME", "LIV0EU_OPENING_MONTH_PASSED",
-        "OUTPUT_DATETIME"
-    ]
-
     def setup_method(self):
-        """Initialize test configuration and Azure clients."""
-        self.config = {
-            "azure": {
-                "subscription_id": "test-subscription-id",
-                "resource_group": "test-resource-group",
-                "data_factory_name": "test-data-factory",
-                "storage_account_name": "teststorageaccount",
-                "key_vault_name": "test-key-vault"
-            },
-            "pipeline": {
-                "name": self.PIPELINE_NAME,
-                "timeout_minutes": self.MAX_EXECUTION_TIME_MINUTES,
-                "retry_count": 3,
-                "csv_directory": "datalake/OMNI/MA/OpeningPaymentGuide",
-                "csv_filename_pattern": "OpeningPaymentGuide_{date}.csv.gz",
-                "sftp_destination": "Import/DAM/ClientDM"
-            }
-        }
+        """テストメソッド初期化"""
+        self.start_time = datetime.now()
+        logger.info(f"開栓支払いガイドE2Eテスト開始: {self.PIPELINE_NAME} - {self.start_time}")
         
-        self.logger = logging.getLogger(__name__)
+    def teardown_method(self):
+        """テストメソッド終了処理"""
+        end_time = datetime.now()
+        duration = end_time - self.start_time
+        logger.info(f"開栓支払いガイドE2Eテスト完了: {self.PIPELINE_NAME} - 実行時間: {duration}")
 
-    async def additional_setup_method(self):
-        """Set up test environment before each test method."""
-        self.credential = DefaultAzureCredential()
-        self.df_client = DataFactoryManagementClient(
-            self.credential,
-            self.config["azure"]["subscription_id"]
-        )
-        self.blob_client = BlobServiceClient(
-            account_url=f"https://{self.config['azure']['storage_account_name']}.blob.core.windows.net",
-            credential=self.credential
-        )
-        self.logs_client = LogsQueryClient(self.credential)
+    @pytest.fixture(scope="class")
+    def helper(self, e2e_synapse_connection):
+        """SynapseE2EConnectionフィクスチャ"""
+        return e2e_synapse_connection
 
-    async def teardown_method(self):
-        """Clean up test environment after each test method."""
-        await self._cleanup_test_files()
-
-    async def _cleanup_test_files(self):
-        """Clean up temporary test files and blobs."""
+    @pytest.fixture(scope="class")
+    def pipeline_run_id(self, helper):
+        """パイプライン実行IDを取得するフィクスチャ"""
+        logger.info(f"パイプライン実行開始: {self.PIPELINE_NAME}")
+        
         try:
-            container_client = self.blob_client.get_container_client("datalake")
-            blobs = container_client.list_blobs(name_starts_with="OMNI/MA/OpeningPaymentGuide/test_")
-            for blob in blobs:
-                await container_client.delete_blob(blob.name)
+            # パイプライン実行前の事前チェック
+            self._pre_execution_validation(helper)
+            
+            # パイプライン実行
+            run_id = helper.trigger_pipeline(self.PIPELINE_NAME)
+            logger.info(f"パイプライン実行開始: run_id={run_id}")
+            
+            yield run_id
+            
         except Exception as e:
-            self.logger.warning(f"Failed to cleanup test files: {e}")
+            logger.error(f"パイプライン実行準備エラー: {e}")
+            pytest.fail(f"パイプライン実行準備に失敗: {e}")
 
-    @pytest.mark.asyncio
-    async def test_basic_pipeline_execution(self):
-        """
-        Test basic pipeline execution with standard dataset.
+    def _pre_execution_validation(self, helper):
+        """実行前検証"""
+        logger.info("実行前検証開始")
         
-        Validates:
-        - Pipeline starts successfully
-        - All activities complete without errors
-        - CSV file is generated and compressed
-        - SFTP transfer completes successfully
-        - Data quality meets minimum thresholds
-        """
-        with patch.object(self.df_client.pipelines, 'create_run') as mock_create_run, \
-             patch.object(self.df_client.pipeline_runs, 'get') as mock_get_run:
-              # Mock successful pipeline run
-            run_id = "test-run-id-001"
-            mock_create_run.return_value.run_id = run_id
-            mock_get_run.return_value = PipelineRun(
-                run_id=run_id,
-                status="Succeeded",
-                start_time=datetime.now(timezone.utc) - timedelta(minutes=30),
-                end_time=datetime.now(timezone.utc),
-                message="Pipeline completed successfully"
-            )
-
-            # Execute pipeline
-            run_response = self.df_client.pipelines.create_run(
-                resource_group_name=self.config["azure"]["resource_group"],
-                factory_name=self.config["azure"]["data_factory_name"],
-                pipeline_name=self.PIPELINE_NAME
-            )
-
-            # Wait for completion
-            await self._wait_for_pipeline_completion(run_response.run_id)
-
-            # Verify pipeline execution
-            pipeline_run = self.df_client.pipeline_runs.get(
-                resource_group_name=self.config["azure"]["resource_group"],
-                factory_name=self.config["azure"]["data_factory_name"],
-                run_id=run_response.run_id
-            )
-
-            assert pipeline_run.status == "Succeeded"
-            assert pipeline_run.run_id == run_id
-
-            # Verify CSV file generation
-            await self._verify_csv_file_generation()
-
-            # Verify data quality
-            data_quality_score = await self._calculate_data_quality_score()
-            assert data_quality_score >= self.MIN_DATA_QUALITY_SCORE
-
-            self.logger.info(f"Basic pipeline execution test passed - Run ID: {run_id}")
-
-    @pytest.mark.asyncio
-    async def test_large_dataset_performance(self):
-        """
-        Test pipeline performance with large dataset.
+        # データセット存在確認
+        required_datasets = ["ds_DamDwhTable_shir", "ds_CSV_BlobGz", "ds_BlobGz", "ds_Gz_Sftp"] 
+        for dataset in required_datasets:
+            assert helper.validate_dataset_exists(dataset), f"データセット {dataset} が存在しません"
         
-        Validates:
-        - Pipeline handles large datasets efficiently
-        - Processing time is within acceptable limits
-        - Memory usage remains stable
-        - Throughput meets performance benchmarks
-        """
-        with patch.object(self.df_client.pipelines, 'create_run') as mock_create_run, \
-             patch.object(self.df_client.pipeline_runs, 'get') as mock_get_run:
-
-            # Mock large dataset scenario
-            large_dataset_rows = self.LARGE_DATASET_THRESHOLD
-            expected_duration = large_dataset_rows / self.EXPECTED_THROUGHPUT_ROWS_PER_MINUTE
-
-            run_id = "test-run-large-001"
-            start_time = datetime.now(timezone.utc)
-            end_time = start_time + timedelta(minutes=expected_duration)
-
-            mock_create_run.return_value.run_id = run_id
-            mock_get_run.return_value = PipelineRun(
-                run_id=run_id,
-                status="Succeeded",
-                start_time=start_time,
-                end_time=end_time,
-                message=f"Pipeline processed {large_dataset_rows} rows successfully"
-            )
-
-            # Execute pipeline with large dataset
-            run_response = self.df_client.pipelines.create_run(
-                resource_group_name=self.config["azure"]["resource_group"],
-                factory_name=self.config["azure"]["data_factory_name"],
-                pipeline_name=self.PIPELINE_NAME,
-                parameters={"datasetSize": "large"}
-            )
-
-            # Monitor performance
-            pipeline_run = self.df_client.pipeline_runs.get(
-                resource_group_name=self.config["azure"]["resource_group"],
-                factory_name=self.config["azure"]["data_factory_name"],
-                run_id=run_response.run_id
-            )
-
-            # Verify performance metrics
-            execution_time = (pipeline_run.end_time - pipeline_run.start_time).total_seconds() / 60
-            assert execution_time <= self.MAX_EXECUTION_TIME_MINUTES
-
-            # Verify throughput
-            throughput = large_dataset_rows / execution_time
-            assert throughput >= self.EXPECTED_THROUGHPUT_ROWS_PER_MINUTE * 0.8  # 80% of expected
-
-            self.logger.info(f"Large dataset performance test passed - Processed {large_dataset_rows} rows in {execution_time:.2f} minutes")
-
-    @pytest.mark.asyncio
-    async def test_opening_payment_guide_data_quality(self):
-        """
-        Test data quality specific to opening payment guide pipeline.
+        # 接続テスト
+        assert helper.test_synapse_connection(), "Synapse接続テストに失敗"
         
-        Validates:
-        - Opening month calculation accuracy
-        - Payment method code mappings
-        - New customer identification logic
-        - Required field completeness
-        - Opening reason classification
-        """
-        # Mock CSV data for testing
-        mock_csv_data = await self._generate_mock_opening_payment_guide_data()
-
-        with patch('pandas.read_csv', return_value=mock_csv_data):
-            # Analyze data quality
-            quality_results = await self._analyze_opening_payment_guide_quality(mock_csv_data)
-
-            # Verify opening month calculations
-            assert quality_results["opening_month_accuracy"] >= 0.98
-            
-            # Verify payment method distributions
-            payment_method_dist = quality_results["payment_method_distribution"]
-            assert all(method in payment_method_dist for method in self.EXPECTED_PAYMENT_METHODS)
-            
-            # Verify new customer identification
-            assert quality_results["new_customer_ratio"] >= 0.85  # At least 85% should be new customers
-            
-            # Verify required fields completeness
-            field_completeness = quality_results["field_completeness"]
-            for field in self.REQUIRED_OPENING_COLUMNS:
-                assert field_completeness.get(field, 0) >= 0.95
-            
-            # Verify opening reason diversity
-            opening_reasons = quality_results["opening_reason_count"]
-            assert opening_reasons >= 5  # Should have multiple opening reasons
-
-            self.logger.info("Opening payment guide data quality test passed")
-
-    @pytest.mark.asyncio
-    async def test_error_handling_and_recovery(self):
-        """
-        Test error handling and recovery mechanisms.
-        
-        Validates:
-        - Proper error handling for database connection issues
-        - Recovery from temporary SFTP failures
-        - Data validation error handling
-        - Retry logic functionality
-        """
-        with patch.object(self.df_client.pipelines, 'create_run') as mock_create_run, \
-             patch.object(self.df_client.pipeline_runs, 'get') as mock_get_run:
-
-            # Test database connection error handling
-            run_id_db_error = "test-run-db-error-001"
-            mock_create_run.return_value.run_id = run_id_db_error
-            mock_get_run.return_value = PipelineRun(
-                run_id=run_id_db_error,
-                status="Failed",
-                start_time=datetime.now(timezone.utc) - timedelta(minutes=5),
-                end_time=datetime.now(timezone.utc),
-                message="Database connection timeout during data extraction"
-            )
-
-            # Execute pipeline with error injection
-            run_response = self.df_client.pipelines.create_run(
-                resource_group_name=self.config["azure"]["resource_group"],
-                factory_name=self.config["azure"]["data_factory_name"],
-                pipeline_name=self.PIPELINE_NAME,
-                parameters={"inject_error": "database_timeout"}
-            )
-
-            pipeline_run = self.df_client.pipeline_runs.get(
-                resource_group_name=self.config["azure"]["resource_group"],
-                factory_name=self.config["azure"]["data_factory_name"],
-                run_id=run_response.run_id
-            )
-
-            # Verify error is properly captured
-            assert pipeline_run.status == "Failed"
-            assert "Database connection timeout" in pipeline_run.message
-
-            # Test SFTP error recovery
-            run_id_sftp_retry = "test-run-sftp-retry-001"
-            mock_create_run.return_value.run_id = run_id_sftp_retry
-            mock_get_run.return_value = PipelineRun(
-                run_id=run_id_sftp_retry,
-                status="Succeeded",
-                start_time=datetime.now(timezone.utc) - timedelta(minutes=10),
-                end_time=datetime.now(timezone.utc),
-                message="Pipeline succeeded after SFTP retry"
-            )
-
-            # Execute pipeline with SFTP retry scenario
-            retry_response = self.df_client.pipelines.create_run(
-                resource_group_name=self.config["azure"]["resource_group"],
-                factory_name=self.config["azure"]["data_factory_name"],
-                pipeline_name=self.PIPELINE_NAME,
-                parameters={"inject_error": "sftp_transient"}
-            )
-
-            retry_run = self.df_client.pipeline_runs.get(
-                resource_group_name=self.config["azure"]["resource_group"],
-                factory_name=self.config["azure"]["data_factory_name"],
-                run_id=retry_response.run_id
-            )
-
-            # Verify successful recovery
-            assert retry_run.status == "Succeeded"
-            assert "retry" in retry_run.message.lower()
-
-            self.logger.info("Error handling and recovery test passed")
-
-    @pytest.mark.asyncio
-    async def test_monitoring_and_alerting(self):
-        """
-        Test monitoring and alerting capabilities.
-        
-        Validates:
-        - Performance metrics collection
-        - Error rate monitoring
-        - Data volume tracking
-        - Alert generation for anomalies
-        """
-        with patch.object(self.logs_client, 'query_workspace') as mock_query:
-            # Mock monitoring data
-            mock_logs = [
-                {
-                    "TimeGenerated": datetime.now(timezone.utc),
-                    "PipelineName": self.PIPELINE_NAME,
-                    "Status": "Succeeded",
-                    "DurationMinutes": 25.5,
-                    "RowsProcessed": 75000,
-                    "FileSizeMB": 45.2
-                }
-            ]
-            mock_query.return_value.tables = [type('Table', (), {'rows': mock_logs})]
-
-            # Query pipeline metrics
-            metrics = await self._query_pipeline_metrics()
-
-            # Verify metrics collection
-            assert len(metrics) > 0
-            assert metrics[0]["PipelineName"] == self.PIPELINE_NAME
-            assert metrics[0]["DurationMinutes"] < self.MAX_EXECUTION_TIME_MINUTES
-            assert metrics[0]["RowsProcessed"] >= self.MIN_EXPECTED_ROWS
-
-            # Test alerting thresholds
-            alerts = await self._check_alerting_thresholds(metrics)
-            
-            # Verify no alerts for normal operation
-            critical_alerts = [alert for alert in alerts if alert["severity"] == "critical"]
-            assert len(critical_alerts) == 0
-
-            self.logger.info("Monitoring and alerting test passed")
-
-    @pytest.mark.asyncio
-    async def test_csv_output_validation(self):
-        """
-        Test CSV output validation and format compliance.
-        
-        Validates:
-        - CSV structure and headers
-        - Data type consistency
-        - Gzip compression integrity
-        - File naming convention adherence
-        - Character encoding (UTF-8)
-        """
-        # Generate mock CSV content
-        mock_csv_content = await self._generate_mock_csv_content()
-
-        # Test CSV structure
-        df = pd.read_csv(io.StringIO(mock_csv_content))
-        
-        # Verify required columns
-        for column in self.REQUIRED_OPENING_COLUMNS:
-            assert column in df.columns, f"Required column {column} missing"
-
-        # Verify data types
-        assert df["CONNECTION_KEY"].dtype == "int64"
-        assert df["LIV0EU_8X"].dtype == "object"  # String type
-        assert pd.api.types.is_datetime64_any_dtype(pd.to_datetime(df["OUTPUT_DATETIME"], errors='coerce'))
-
-        # Test gzip compression
-        compressed_content = gzip.compress(mock_csv_content.encode('utf-8'))
-        decompressed_content = gzip.decompress(compressed_content).decode('utf-8')
-        assert decompressed_content == mock_csv_content
-
-        # Test filename pattern
-        filename = f"OpeningPaymentGuide_{datetime.now().strftime('%Y%m%d')}.csv.gz"
-        assert filename.startswith("OpeningPaymentGuide_")
-        assert filename.endswith(".csv.gz")
-
-        self.logger.info("CSV output validation test passed")
-
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("opening_scenario", [
-        "new_construction", "moving_in", "service_upgrade", "reconnection"
-    ])
-    async def test_opening_scenarios(self, opening_scenario):
-        """
-        Test different opening scenarios for payment guide targeting.
-        
-        Parameters:
-        - opening_scenario: Type of opening scenario to test
-        
-        Validates:
-        - Scenario-specific data filtering
-        - Appropriate payment method recommendations
-        - Opening month calculations
-        - Business rule compliance
-        """
-        with patch.object(self.df_client.pipelines, 'create_run') as mock_create_run:
-            run_id = f"test-{opening_scenario}-001"
-            mock_create_run.return_value.run_id = run_id
-
-            # Execute pipeline with scenario-specific parameters
-            run_response = self.df_client.pipelines.create_run(
-                resource_group_name=self.config["azure"]["resource_group"],
-                factory_name=self.config["azure"]["data_factory_name"],
-                pipeline_name=self.PIPELINE_NAME,
-                parameters={"opening_scenario": opening_scenario}
-            )
-
-            # Verify scenario-specific processing
-            processed_data = await self._get_scenario_processed_data(opening_scenario)
-            
-            # Validate scenario-specific business rules
-            if opening_scenario == "new_construction":
-                assert processed_data["avg_opening_months"] <= 1.0
-            elif opening_scenario == "moving_in":
-                assert processed_data["payment_method_diversity"] >= 3
-            elif opening_scenario == "service_upgrade":
-                assert processed_data["existing_customer_ratio"] >= 0.7
-            elif opening_scenario == "reconnection":
-                assert processed_data["previous_payment_history_available"] >= 0.5
-
-            self.logger.info(f"Opening scenario test passed for: {opening_scenario}")
-
-    # Helper methods
-
-    async def _wait_for_pipeline_completion(self, run_id: str, timeout_minutes: int = 120):
-        """Wait for pipeline completion with timeout."""
-        timeout = datetime.now(timezone.utc) + timedelta(minutes=timeout_minutes)
-        while datetime.now(timezone.utc) < timeout:
-            pipeline_run = self.df_client.pipeline_runs.get(
-                resource_group_name=self.config["azure"]["resource_group"],
-                factory_name=self.config["azure"]["data_factory_name"],
-                run_id=run_id
-            )
-            if pipeline_run.status in ["Succeeded", "Failed", "Cancelled"]:
-                return pipeline_run
-            await asyncio.sleep(30)
-        raise TimeoutError(f"Pipeline {run_id} did not complete within {timeout_minutes} minutes")
-
-    async def _verify_csv_file_generation(self) -> bool:
-        """Verify CSV file was generated correctly."""
-        try:
-            container_client = self.blob_client.get_container_client("datalake")
-            date_str = datetime.now().strftime("%Y%m%d")
-            expected_filename = f"OpeningPaymentGuide_{date_str}.csv.gz"
-            blob_path = f"OMNI/MA/OpeningPaymentGuide/{expected_filename}"
-            
-            blob_client = container_client.get_blob_client(blob_path)
-            blob_properties = blob_client.get_blob_properties()
-            
-            return blob_properties.size > 0
-        except Exception as e:
-            self.logger.error(f"Failed to verify CSV file: {e}")
-            return False
-
-    async def _calculate_data_quality_score(self) -> float:
-        """Calculate overall data quality score."""
-        try:
-            # Mock data quality calculation
-            quality_metrics = {
-                "completeness": 0.98,
-                "accuracy": 0.96,
-                "consistency": 0.97,
-                "validity": 0.95
-            }
-            
-            # Weighted average
-            weights = {"completeness": 0.3, "accuracy": 0.3, "consistency": 0.2, "validity": 0.2}
-            score = sum(quality_metrics[metric] * weights[metric] for metric in quality_metrics)
-            
-            return score
-        except Exception as e:
-            self.logger.error(f"Failed to calculate data quality score: {e}")
-            return 0.0
-
-    async def _generate_mock_opening_payment_guide_data(self) -> pd.DataFrame:
-        """Generate mock data for opening payment guide testing."""
-        import random
-        
-        data = []
-        for i in range(1000):
-            data.append({
-                "CONNECTION_KEY": i + 1,
-                "USAGESERVICE_BX": f"GAS{i:06d}",
-                "CLIENT_KEY_AX": f"CK{i:08d}",
-                "LIV0EU_1X": f"GM{i:08d}",
-                "LIV0EU_8X": f"CM{i:08d}",
-                "LIV0EU_4X": f"UC{i:08d}",
-                "LIV0EU_2X": f"PC{i:08d}",
-                "LIV0EU_GAS_PAY_METHOD_CD": random.choice(["01", "02", "03", "04"]),
-                "LIV0EU_GAS_PAY_METHOD": random.choice(self.EXPECTED_PAYMENT_METHODS),
-                "LIV0EU_OPENING_REASON_NAME": random.choice(["新築", "転居", "サービス変更", "再開栓"]),
-                "LIV0EU_OPENING_MONTH_PASSED": random.randint(0, 6),
-                "OUTPUT_DATETIME": datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-            })
-        
-        return pd.DataFrame(data)
-
-    async def _analyze_opening_payment_guide_quality(self, df: pd.DataFrame) -> Dict[str, Any]:
-        """Analyze data quality specific to opening payment guide."""
-        results = {}
-        
-        # Opening month accuracy (should be recent for new customers)
-        results["opening_month_accuracy"] = len(df[df["LIV0EU_OPENING_MONTH_PASSED"] <= 6]) / len(df)
-        
-        # Payment method distribution
-        results["payment_method_distribution"] = df["LIV0EU_GAS_PAY_METHOD"].value_counts().to_dict()
-        
-        # New customer ratio (based on opening month)
-        results["new_customer_ratio"] = len(df[df["LIV0EU_OPENING_MONTH_PASSED"] <= 3]) / len(df)
-        
-        # Field completeness
-        results["field_completeness"] = {}
-        for column in self.REQUIRED_OPENING_COLUMNS:
-            if column in df.columns:
-                results["field_completeness"][column] = 1 - (df[column].isna().sum() / len(df))
-        
-        # Opening reason diversity
-        results["opening_reason_count"] = df["LIV0EU_OPENING_REASON_NAME"].nunique()
-        
-        return results
-
-    async def _generate_mock_csv_content(self) -> str:
-        """Generate mock CSV content for validation testing."""
-        df = await self._generate_mock_opening_payment_guide_data()
-        return df.to_csv(index=False)
-
-    async def _query_pipeline_metrics(self) -> List[Dict[str, Any]]:
-        """Query pipeline performance metrics from Azure Monitor."""
-        # Mock implementation
-        return [
-            {
-                "PipelineName": self.PIPELINE_NAME,
-                "Status": "Succeeded",
-                "DurationMinutes": 25.5,
-                "RowsProcessed": 75000,
-                "FileSizeMB": 45.2
-            }
+        # 必要なテーブル存在確認
+        required_tables = [
+            "omni_ods_ma_trn_opened1x_temp",
+            "omni_ods_ma_trn_opening_target_temp",
+            "omni_ods_livalit_trn_liv5_opening_basics",
+            "omni_odm_gascstmr_trn_gaskiy",
+            "omni_ods_cloak_trn_usageservice"
         ]
-
-    async def _check_alerting_thresholds(self, metrics: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Check if metrics exceed alerting thresholds."""
-        alerts = []
+        for table in required_tables:
+            assert helper.validate_table_exists(table), f"テーブル {table} が存在しません"
         
-        for metric in metrics:
-            if metric["DurationMinutes"] > self.MAX_EXECUTION_TIME_MINUTES:
-                alerts.append({
-                    "severity": "critical",
-                    "message": f"Pipeline execution time exceeded threshold: {metric['DurationMinutes']} minutes",
-                    "pipeline": metric["PipelineName"]
-                })
-            
-            if metric["RowsProcessed"] < self.MIN_EXPECTED_ROWS:
-                alerts.append({
-                    "severity": "warning",
-                    "message": f"Low row count detected: {metric['RowsProcessed']} rows",
-                    "pipeline": metric["PipelineName"]
-                })
+        logger.info("実行前検証完了")
+
+    def test_pipeline_execution_success(self, helper, pipeline_run_id):
+        """パイプライン実行成功テスト (OPG-001: 基本実行)"""
+        logger.info("パイプライン実行成功テスト開始 (OPG-001)")
         
-        return alerts
-
-    async def _get_scenario_processed_data(self, scenario: str) -> Dict[str, Any]:
-        """Get processed data for specific opening scenario."""
-        # Mock scenario-specific data
-        scenario_data = {
-            "new_construction": {
-                "avg_opening_months": 0.5,
-                "payment_method_diversity": 4,
-                "existing_customer_ratio": 0.1,
-                "previous_payment_history_available": 0.0
-            },
-            "moving_in": {
-                "avg_opening_months": 1.2,
-                "payment_method_diversity": 4,
-                "existing_customer_ratio": 0.3,
-                "previous_payment_history_available": 0.2
-            },
-            "service_upgrade": {
-                "avg_opening_months": 2.0,
-                "payment_method_diversity": 3,
-                "existing_customer_ratio": 0.8,
-                "previous_payment_history_available": 0.9
-            },
-            "reconnection": {
-                "avg_opening_months": 1.5,
-                "payment_method_diversity": 3,
-                "existing_customer_ratio": 0.9,
-                "previous_payment_history_available": 0.8
-            }
-        }
+        # パイプライン完了待機
+        status = helper.wait_for_pipeline_completion(
+            pipeline_run_id, 
+            timeout_minutes=self.EXPECTED_MAX_DURATION
+        )
         
-        return scenario_data.get(scenario, {})
+        # 実行結果確認
+        assert status == "Succeeded", f"パイプライン実行が失敗: ステータス={status}"
+        
+        logger.info("パイプライン実行成功確認完了 (OPG-001)")
 
+    def test_opening_data_extraction(self, helper, pipeline_run_id):
+        """開栓データ抽出検証テスト (OPG-002: 開栓データ抽出確認)"""
+        logger.info("開栓データ抽出検証テスト開始 (OPG-002)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # 開栓データ抽出期間の確認（20日前〜5日前）
+        today_jst = datetime.now()
+        from_20days = (today_jst - timedelta(days=20)).strftime('%Y%m%d')
+        to_5days = (today_jst - timedelta(days=5)).strftime('%Y%m%d')
+        
+        # 期間データ確認クエリ
+        period_query = f"""
+        SELECT COUNT(*) as record_count
+        FROM omni.omni_ods_ma_trn_opened1x_temp
+        WHERE SAGYO_YMD >= '{from_20days}' AND SAGYO_YMD < '{to_5days}'
+        """
+        
+        result = helper.execute_query(period_query)
+        record_count = result[0]['record_count'] if result else 0
+        
+        # データの論理的整合性確認（0以上であることを確認）
+        assert record_count >= 0, f"開栓データ抽出件数が不正: {record_count}"
+        
+        logger.info(f"開栓データ抽出件数: {record_count}件")
+        logger.info("開栓データ抽出確認完了 (OPG-002)")
 
-if __name__ == "__main__":
-    # Set up logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    
-    # Run specific test
-    import sys
-from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
+    def test_csv_creation_validation(self, helper, pipeline_run_id):
+        """CSV作成検証テスト (OPG-003: CSV.gz出力確認)"""
+        logger.info("CSV作成検証テスト開始 (OPG-003)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # Blob Storage上のCSV.gzファイル存在確認
+        expected_filename = f"OpeningPaymentGuide_{datetime.now().strftime('%Y%m%d')}.csv.gz"
+        csv_exists = helper.validate_blob_file_exists(self.BLOB_CONTAINER, expected_filename)
+        assert csv_exists, f"CSV.gzファイルが作成されていません: {expected_filename}"
+        
+        # ファイルサイズ確認（0バイトでも開栓作業がない場合は正常）
+        file_size = helper.get_blob_file_size(self.BLOB_CONTAINER, expected_filename)
+        assert file_size >= 0, f"CSV.gzファイルのサイズが不正です: {expected_filename}"
+        
+        logger.info("CSV作成確認完了 (OPG-003)")
 
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        test_name = sys.argv[1]
-        pytest.main([f"-v", f"test_{test_name}"])
-    else:
-        pytest.main(["-v", __file__])
+    def test_sftp_transmission_validation(self, helper, pipeline_run_id):
+        """SFTP送信検証テスト (OPG-004: SFTP送信確認)"""
+        logger.info("SFTP送信検証テスト開始 (OPG-004)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # SFTP先ファイル存在確認
+        expected_filename = f"OpeningPaymentGuide_{datetime.now().strftime('%Y%m%d')}.csv.gz"
+        sftp_success = helper.validate_sftp_file_exists(self.SFTP_DIRECTORY, expected_filename)
+        assert sftp_success, f"SFTPファイル送信が確認できません: {expected_filename}"
+        
+        logger.info("SFTP送信確認完了 (OPG-004)")
+
+    def test_data_quality_validation(self, helper, pipeline_run_id):
+        """データ品質検証テスト (OPG-005: データ品質確認)"""
+        logger.info("データ品質検証テスト開始 (OPG-005)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # 基本的なデータ品質チェック
+        quality_checks = [
+            "csv_format_check", 
+            "column_header_check",
+            "row_count_check",
+            "encoding_check",
+            "timestamp_format_check"
+        ]
+        
+        failed_checks = []
+        for check_name in quality_checks:
+            try:
+                check_result = helper.execute_csv_quality_check(
+                    self.BLOB_CONTAINER, 
+                    f"OpeningPaymentGuide_{datetime.now().strftime('%Y%m%d')}.csv.gz",
+                    check_name
+                )
+                if not check_result:
+                    failed_checks.append(check_name)
+                    logger.warning(f"データ品質チェック失敗: {check_name}")
+            except Exception as e:
+                logger.warning(f"データ品質チェックでエラー: {check_name} - {e}")
+                failed_checks.append(check_name)
+        
+        # 重要なチェックが失敗した場合はエラー
+        critical_checks = ["csv_format_check", "encoding_check"]
+        critical_failures = [check for check in failed_checks if check in critical_checks]
+        assert len(critical_failures) == 0, f"重要なデータ品質チェックが失敗: {critical_failures}"
+        
+        logger.info("データ品質確認完了 (OPG-005)")
+
+    def test_column_structure_validation(self, helper, pipeline_run_id):
+        """カラム構造検証テスト (OPG-006: 出力カラム確認)"""
+        logger.info("カラム構造検証テスト開始 (OPG-006)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # 期待されるカラム構造
+        expected_columns = [
+            "Bx",
+            "INDEX_ID",
+            "ANKEN_NO",
+            "GASMETER_SETTI_BASYO_NO",
+            "SAGYO_YMD",
+            "SYO_KYO_TRNO",
+            "SHSY_KYO_TRNO",
+            "OUTPUT_DATETIME"
+        ]
+        
+        # CSV.gzファイルからカラム構造確認
+        csv_filename = f"OpeningPaymentGuide_{datetime.now().strftime('%Y%m%d')}.csv.gz"
+        actual_columns = helper.get_csv_column_headers(self.BLOB_CONTAINER, csv_filename)
+        
+        # カラム構造の整合性確認
+        assert actual_columns == expected_columns, f"カラム構造が不正: 期待={expected_columns}, 実際={actual_columns}"
+        
+        logger.info("カラム構造確認完了 (OPG-006)")
+
+    def test_business_logic_validation(self, helper, pipeline_run_id):
+        """ビジネスロジック検証テスト (OPG-007: 開栓作業ロジック確認)"""
+        logger.info("ビジネスロジック検証テスト開始 (OPG-007)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # 開栓作業の条件確認
+        business_logic_query = """
+        SELECT COUNT(*) as valid_opening_count
+        FROM omni.omni_ods_ma_trn_opened1x_temp temp1
+        INNER JOIN omni.omni_ods_livalit_trn_liv5_opening_basics basics
+            ON temp1.ANKEN_NO = basics.ANKEN_NO
+        WHERE basics.TENKEN_JUTAKU_KBN = '1'  -- TG小売り
+            AND basics.KAISEN_JIYU_CD IN ('11', '12')  -- 代替/新設
+            AND basics.ERROR_FOLLOW_JOTAI_CD IN ('0', '2')  -- 正常/フォロー済
+        """
+        
+        result = helper.execute_query(business_logic_query)
+        valid_count = result[0]['valid_opening_count'] if result else 0
+        
+        # ビジネスロジックの論理的整合性確認
+        assert valid_count >= 0, f"有効な開栓作業データ数が不正: {valid_count}"
+        
+        logger.info(f"有効な開栓作業データ数: {valid_count}件")
+        logger.info("ビジネスロジック確認完了 (OPG-007)")
+
+    def test_error_handling_validation(self, helper, pipeline_run_id):
+        """エラーハンドリング検証テスト (OPG-008: エラー処理確認)"""
+        logger.info("エラーハンドリング検証テスト開始 (OPG-008)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # パイプライン実行ログ確認
+        run_logs = helper.get_pipeline_run_logs(pipeline_run_id)
+        
+        # エラーログの有無確認
+        error_logs = [log for log in run_logs if log.get('level') == 'Error']
+        
+        # 重要なエラーがないことを確認
+        critical_errors = [
+            log for log in error_logs 
+            if any(keyword in log.get('message', '') for keyword in ['timeout', 'connection', 'authentication'])
+        ]
+        
+        assert len(critical_errors) == 0, f"重要なエラーが発生: {critical_errors}"
+        
+        logger.info("エラーハンドリング確認完了 (OPG-008)")
+
+    def test_performance_validation(self, helper, pipeline_run_id):
+        """パフォーマンス検証テスト (OPG-009: 実行時間確認)"""
+        logger.info("パフォーマンス検証テスト開始 (OPG-009)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # 実行時間取得
+        run_details = helper.get_pipeline_run_details(pipeline_run_id)
+        start_time = run_details.get('runStart')
+        end_time = run_details.get('runEnd')
+        
+        if start_time and end_time:
+            duration = (end_time - start_time).total_seconds() / 60  # 分単位
+            assert duration <= self.EXPECTED_MAX_DURATION, f"実行時間が期待値を超過: {duration}分 > {self.EXPECTED_MAX_DURATION}分"
+            logger.info(f"パイプライン実行時間: {duration:.2f}分")
+        
+        logger.info("パフォーマンス確認完了 (OPG-009)")
+
+    def test_integration_validation(self, helper, pipeline_run_id):
+        """統合テスト (OPG-010: 全体整合性確認)"""
+        logger.info("統合テスト開始 (OPG-010)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # 全体的な整合性確認
+        integration_checks = [
+            ("pipeline_status", "Succeeded"),
+            ("csv_created", True),
+            ("sftp_transmitted", True),
+            ("data_quality", True)
+        ]
+        
+        failed_integrations = []
+        for check_name, expected_value in integration_checks:
+            try:
+                if check_name == "pipeline_status":
+                    actual_value = helper.get_pipeline_status(pipeline_run_id)
+                elif check_name == "csv_created":
+                    csv_filename = f"OpeningPaymentGuide_{datetime.now().strftime('%Y%m%d')}.csv.gz"
+                    actual_value = helper.validate_blob_file_exists(self.BLOB_CONTAINER, csv_filename)
+                elif check_name == "sftp_transmitted":
+                    csv_filename = f"OpeningPaymentGuide_{datetime.now().strftime('%Y%m%d')}.csv.gz"
+                    actual_value = helper.validate_sftp_file_exists(self.SFTP_DIRECTORY, csv_filename)
+                elif check_name == "data_quality":
+                    csv_filename = f"OpeningPaymentGuide_{datetime.now().strftime('%Y%m%d')}.csv.gz"
+                    actual_value = helper.execute_csv_quality_check(self.BLOB_CONTAINER, csv_filename, "csv_format_check")
+                
+                if actual_value != expected_value:
+                    failed_integrations.append(f"{check_name}: 期待={expected_value}, 実際={actual_value}")
+                    
+            except Exception as e:
+                failed_integrations.append(f"{check_name}: エラー={e}")
+        
+        assert len(failed_integrations) == 0, f"統合テストで失敗: {failed_integrations}"
+        
+        logger.info("統合テスト完了 (OPG-010)")

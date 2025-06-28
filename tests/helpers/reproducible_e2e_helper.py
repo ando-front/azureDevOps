@@ -9,8 +9,59 @@ import sys
 import time
 import logging
 import subprocess
-import pyodbc
 from pathlib import Path
+
+# pyodbcの条件付きインポート（技術的負債対応）
+try:
+    import pyodbc
+    PYODBC_AVAILABLE = True
+except ImportError:    # pyodbcが利用できない場合のモッククラス
+    class MockPyodbc:
+        @staticmethod
+        def connect(*args, **kwargs):
+            raise ImportError("pyodbc is not available - DB tests will be skipped")
+        
+        class Error(Exception):
+            pass
+            
+        class DatabaseError(Error):
+            pass
+            
+        class InterfaceError(Error):
+            pass
+            
+        class Connection:
+            """モックConnection類"""
+            def __init__(self):
+                pass
+            
+            def close(self):
+                pass
+            
+            def cursor(self):
+                return MockPyodbc.Cursor()
+                
+        class Cursor:
+            """モックCursor類"""
+            def __init__(self):
+                pass
+            
+            def execute(self, query):
+                pass
+            
+            def fetchall(self):
+                return []
+            
+            def close(self):
+                pass
+            pass
+            
+        class Connection:
+            """Mock Connection class"""
+            pass
+    
+    pyodbc = MockPyodbc()
+    PYODBC_AVAILABLE = False
 
 # ログ設定
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
@@ -163,6 +214,9 @@ def teardown_reproducible_test_class():
 
 def get_reproducible_database_connection():
     """再現可能テスト用のデータベース接続を取得"""
+    if not PYODBC_AVAILABLE:
+        raise ImportError("pyodbc is not available - DB tests will be skipped")
+        
     connection_string = (
         "DRIVER={ODBC Driver 17 for SQL Server};"
         "SERVER=localhost,1433;"

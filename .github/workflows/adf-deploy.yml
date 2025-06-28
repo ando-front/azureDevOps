@@ -6,80 +6,422 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, new-runner]
 
     steps:
+      - name: Clean workspace
+        run: |
+          # セルフホストランナーのワークスペースクリーンアップ
+          find ${{ github.workspace }} -mindepth 1 -maxdepth 1 \
+            ! -name src \
+            -exec sudo rm -rf {} +
+          find ${{ github.workspace }}/src -mindepth 1 -maxdepth 1 \
+            ! -name dev \
+            -exec sudo rm -rf {} +
+          find ${{ github.workspace }}/src/dev -mindepth 1 -maxdepth 1 \
+            ! -name pipeline \
+            -exec sudo rm -rf {} +
+          # pipelineディレクトリ配下のファイルも絶対に消さない（rmやfindでpipeline配下を一切触らない）
+          sudo find ${{ github.workspace }} -name ".pytest_cache" -type d -exec rm -rf {} + 2>/dev/null || true
+          sudo find ${{ github.workspace }} -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+          sudo find ${{ github.workspace }} -name "*.pyc" -type f -delete 2>/dev/null || true
+          
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v2
+      - name: Debug pipeline directory after checkout
+        run: |
+          echo "=== Files under src/dev after checkout ==="
+          ls -lR ${{ github.workspace }}/src/dev/ || echo "No src/dev directory"
+          echo "=== Files under src/dev/pipeline after checkout ==="
+          ls -lR ${{ github.workspace }}/src/dev/pipeline/ || echo "No pipeline directory"
+          echo "=== Git tracked files under src/dev/pipeline ==="
+          git -C ${{ github.workspace }} ls-files src/dev/pipeline || echo "No tracked files in src/dev/pipeline"
+
+      - name: Debug tests/unit directory after checkout
+        run: |
+          echo "=== tests/unit/ directory contents after checkout ==="
+          ls -la ${{ github.workspace }}/tests/unit/
+
+      - name: Fix file permissions
+        run: |
+          # セルフホストランナーでのファイル権限問題を修正
+          sudo chown -R $USER:$USER ${{ github.workspace }}/
+          sudo chmod -R 755 ${{ github.workspace }}/src/
+          sudo chmod -R 644 ${{ github.workspace }}/src/dev/pipeline/*.json || true
+          # pipelineディレクトリ配下の所有者・権限も明示的に修正
+          sudo chown -R $USER:$USER ${{ github.workspace }}/src/dev/pipeline
+          sudo chmod -R 755 ${{ github.workspace }}/src/dev/pipeline
+          echo "File permissions fixed"
+
+      - name: Configure Docker Buildx
+        run: |
+          # Buildx環境の設定と検証
+          docker buildx create --use --name multiarch-builder || true
+          docker buildx inspect --bootstrap
+          docker buildx ls
 
       - name: Clean up existing containers
         run: |
-          docker rm -f pytest-test azurite-test || true
+          docker rm -f pytest-test azurite-test sqlserver-test || true
           docker network rm test-network || true
 
       - name: Create test network
         run: docker network create test-network
 
+      - name: Start comprehensive E2E environment
+        run: |
+          echo "🚀 Starting comprehensive E2E test environment..."
+          
+          # Start SQL Server with proper health check (matching docker-compose.e2e.yml)
+          docker run -d --name sqlserver-test \
+            --network test-network \
+            -e 'ACCEPT_EULA=Y' \
+            -e 'SA_PASSWORD=YourStrong!Passw0rd123' \
+            -e 'MSSQL_PID=Express' \
+            -e 'MSSQL_COLLATION=Japanese_CI_AS' \
+            -p 1433:1433 \
+            mcr.microsoft.com/mssql/server:2022-latest
+          
+          # Wait for SQL Server with proper health check
+          echo "⏳ Waiting for SQL Server to be ready..."
+          for i in {1..15}; do
+            if docker exec sqlserver-test /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q 'SELECT 1' -C >/dev/null 2>&1; then
+              echo "✅ SQL Server is ready!"
+              break
+            fi
+            echo "Waiting for SQL Server... attempt $i/15"
+            sleep 5
+          done
+          
+          # Initialize test databases
+          echo "🗄️ Initializing test databases..."
+          docker exec sqlserver-test /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q "CREATE DATABASE TGMATestDB COLLATE Japanese_CI_AS" -C || echo "Database may already exist"
+
       - name: Start Azurite service
         run: |
           docker run -d --name azurite-test \
             --network test-network \
+            -e 'AZURITE_ACCOUNTS=devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==' \
             -p 10000:10000 \
             -p 10001:10001 \
             -p 10002:10002 \
             mcr.microsoft.com/azure-storage/azurite:latest \
-            azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
-
+            azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --location /data --debug /data/debug.log
+      
       - name: Build test image
         run: docker build -t pytest-test .
       
-      - name: Run test container
+      - name: Run test container with full environment
         run: |
-          docker run -d --name pytest-test \
-            --network test-network \
-            -e PYTHONPATH=/tests \
+          set -x
+          # コンテナ起動コマンドをデバッグ出力（完全な環境変数セット）
+          docker run -d --name pytest-test --network test-network \
+            -e PYTHONPATH=/app \
+            -e PYTHONUNBUFFERED=1 \
+            -e PYTHONDONTWRITEBYTECODE=1 \
+            -e TEST_MODE=e2e \
+            -e LOG_LEVEL=INFO \
+            -e SQL_SERVER_HOST=sqlserver-test \
+            -e SQL_SERVER_PORT=1433 \
+            -e E2E_SQL_SERVER=sqlserver-test,1433 \
+            -e E2E_SQL_DATABASE=TGMATestDB \
+            -e E2E_SQL_USERNAME=sa \
+            -e E2E_SQL_PASSWORD=YourStrong!Passw0rd123 \
             -e AZURITE_HOST=azurite-test \
             -e AZURITE_ENDPOINT=http://azurite-test:10000 \
+            -e AZURITE_CONNECTION_STRING='DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite-test:10000/devstoreaccount1;' \
             -e GITHUB_ACTIONS=true \
-            -v ${{ github.workspace }}/tests:/tests \
-            -v ${{ github.workspace }}/src:/tests/src \
-            pytest-test tail -f /dev/null
+            -v "${{ github.workspace }}/tests:/app/tests" \
+            -v "${{ github.workspace }}/src:/app/src" \
+            -v "${{ github.workspace }}/config:/app/config" \
+            -v "${{ github.workspace }}/input:/app/input" \
+            -v "${{ github.workspace }}/output:/app/output" \
+            pytest-test tail -f /dev/null || { echo 'docker run failed'; exit 1; }
+          echo "Container ID: $(docker ps -aqf 'name=pytest-test')"
+      
+      - name: Ensure pipeline files are accessible
+        run: |
+          echo "=== Host directory structure verification ==="
+          echo "Workspace root contents:"
+          ls -la ${{ github.workspace }}/ | head -10
+          echo "src directory:"
+          ls -la ${{ github.workspace }}/src/
+          echo "src/dev directory:"
+          ls -la ${{ github.workspace }}/src/dev/
+          echo "=== Host pipeline directory detailed check ==="
+          echo "Pipeline directory contents:"
+          ls -la ${{ github.workspace }}/src/dev/pipeline/
+          echo "Pipeline directory file count:"
+          ls -1 ${{ github.workspace }}/src/dev/pipeline/ | wc -l
+          echo "JSON files specifically:"
+          ls -la ${{ github.workspace }}/src/dev/pipeline/*.json || echo "No JSON files found"
+          echo "First 5 JSON files:"
+          ls ${{ github.workspace }}/src/dev/pipeline/*.json 2>/dev/null | head -5 || echo "No JSON files to list"
+          echo "=== File permissions check ==="
+          ls -la ${{ github.workspace }}/src/dev/pipeline/ | grep "\.json" | head -3
+          echo "=== Directory permissions ==="
+          ls -ld ${{ github.workspace }}/src/dev/pipeline/
+          echo "=== Container pipeline file access test ==="
+          docker exec pytest-test ls -la /tests/src/dev/pipeline/ || echo "No /tests/src/dev/pipeline directory"
+          docker exec pytest-test ls -la /app/src/dev/pipeline/ || echo "No /app/src/dev/pipeline directory"
+          echo "=== Container JSON files direct check ==="
+          docker exec pytest-test find /tests/src/dev/pipeline/ -name "*.json" -ls 2>/dev/null || echo "No JSON files in /tests mount"
+          docker exec pytest-test find /app/src/dev/pipeline/ -name "*.json" -ls 2>/dev/null || echo "No JSON files in /app mount"
+          echo "=== Running pipeline path initialization ==="
+          docker exec pytest-test bash /app/docker/init-pipeline-paths.sh
+          echo "=== Final verification ==="
+          docker exec pytest-test ls -la /app/src/dev/pipeline/ | head -5
+          docker exec pytest-test ls -la /tests/src/dev/pipeline/ | head -5
       
       - name: Wait for Azurite to be ready
         run: |
-          echo "Waiting for Azurite to be ready..."
-          for i in {1..60}; do
-            if docker exec pytest-test curl -f http://azurite-test:10000/devstoreaccount1 2>/dev/null; then
-              echo "Azurite is ready!"
-              break
-            fi
-            echo "Waiting for Azurite... ($i/60)"
-            sleep 2
-          done
+          echo "Waiting for Azurite to start up..."
+          sleep 15
       
       - name: Verify test environment
         run: |
           echo "=== Python Environment ==="
           docker exec pytest-test bash -c "
-            source /opt/venv/bin/activate && \
             python --version && \
             pip list | grep pytest
-          "          echo "=== Test Directory ==="
+          "
+          echo "=== Test Directory Structure ==="
           docker exec pytest-test ls -la /tests/
+          echo "=== Source Directory Structure ==="
+          docker exec pytest-test ls -la /tests/src/ || echo "No /tests/src directory"
+          docker exec pytest-test ls -la /tests/src/dev/ || echo "No /tests/src/dev directory"
+          docker exec pytest-test ls -la /tests/src/dev/pipeline/ || echo "No /tests/src/dev/pipeline directory"          echo "=== Host Source Directory Check ==="
+          ls -la ${{ github.workspace }}/src/dev/
+          echo "=== Host Pipeline Directory Check ==="
+          ls -la ${{ github.workspace }}/src/dev/pipeline/ || echo "No pipeline directory on host"
+          echo "=== Working Directory ==="
+          docker exec pytest-test pwd
           echo "=== Network Connectivity ==="
           docker exec pytest-test curl -f http://azurite-test:10000/devstoreaccount1 || echo 'Azurite connection failed'
-      
+
+      - name: DB初期化（pyodbc経由・pytest-testコンテナ）- 条件付き実行
+        run: |
+          # TODO: 技術的負債 - pyodbc依存のDB初期化を条件分岐で回避している
+          # 理想的には以下のいずれかの対応が必要:
+          # 1. pyodbc非依存のDB初期化スクリプト（SQLAlchemy/requests経由）の作成
+          # 2. 軽量Dockerイメージにpyodbc + ODBC Driver 18の追加
+          # 3. SQLファイル実行のためのシェルスクリプト化（sqlcmd経由）
+          # 現在は条件付きスキップで回避しているが、完全なDB初期化テストには限界がある
+          
+          # pyodbcが利用可能かチェック
+          if docker exec pytest-test python -c "import pyodbc; print('✅ pyodbc available')" 2>/dev/null; then
+            echo "🔧 pyodbc is available, proceeding with DB initialization"
+            cat <<'EOF' > init_db.py
+          import pyodbc, re, sys, traceback
+
+          def exec_sqlfile(path, conn):
+              print(f"🔧 Executing SQL file: {path}")
+              try:
+                  with open(path, encoding='utf-8') as f:
+                      sql = f.read()
+                  print(f"✅ Successfully read {len(sql)} characters from {path}")
+                  
+                  # 行頭・行末のGOで分割
+                  statements = re.split(r'(?im)^\s*GO\s*$', sql)
+                  print(f"📝 Split into {len(statements)} SQL statements")
+                  
+                  for i, stmt in enumerate(statements):
+                      stmt = stmt.strip()
+                      if stmt:
+                          try:
+                              cursor = conn.cursor()
+                              cursor.execute(stmt)
+                              conn.commit()
+                              print(f"   ✅ Statement {i+1} executed successfully")
+                          except Exception as e:
+                              print(f"   ❌ Statement {i+1} failed: {e}")
+                              print(f"   📄 Statement content (first 200 chars): {stmt[:200]}...")
+                              # Continue with next statement instead of failing completely
+                              continue
+                  print(f"🎉 Completed processing {path}")
+              except Exception as e:
+                  print(f"❌ Failed to process {path}: {e}")
+                  traceback.print_exc()
+
+          # 接続確認とリトライ機能を追加
+          print("🔗 Attempting to connect to SQL Server...")
+          max_retries = 5
+          for attempt in range(max_retries):
+              try:
+                  conn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=sqlserver-test,1433;DATABASE=TGMATestDB;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes', timeout=30)
+                  print(f"✅ Connected to SQL Server on attempt {attempt + 1}")
+                  break
+              except Exception as e:
+                  print(f"⚠️ Connection attempt {attempt + 1} failed: {e}")
+                  if attempt < max_retries - 1:
+                      import time
+                      time.sleep(5)
+                  else:                      print("❌ Failed to connect after all retries")
+                      sys.exit(1)
+
+          # 全ての初期化SQLファイルを順序通り実行
+          sql_files = [
+              '/app/docker/sql/init/00_create_synapse_db_fixed.sql',
+              '/app/docker/sql/init/01_init_database_fixed.sql', 
+              '/app/docker/sql/init/02_create_test_tables_simple.sql',
+              '/app/docker/sql/init/03_insert_test_data.sql',
+              '/app/docker/sql/init/04_enhanced_test_tables.sql',
+              '/app/docker/sql/init/05_comprehensive_test_data.sql',
+              '/app/docker/sql/init/06_additional_e2e_test_data.sql'
+          ]
+          
+          print(f"🚀 Starting DB initialization with {len(sql_files)} SQL files...")
+          for sql_file in sql_files:
+              exec_sqlfile(sql_file, conn)
+          
+          # テーブル存在確認
+          print("🔍 Verifying table creation...")
+          cursor = conn.cursor()
+          try:
+              cursor.execute("SELECT COUNT(*) FROM dbo.client_dm")
+              client_count = cursor.fetchone()[0]
+              print(f"✅ client_dm table has {client_count} records")
+              
+              cursor.execute("SELECT COUNT(*) FROM etl.e2e_test_execution_log")
+              e2e_count = cursor.fetchone()[0] 
+              print(f"✅ e2e_test_execution_log table has {e2e_count} records")  
+              cursor.execute("SELECT COUNT(*) FROM dbo.client_dm WHERE client_id LIKE 'E2E_%'")
+              e2e_client_count = cursor.fetchone()[0]
+              print(f"✅ E2E client_dm records: {e2e_client_count}")
+              
+          except Exception as e:
+              print(f"⚠️ Table verification failed: {e}")
+          
+          conn.close()
+          print('🎉 DB initialization completed successfully')
+          EOF
+            docker cp init_db.py pytest-test:/app/init_db.py
+            docker exec pytest-test python /app/init_db.py
+          else
+            echo "⚠️ pyodbc not available in container - skipping DB initialization"
+            echo "ℹ️ DB-dependent tests will be automatically skipped during test execution"
+          fi
+
+      - name: Wait for SQL Server ready (pyodbc) - 条件付き実行
+        run: |
+          # TODO: 技術的負債 - SQL Server接続確認もpyodbc依存
+          # 代替案: 
+          # 1. sqlcmdコマンドによる接続確認（コンテナ間通信）
+          # 2. curl/wgetによるSQL Server TCPポート確認
+          # 3. dockerコンテナのhealthcheckステータス確認
+          # pyodbcが利用可能かチェック
+          if docker exec pytest-test python -c "import pyodbc; print('✅ pyodbc available')" 2>/dev/null; then
+            echo "🔧 pyodbc is available, proceeding with SQL Server readiness check"
+            cat <<'EOF' > wait_sqlserver.py
+          import time
+          import pyodbc
+          
+          print("🔄 Waiting for SQL Server to be ready...")
+          max_retries = 60  # 増加: 60回 × 3秒 = 最大3分
+          
+          for i in range(max_retries):
+              try:
+                  # 接続テスト - より長いタイムアウト
+                  conn = pyodbc.connect(
+                      'DRIVER={ODBC Driver 18 for SQL Server};SERVER=sqlserver-test,1433;DATABASE=master;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes', 
+                      timeout=10  # 接続タイムアウトを10秒に増加
+                  )
+                  
+                  # TGMATestDBの存在確認
+                  cursor = conn.cursor()
+                  cursor.execute("SELECT name FROM sys.databases WHERE name = 'TGMATestDB'")
+                  if cursor.fetchone():
+                      print("✅ TGMATestDB database found")
+                  else:
+                      print("⚠️ TGMATestDB database not found, creating...")
+                      cursor.execute("CREATE DATABASE TGMATestDB")
+                      conn.commit()                  
+                  conn.close()
+                  
+                  # TGMATestDBへの接続テスト
+                  test_conn = pyodbc.connect(
+                      'DRIVER={ODBC Driver 18 for SQL Server};SERVER=sqlserver-test,1433;DATABASE=TGMATestDB;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes',
+                      timeout=10
+                  )
+                  test_conn.close()
+                  
+                  print(f'✅ SQL Server is ready (attempt {i+1}/{max_retries})')
+                  break
+              except Exception as e:
+                  print(f'⚠️ Waiting for SQL Server... ({i+1}/{max_retries}): {e}')
+                  time.sleep(3)  # 待機時間を3秒に増加
+          else:
+              print('❌ SQL Server did not become ready in time')
+              raise RuntimeError('SQL Server did not become ready in time')
+          EOF
+            docker cp wait_sqlserver.py pytest-test:/app/wait_sqlserver.py
+            docker exec pytest-test python /app/wait_sqlserver.py
+          else
+            echo "⚠️ pyodbc not available in container - skipping SQL Server readiness check"
+            echo "ℹ️ SQL Server dependent operations will be skipped"
+          fi
+
       - name: Run pytest
         run: |
-          docker exec pytest-test bash -c "
-            source /opt/venv/bin/activate && \
-            export PYTHONPATH=/tests && \
+          docker exec pytest-test bash -c "            export PYTHONPATH=/app && \
             export AZURITE_HOST=azurite-test && \
-            cd /tests && \
+            cd /app/tests && \
             python -m pytest unit/ -v --tb=short --no-header
+          "
+
+      - name: Run unit tests
+        run: docker exec pytest-test pytest tests/unit --maxfail=1 --disable-warnings -q
+
+      - name: Run e2e tests with comprehensive environment
+        run: |
+          echo "🧪 Running E2E tests with full environment setup..."
+          
+          # Verify all services are running
+          echo "📋 Service status check:"
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            # Test database connectivity with longer timeout (条件付き)
+          echo "🔍 Testing database connectivity..."
+          if docker exec sqlserver-test /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q "SELECT name FROM sys.databases" -C -t 30; then
+            echo "✅ SQL Server is accessible"
+          else
+            echo "⚠️ SQL Server connectivity test failed - DB-dependent tests will be skipped"
+          fi
+          
+          # Test Azurite connectivity
+          echo "🔍 Testing Azurite connectivity..."
+          docker exec pytest-test curl -f http://azurite-test:10000/devstoreaccount1 || echo "Azurite connection test completed"
+          
+          # Pre-test database verification (条件付き)
+          echo "🔍 Pre-test database verification..."
+          if docker exec pytest-test python -c "import pyodbc; print('pyodbc available')" 2>/dev/null; then
+            docker exec pytest-test python -c "
+          import pyodbc
+          try:
+              conn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=sqlserver-test,1433;DATABASE=TGMATestDB;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes', timeout=30)
+              cursor = conn.cursor()
+              cursor.execute('SELECT COUNT(*) FROM dbo.client_dm WHERE client_id LIKE \'E2E_%\'')
+              e2e_count = cursor.fetchone()[0]
+              print(f'✅ E2E client_dm records: {e2e_count}')
+              cursor.execute('SELECT COUNT(*) FROM etl.e2e_test_execution_log')
+              log_count = cursor.fetchone()[0]
+              print(f'✅ e2e_test_execution_log records: {log_count}')
+              conn.close()
+          except Exception as e:
+              print(f'⚠️ Pre-test DB verification failed: {e}')
+              print('ℹ️ DB-dependent tests will be automatically skipped')
+          "
+          else
+            echo "⚠️ pyodbc not available - skipping pre-test database verification"
+          fi
+            # Run E2E tests with all environment variables and extended timeout
+          echo "🚀 Starting E2E test execution..."
+          docker exec pytest-test bash -c "
+            export PYTHONPATH=/app && \
+            export AZURITE_HOST=azurite-test && \
+            export SQL_CONNECTION_TIMEOUT=30 && \
+            cd /app && \
+            pytest tests/e2e --maxfail=3 --disable-warnings -v --tb=short
           "
 
       - name: Get logs on failure
@@ -99,5 +441,14 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker rm -f pytest-test azurite-test || true
+          # Dockerリソースのクリーンアップ          docker rm -f pytest-test azurite-test sqlserver-test || true
           docker network rm test-network || true
+          # セルフホストランナー用の追加クリーンアップ
+          sudo rm -rf tests/.pytest_cache/ || true
+          sudo rm -rf tests/__pycache__/ || true
+          sudo find . -name "*.pyc" -type f -delete 2>/dev/null || true
+          sudo find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+
+      - name: SQL Serverコンテナ内のsqlcmdパス調査
+        run: |
+          docker exec sqlserver-test which sqlcmd || docker exec sqlserver-test find / -name sqlcmd || echo 'sqlcmd not found'

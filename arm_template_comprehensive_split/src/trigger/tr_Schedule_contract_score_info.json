@@ -1,0 +1,184 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "factoryName": {
+      "type": "string",
+      "metadata": "データ ファクトリ名",
+      "defaultValue": "omni-df-dev"
+    },
+    "li_dam_dwh_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_secretAccessKey": {
+      "type": "secureString",
+      "metadata": "'li_Karte_AmazonS3' の 'secretAccessKey' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomni_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomni_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sqlmi_dwh2_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_sqlmi_dwh2' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sftp_password": {
+      "type": "secureString",
+      "metadata": "'li_sftp' の 'password' のセキュリティで保護された文字列"
+    },
+    "AzureSqlDatabase1_connectionString": {
+      "type": "secureString",
+      "metadata": "'AzureSqlDatabase1' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_ftp_test_password": {
+      "type": "secureString",
+      "metadata": "'li_ftp_test' の 'password' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_dam_dwh_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_damhdinsight_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_damhdinsight_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_properties_typeProperties_accessKeyId": {
+      "type": "string",
+      "defaultValue": "AKIASLGERJSDMDR3YKGF"
+    },
+    "li_sftp_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_sftp_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_ftp_test_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_ftp_test_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_dam_kv_omni_properties_typeProperties_baseUrl": {
+      "type": "string",
+      "defaultValue": "https://tgomnidevkey03.vault.azure.net/"
+    },
+    "li_blob_damhdinsight_container_akv_properties_typeProperties_sasUri_secretName": {
+      "type": "string",
+      "defaultValue": "0001damdevrgsa-damhdinsight-container"
+    },
+    "li_blob_mytokyogas_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_mytokyogas_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.Storage/storageAccounts/0001tgomnidevrgsa"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "0001tgomnidevrgsa.blob.core.windows.net"
+      ]
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Sql/servers/damd-dwh"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "sqlServer"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "damd-dwh.database.windows.net"
+      ]
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Storage/storageAccounts/0001damdevrgsa"
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "AzureSqlMI-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/43d95da1-ff6f-49ae-868b-a427c8bb161e/resourceGroups/dam2-rg-dev/providers/Microsoft.Sql/managedInstances/dam2-sqlmi-dev"
+    },
+    "AzureSqlMI-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "managedInstance"
+    },
+    "AzureSqlMI-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "dam2-sqlmi-dev.6b9b3938f4f4.database.windows.net"
+      ]
+    },
+    "tgomnidevkey03-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.KeyVault/vaults/tgomnidevkey03"
+    },
+    "tgomnidevkey03-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "vault"
+    },
+    "tgomnidevkey03-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "tgomnidevkey03.vault.azure.net"
+      ]
+    }
+  },
+  "variables": {
+    "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('factoryName'), '/tr_Schedule_contract_score_info')]",
+      "type": "Microsoft.DataFactory/factories/triggers",
+      "apiVersion": "2018-06-01",
+      "properties": {
+        "annotations": [],
+        "runtimeState": "Stopped",
+        "pipelines": [],
+        "type": "ScheduleTrigger",
+        "typeProperties": {
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2023-11-08T02:54:00",
+            "timeZone": "Tokyo Standard Time",
+            "schedule": {
+              "minutes": [
+                0
+              ],
+              "hours": [
+                0
+              ]
+            }
+          }
+        }
+      },
+      "dependsOn": []
+    }
+  ]
+}

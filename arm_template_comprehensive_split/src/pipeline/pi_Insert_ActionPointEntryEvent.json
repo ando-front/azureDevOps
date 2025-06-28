@@ -1,0 +1,238 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "factoryName": {
+      "type": "string",
+      "metadata": "データ ファクトリ名",
+      "defaultValue": "omni-df-dev"
+    },
+    "li_dam_dwh_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_secretAccessKey": {
+      "type": "secureString",
+      "metadata": "'li_Karte_AmazonS3' の 'secretAccessKey' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomni_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomni_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sqlmi_dwh2_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_sqlmi_dwh2' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sftp_password": {
+      "type": "secureString",
+      "metadata": "'li_sftp' の 'password' のセキュリティで保護された文字列"
+    },
+    "AzureSqlDatabase1_connectionString": {
+      "type": "secureString",
+      "metadata": "'AzureSqlDatabase1' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_ftp_test_password": {
+      "type": "secureString",
+      "metadata": "'li_ftp_test' の 'password' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_dam_dwh_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_damhdinsight_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_damhdinsight_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_properties_typeProperties_accessKeyId": {
+      "type": "string",
+      "defaultValue": "AKIASLGERJSDMDR3YKGF"
+    },
+    "li_sftp_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_sftp_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_ftp_test_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_ftp_test_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_dam_kv_omni_properties_typeProperties_baseUrl": {
+      "type": "string",
+      "defaultValue": "https://tgomnidevkey03.vault.azure.net/"
+    },
+    "li_blob_damhdinsight_container_akv_properties_typeProperties_sasUri_secretName": {
+      "type": "string",
+      "defaultValue": "0001damdevrgsa-damhdinsight-container"
+    },
+    "li_blob_mytokyogas_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_mytokyogas_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.Storage/storageAccounts/0001tgomnidevrgsa"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "0001tgomnidevrgsa.blob.core.windows.net"
+      ]
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Sql/servers/damd-dwh"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "sqlServer"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "damd-dwh.database.windows.net"
+      ]
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Storage/storageAccounts/0001damdevrgsa"
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "AzureSqlMI-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/43d95da1-ff6f-49ae-868b-a427c8bb161e/resourceGroups/dam2-rg-dev/providers/Microsoft.Sql/managedInstances/dam2-sqlmi-dev"
+    },
+    "AzureSqlMI-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "managedInstance"
+    },
+    "AzureSqlMI-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "dam2-sqlmi-dev.6b9b3938f4f4.database.windows.net"
+      ]
+    },
+    "tgomnidevkey03-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.KeyVault/vaults/tgomnidevkey03"
+    },
+    "tgomnidevkey03-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "vault"
+    },
+    "tgomnidevkey03-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "tgomnidevkey03.vault.azure.net"
+      ]
+    }
+  },
+  "variables": {
+    "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('factoryName'), '/pi_Insert_ActionPointEntryEvent')]",
+      "type": "Microsoft.DataFactory/factories/pipelines",
+      "apiVersion": "2018-06-01",
+      "properties": {
+        "description": "ODM「アクションポイントエントリーevent」を作成する",
+        "activities": [
+          {
+            "name": "at_Insert_EntryEvent_temp",
+            "description": "KARTE全量event → アクションポイントエントリーevent_temp",
+            "type": "Script",
+            "dependsOn": [],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "----------------------------------------------------------------\n-- 2(a)_at_Insert_EntryEvent_temp\n-- アクションポイントエントリーevent_temp 作成\n----------------------------------------------------------------\n\nDECLARE @today date;\nSET @today=CONVERT(DATE, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time');  -- 実行日\n\nDECLARE @isEmpty int;\nSELECT @isEmpty=COUNT(*) FROM [omni].[omni_odm_actionpoint_trn_entry_event];  -- 「アクションポイントエントリーevent」のレコード数取得\nIF @isEmpty=0    -- 初回は全量作成する\nBEGIN\n    SET @today='2025-02-01';\nEND\n\ndeclare @targetDT as datetime;\nset @targetDT=DATEADD(day,-30,@today);   -- 実行日-30日\n\n\n----------------------------------------------------------------\n\nTRUNCATE TABLE [omni].[omni_odm_actionpoint_trn_entry_event_temp];\n\nINSERT INTO [omni].[omni_odm_actionpoint_trn_entry_event_temp]\nSELECT DISTINCT\n     KEY_MTGID as MTGID\n    ,CASE WHEN EVENT_NAME='ap_gas'   THEN 1\n          WHEN EVENT_NAME='ap_power' THEN 2\n          WHEN EVENT_NAME='ap_quiz'  THEN 3\n          ELSE 99\n     END as ACTION_POINT_TYPE\n    ,convert(date, EVENT_TIME) as EVENT_DATE   -- 日付にする\n    ,EVENT_NAME\nFROM [omni].[omni_ods_karte_trn_event]   -- KARTE全量event\n\nWHERE \n          EVENT_NAME in('ap_gas','ap_power','ap_quiz')   -- アクションポイントのアクセス\n      and KEY_MTGID is not NULL\n      and EVENT_TIME>=@targetDT\n;\n"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          },
+          {
+            "name": "at_Insert_EntryEvent",
+            "description": "アクションポイントエントリーevent_temp → アクションポイントエントリーevent",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_EntryEvent_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "----------------------------------------------------------------\n-- 2(b)_at_Insert_EntryEvent\n-- アクションポイントエントリーevent 作成\n----------------------------------------------------------------\n\nDECLARE @today varchar(8);\nSET @today=format(CONVERT(DATE, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time'),'yyyyMMdd');  -- 実行日\n\n\n-- アクションポイントエントリーevent_tempから既存レコード削除\nDELETE tmp\nFROM [omni].[omni_odm_actionpoint_trn_entry_event_temp] tmp\n\nINNER JOIN [omni].[omni_odm_actionpoint_trn_entry_event] eev\n        ON\n                eev.MTGID=tmp.MTGID                          -- mTG会員ID\n            and eev.ACTIONPOINT_TYPE=tmp.ACTIONPOINT_TYPE    -- アクションポイント種別\n            and eev.ENTRY_DATE=tmp.ENTRY_DATE                -- エントリー年月日\n;\n\n\n-- アクションポイントエントリーeventに挿入\nINSERT INTO [omni].[omni_odm_actionpoint_trn_entry_event]\nSELECT\n     MTGID                  -- mTG会員ID\n    ,ACTIONPOINT_TYPE       -- アクションポイント種別\n    ,ENTRY_DATE             -- エントリー年月日\n    ,@today as REC_REG_YMD  -- 登録日\n    ,''     as REC_UPD_YMD  -- 更新日\nFROM [omni].[omni_odm_actionpoint_trn_entry_event_temp]   -- アクションポイントエントリーevent_temp\n;\n"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          }
+        ],
+        "policy": {
+          "elapsedTimeMetric": {}
+        },
+        "folder": {
+          "name": "ActionPoint"
+        },
+        "annotations": [],
+        "lastPublishTime": "2025-03-05T02:52:02Z"
+      },
+      "dependsOn": [
+        "[concat(variables('factoryId'), '/linkedServices/li_dam_dwh')]"
+      ]
+    }
+  ]
+}

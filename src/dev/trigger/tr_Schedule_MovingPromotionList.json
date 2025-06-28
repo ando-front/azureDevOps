@@ -1,0 +1,41 @@
+{
+  "name": "tr_Schedule_MovingPromotionList",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "description": "「引越し予測2か月以内リスト」用トリガー",
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [
+      {
+        "pipelineReference": {
+          "referenceName": "pi_Send_MovingPromotionList",
+          "type": "PipelineReference"
+        },
+        "parameters": {}
+      }
+    ],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Week",
+        "interval": 1,
+        "startTime": "2025-05-19T05:00:00",
+        "timeZone": "Tokyo Standard Time",
+        "schedule": {
+          "minutes": [
+            45
+          ],
+          "hours": [
+            5
+          ],
+          "weekDays": [
+            "Friday"
+          ]
+        }
+      }
+    }
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/pipelines/pi_Send_MovingPromotionList')]"
+  ]
+}

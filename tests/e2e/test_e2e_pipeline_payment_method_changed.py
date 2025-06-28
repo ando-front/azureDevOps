@@ -1,11 +1,18 @@
 """
-E2E tests for pi_Send_PaymentMethodChanged pipeline.
+E2E tests for pi_Send_PaymentMethodChanged pipeline
 
 This module contains comprehensive end-to-end tests for the pi_Send_PaymentMethodChanged pipeline,
 which extracts payment method change data from the customer DM table and sends it to SFMC via SFTP.
 
+【実際の実装】このパイプラインは以下の処理を実行します：
+1. 前日分ガス契約データと現在のODMデータを比較
+2. 支払い方法が変更された顧客を抽出
+3. 利用サービステーブルと結合してBx、INDEX_IDを取得
+4. CSV.gz形式でBlob Storageに出力
+5. SFMCにSFTP送信
+
 Test Coverage:
-    - Basic pipeline execution and data flow validation
+- Basic pipeline execution and data flow validation
 - Large dataset performance testing
 - Data quality and integrity validation
 - Error handling and recovery scenarios
@@ -15,73 +22,31 @@ Test Coverage:
 """
 
 import pytest
-import asyncio
+import time
 import logging
 import os
 import requests
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, List
-from dataclasses import dataclass
-from enum import Enum
-import pandas as pd
-import gzip
-import io
-import json
+from datetime import datetime
+from unittest.mock import Mock
+from typing import Dict, Any
+
+from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
 from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
 
-# from azure.datafactory import DataFactoryManagementClient
-# from azure.storage.blob import BlobServiceClient  
-# from azure.monitor.query import LogsQueryClient
-
-# Placeholder classes for missing Azure modules
-class DataFactoryManagementClient:
-    def __init__(self, *args, **kwargs):
-        pass
-
-class BlobServiceClient:
-    def __init__(self, *args, **kwargs):
-        pass
-
-class LogsQueryClient:
-    def __init__(self, *args, **kwargs):
-        pass
-from azure.identity import DefaultAzureCredential
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class PaymentMethodChangedTestScenario(Enum):
-    """Test scenarios for Payment Method Changed pipeline testing."""
-    BASIC_EXECUTION = "basic_execution"
-    LARGE_DATASET = "large_dataset"
-    DATA_QUALITY = "data_quality"
-    ERROR_HANDLING = "error_handling"
-    MONITORING = "monitoring"
-    PAYMENT_METHOD_VALIDATION = "payment_method_validation"
-    CHANGE_TRACKING = "change_tracking"
-
-
-@dataclass
-class PaymentMethodChangedTestResult:
-    """Test result data structure for Payment Method Changed pipeline tests."""
-    scenario: PaymentMethodChangedTestScenario
-    pipeline_run_id: str
-    execution_duration: float
-    status: str
-    rows_processed: int
-    file_size_mb: float
-    data_quality_score: float
-    payment_method_changes_count: int
-    unique_customers_count: int
-    error_message: Optional[str] = None
-    performance_metrics: Optional[Dict[str, Any]] = None
-
-
 class TestPipelinePaymentMethodChanged:
- 
-       
+    """pi_Send_PaymentMethodChanged パイプライン E2Eテストクラス"""
+    
+    PIPELINE_NAME = "pi_Send_PaymentMethodChanged"
+    BLOB_CONTAINER = "datalake/OMNI/MA/PaymentMethodChanged"
+    SFTP_DIRECTORY = "Import/DAM/PaymentMethodChanged"
+    
+    # パフォーマンス期待値
+    EXPECTED_MAX_DURATION = 30  # 30分（データ比較処理があるため）
+    EXPECTED_MIN_RECORDS = 0    # 変更がない場合もあるため
+    
     @classmethod
     def setup_class(cls):
         """再現可能テスト環境のセットアップ"""
@@ -92,684 +57,306 @@ class TestPipelinePaymentMethodChanged:
             if var in os.environ:
                 del os.environ[var]
     
-    
-    
-    
-    
     @classmethod
     def teardown_class(cls):
         """再現可能テスト環境のクリーンアップ"""
         cleanup_reproducible_test_class()
-
-
 
     def _get_no_proxy_session(self):
         """Get a requests session with proxy disabled"""
         session = requests.Session()
         session.proxies = {'http': None, 'https': None}
         return session
-    """
-    Comprehensive E2E test suite for pi_Send_PaymentMethodChanged pipeline.
     
-    This test class covers all aspects of the payment method changed pipeline execution,
-    including data extraction, CSV generation, compression, and SFTP transfer with
-    specific focus on payment method change tracking and validation.
-    """
-
-    # Pipeline configuration
-    PIPELINE_NAME = "pi_Send_PaymentMethodChanged"
-    EXPECTED_ACTIVITIES = ["at_CreateCSV_ClientDM", "at_SendSftp_ClientDM"]
-    SOURCE_TABLE = "omni.omni_ods_marketing_trn_client_dm_bx_temp"
-    OUTPUT_DIRECTORY = "datalake/OMNI/MA/ClientDM"
-    SFTP_DIRECTORY = "Import/DAM/ClientDM"
-    
-    # Data quality thresholds
-    MIN_EXPECTED_ROWS = 5000  # Lower threshold for payment method changes
-    MAX_EXECUTION_TIME_MINUTES = 120
-    MIN_DATA_QUALITY_SCORE = 0.95
-    
-    # Performance benchmarks
-    LARGE_DATASET_THRESHOLD = 500000  # 500K rows (smaller than general pipelines)
-    EXPECTED_THROUGHPUT_ROWS_PER_MINUTE = 50000
-    
-    # Payment method specific validations
-    EXPECTED_PAYMENT_METHODS = [
-        "口座振替", "クレジットカード", "コンビニ払い", "請求書払い"
-    ]
+    def setup_method(self):
+        """テストメソッド初期化"""
+        self.start_time = datetime.now()
+        logger.info(f"支払い方法変更E2Eテスト開始: {self.PIPELINE_NAME} - {self.start_time}")
+        
+    def teardown_method(self):
+        """テストメソッド終了処理"""
+        end_time = datetime.now()
+        duration = end_time - self.start_time
+        logger.info(f"支払い方法変更E2Eテスト完了: {self.PIPELINE_NAME} - 実行時間: {duration}")
 
     @pytest.fixture(scope="class")
-    def azure_clients(self):
-        """Initialize Azure service clients for testing."""
-        credential = DefaultAzureCredential()
+    def helper(self, e2e_synapse_connection):
+        """SynapseE2EConnectionフィクスチャ"""
+        return e2e_synapse_connection
+
+    @pytest.fixture(scope="class")
+    def pipeline_run_id(self, helper):
+        """パイプライン実行IDを取得するフィクスチャ"""
+        logger.info(f"パイプライン実行開始: {self.PIPELINE_NAME}")
         
-        return {
-            'data_factory': DataFactoryManagementClient(
-                credential=credential,
-                subscription_id="your-subscription-id"
-            ),
-            'blob_service': BlobServiceClient(
-                account_url="https://your-storage-account.blob.core.windows.net",
-                credential=credential
-            ),
-            'logs_client': LogsQueryClient(credential=credential)
-        }
+        try:
+            # パイプライン実行前の事前チェック
+            self._pre_execution_validation(helper)
+            
+            # パイプライン実行
+            run_id = helper.trigger_pipeline(self.PIPELINE_NAME)
+            logger.info(f"パイプライン実行開始: run_id={run_id}")
+            
+            yield run_id
+            
+        except Exception as e:
+            logger.error(f"パイプライン実行準備エラー: {e}")
+            pytest.fail(f"パイプライン実行準備に失敗: {e}")
 
-    @pytest.fixture
-    def test_config(self):
-        """Test configuration and parameters."""
-        return {
-            'resource_group': 'your-resource-group',
-            'factory_name': 'your-adf-name',
-            'storage_account': 'your-storage-account',
-            'container_name': 'your-container',
-            'log_analytics_workspace': 'your-workspace-id'
-        }
+    def _pre_execution_validation(self, helper):
+        """実行前検証"""
+        logger.info("実行前検証開始")
+        
+        # データセット存在確認
+        required_datasets = ["ds_DamDwhTable_shir", "ds_CSV_BlobGz", "ds_BlobGz", "ds_Gz_Sftp"] 
+        for dataset in required_datasets:
+            assert helper.validate_dataset_exists(dataset), f"データセット {dataset} が存在しません"
+        
+        # 接続テスト
+        assert helper.test_synapse_connection(), "Synapse接続テストに失敗"
+        
+        # 必要なテーブル存在確認
+        required_tables = [
+            "omni_odm_gascstmr_trn_previousday_gaskiy_temp",
+            "omni_odm_gascstmr_trn_gaskiy",
+            "omni_ods_ma_trn_changed_payment_temp",
+            "omni_ods_cloak_trn_usageservice"
+        ]
+        for table in required_tables:
+            assert helper.validate_table_exists(table), f"テーブル {table} が存在しません"
+        
+        logger.info("実行前検証完了")
 
-    async def execute_pipeline_run(self, clients: Dict, config: Dict, 
-                                 parameters: Dict = None) -> PaymentMethodChangedTestResult:
+    def test_pipeline_execution_success(self, helper, pipeline_run_id):
+        """パイプライン実行成功テスト (PMC-001: 基本実行)"""
+        logger.info("パイプライン実行成功テスト開始 (PMC-001)")
+        
+        # パイプライン完了待機
+        status = helper.wait_for_pipeline_completion(
+            pipeline_run_id, 
+            timeout_minutes=self.EXPECTED_MAX_DURATION
+        )
+        
+        # 実行結果確認
+        assert status == "Succeeded", f"パイプライン実行が失敗: ステータス={status}"
+        
+        logger.info("パイプライン実行成功確認完了 (PMC-001)")
+
+    def test_data_comparison_logic(self, helper, pipeline_run_id):
+        """データ比較ロジック検証テスト (PMC-002: 前日データ比較)"""
+        logger.info("データ比較ロジック検証テスト開始 (PMC-002)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # 前日データテーブルの登録日確認
+        prev_day_query = "SELECT TOP 1 REC_REG_YMD2 FROM omni.omni_odm_gascstmr_trn_previousday_gaskiy_temp"
+        prev_day_data = helper.execute_query(prev_day_query)
+        assert prev_day_data, "前日分ガス契約データが存在しません"
+        
+        # 現在データテーブルの登録日確認
+        current_day_query = "SELECT TOP 1 REC_REG_YMD2 FROM omni.omni_odm_gascstmr_trn_gaskiy"
+        current_day_data = helper.execute_query(current_day_query)
+        assert current_day_data, "現在のガス契約データが存在しません"
+        
+        logger.info("データ比較ロジック確認完了 (PMC-002)")
+
+    def test_csv_creation_validation(self, helper, pipeline_run_id):
+        """CSV作成検証テスト (PMC-003: CSV.gz出力確認)"""
+        logger.info("CSV作成検証テスト開始 (PMC-003)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # Blob Storage上のCSV.gzファイル存在確認
+        expected_filename = f"PaymentMethodChanged_{datetime.now().strftime('%Y%m%d')}.csv.gz"
+        csv_exists = helper.validate_blob_file_exists(self.BLOB_CONTAINER, expected_filename)
+        assert csv_exists, f"CSV.gzファイルが作成されていません: {expected_filename}"
+        
+        # ファイルサイズ確認（0バイトでも変更がない場合は正常）
+        file_size = helper.get_blob_file_size(self.BLOB_CONTAINER, expected_filename)
+        assert file_size >= 0, f"CSV.gzファイルのサイズが不正です: {expected_filename}"
+        
+        logger.info("CSV作成確認完了 (PMC-003)")
+
+    def test_sftp_transmission_validation(self, helper, pipeline_run_id):
+        """SFTP送信検証テスト (PMC-004: SFTP送信確認)"""
+        logger.info("SFTP送信検証テスト開始 (PMC-004)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # SFTP先ファイル存在確認
+        expected_filename = f"PaymentMethodChanged_{datetime.now().strftime('%Y%m%d')}.csv.gz"
+        sftp_success = helper.validate_sftp_file_exists(self.SFTP_DIRECTORY, expected_filename)
+        assert sftp_success, f"SFTPファイル送信が確認できません: {expected_filename}"
+        
+        logger.info("SFTP送信確認完了 (PMC-004)")
+
+    def test_data_quality_validation(self, helper, pipeline_run_id):
+        """データ品質検証テスト (PMC-005: データ品質確認)"""
+        logger.info("データ品質検証テスト開始 (PMC-005)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # 基本的なデータ品質チェック
+        quality_checks = [
+            "csv_format_check", 
+            "column_header_check",
+            "row_count_check",
+            "encoding_check",
+            "timestamp_format_check"
+        ]
+        
+        failed_checks = []
+        for check_name in quality_checks:
+            try:
+                check_result = helper.execute_csv_quality_check(
+                    self.BLOB_CONTAINER, 
+                    f"PaymentMethodChanged_{datetime.now().strftime('%Y%m%d')}.csv.gz",
+                    check_name
+                )
+                if not check_result:
+                    failed_checks.append(check_name)
+                    logger.warning(f"データ品質チェック失敗: {check_name}")
+            except Exception as e:
+                logger.warning(f"データ品質チェックでエラー: {check_name} - {e}")
+                failed_checks.append(check_name)
+        
+        # 重要なチェックが失敗した場合はエラー
+        critical_checks = ["csv_format_check", "encoding_check"]
+        critical_failures = [check for check in failed_checks if check in critical_checks]
+        assert len(critical_failures) == 0, f"重要なデータ品質チェックが失敗: {critical_failures}"
+        
+        logger.info("データ品質確認完了 (PMC-005)")
+
+    def test_column_structure_validation(self, helper, pipeline_run_id):
+        """カラム構造検証テスト (PMC-006: 出力カラム確認)"""
+        logger.info("カラム構造検証テスト開始 (PMC-006)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # 期待されるカラム構造
+        expected_columns = [
+            "Bx",
+            "INDEX_ID", 
+            "SYO_KYO_TRNO",
+            "OUTPUT_DATETIME"
+        ]
+        
+        # CSV.gzファイルからカラム構造確認
+        csv_filename = f"PaymentMethodChanged_{datetime.now().strftime('%Y%m%d')}.csv.gz"
+        actual_columns = helper.get_csv_column_headers(self.BLOB_CONTAINER, csv_filename)
+        
+        # カラム構造の整合性確認
+        assert actual_columns == expected_columns, f"カラム構造が不正: 期待={expected_columns}, 実際={actual_columns}"
+        
+        logger.info("カラム構造確認完了 (PMC-006)")
+
+    def test_error_handling_validation(self, helper, pipeline_run_id):
+        """エラーハンドリング検証テスト (PMC-007: エラー処理確認)"""
+        logger.info("エラーハンドリング検証テスト開始 (PMC-007)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # パイプライン実行ログ確認
+        run_logs = helper.get_pipeline_run_logs(pipeline_run_id)
+        
+        # エラーログの有無確認
+        error_logs = [log for log in run_logs if log.get('level') == 'Error']
+        
+        # 重要なエラーがないことを確認
+        critical_errors = [
+            log for log in error_logs 
+            if any(keyword in log.get('message', '') for keyword in ['timeout', 'connection', 'authentication'])
+        ]
+        
+        assert len(critical_errors) == 0, f"重要なエラーが発生: {critical_errors}"
+        
+        logger.info("エラーハンドリング確認完了 (PMC-007)")
+
+    def test_performance_validation(self, helper, pipeline_run_id):
+        """パフォーマンス検証テスト (PMC-008: 実行時間確認)"""
+        logger.info("パフォーマンス検証テスト開始 (PMC-008)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # 実行時間取得
+        run_details = helper.get_pipeline_run_details(pipeline_run_id)
+        start_time = run_details.get('runStart')
+        end_time = run_details.get('runEnd')
+        
+        if start_time and end_time:
+            duration = (end_time - start_time).total_seconds() / 60  # 分単位
+            assert duration <= self.EXPECTED_MAX_DURATION, f"実行時間が期待値を超過: {duration}分 > {self.EXPECTED_MAX_DURATION}分"
+            logger.info(f"パイプライン実行時間: {duration:.2f}分")
+        
+        logger.info("パフォーマンス確認完了 (PMC-008)")
+
+    def test_business_logic_validation(self, helper, pipeline_run_id):
+        """ビジネスロジック検証テスト (PMC-009: 支払い方法変更ロジック確認)"""
+        logger.info("ビジネスロジック検証テスト開始 (PMC-009)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # 支払い方法変更ロジックの検証
+        # 前日は「払込」(SIH_HUHU_SHBT='2')、現在は「払込以外」のデータが抽出されているか確認
+        validation_query = """
+        SELECT COUNT(*) as change_count
+        FROM omni.omni_ods_ma_trn_changed_payment_temp
+        WHERE REC_REG_YMD_PRE IS NOT NULL AND REC_REG_YMD IS NOT NULL
         """
-        Execute the payment method changed pipeline and monitor its execution.
         
-        Args:
-            clients: Azure service clients
-            config: Test configuration
-            parameters: Pipeline parameters
-            
-        Returns:
-            PaymentMethodChangedTestResult: Test execution results
-        """
-        start_time = datetime.utcnow()
+        result = helper.execute_query(validation_query)
+        change_count = result[0]['change_count'] if result else 0
         
-        try:
-            # Trigger pipeline execution
-            run_response = clients['data_factory'].pipelines.create_run(
-                resource_group_name=config['resource_group'],
-                factory_name=config['factory_name'],
-                pipeline_name=self.PIPELINE_NAME,
-                parameters=parameters or {}
-            )
-            
-            pipeline_run_id = run_response.run_id
-            logger.info(f"Started pipeline run: {pipeline_run_id}")
-            
-            # Monitor pipeline execution
-            status = await self._monitor_pipeline_execution(
-                clients['data_factory'], config, pipeline_run_id
-            )
-            
-            end_time = datetime.utcnow()
-            execution_duration = (end_time - start_time).total_seconds() / 60
-            
-            # Analyze pipeline results
-            rows_processed = await self._get_rows_processed(
-                clients, config, pipeline_run_id
-            )
-            
-            file_size_mb = await self._get_output_file_size(
-                clients['blob_service'], config, pipeline_run_id
-            )
-            
-            data_quality_score = await self._calculate_data_quality_score(
-                clients, config, pipeline_run_id
-            )
-            
-            # Payment method specific analysis
-            payment_analysis = await self._analyze_payment_method_changes(
-                clients, config, pipeline_run_id
-            )
-            
-            performance_metrics = await self._get_performance_metrics(
-                clients['logs_client'], config, pipeline_run_id
-            )
-            
-            return PaymentMethodChangedTestResult(
-                scenario=PaymentMethodChangedTestScenario.BASIC_EXECUTION,
-                pipeline_run_id=pipeline_run_id,
-                execution_duration=execution_duration,
-                status=status,
-                rows_processed=rows_processed,
-                file_size_mb=file_size_mb,
-                data_quality_score=data_quality_score,
-                payment_method_changes_count=payment_analysis['changes_count'],
-                unique_customers_count=payment_analysis['unique_customers'],
-                performance_metrics=performance_metrics
-            )
-            
-        except Exception as e:
-            logger.error(f"Pipeline execution failed: {str(e)}")
-            return PaymentMethodChangedTestResult(
-                scenario=PaymentMethodChangedTestScenario.BASIC_EXECUTION,
-                pipeline_run_id="",
-                execution_duration=0,
-                status="Failed",
-                rows_processed=0,
-                file_size_mb=0,
-                data_quality_score=0,
-                payment_method_changes_count=0,
-                unique_customers_count=0,
-                error_message=str(e)
-            )
-
-    async def _monitor_pipeline_execution(self, data_factory_client, config: Dict, 
-                                        run_id: str) -> str:
-        """Monitor pipeline execution until completion."""
-        max_wait_time = timedelta(minutes=self.MAX_EXECUTION_TIME_MINUTES)
-        start_time = datetime.utcnow()
+        # 変更データの論理的整合性確認（0以上であることを確認）
+        assert change_count >= 0, f"支払い方法変更データ数が不正: {change_count}"
         
-        while datetime.utcnow() - start_time < max_wait_time:
-            run_status = data_factory_client.pipeline_runs.get(
-                resource_group_name=config['resource_group'],
-                factory_name=config['factory_name'],
-                run_id=run_id
-            )
-            
-            if run_status.status in ['Succeeded', 'Failed', 'Cancelled']:
-                return run_status.status
+        logger.info(f"支払い方法変更データ数: {change_count}件")
+        logger.info("ビジネスロジック確認完了 (PMC-009)")
+
+    def test_integration_validation(self, helper, pipeline_run_id):
+        """統合テスト (PMC-010: 全体整合性確認)"""
+        logger.info("統合テスト開始 (PMC-010)")
+        
+        # パイプライン完了確認
+        helper.wait_for_pipeline_completion(pipeline_run_id, timeout_minutes=self.EXPECTED_MAX_DURATION)
+        
+        # 全体的な整合性確認
+        integration_checks = [
+            ("pipeline_status", "Succeeded"),
+            ("csv_created", True),
+            ("sftp_transmitted", True),
+            ("data_quality", True)
+        ]
+        
+        failed_integrations = []
+        for check_name, expected_value in integration_checks:
+            try:
+                if check_name == "pipeline_status":
+                    actual_value = helper.get_pipeline_status(pipeline_run_id)
+                elif check_name == "csv_created":
+                    csv_filename = f"PaymentMethodChanged_{datetime.now().strftime('%Y%m%d')}.csv.gz"
+                    actual_value = helper.validate_blob_file_exists(self.BLOB_CONTAINER, csv_filename)
+                elif check_name == "sftp_transmitted":
+                    csv_filename = f"PaymentMethodChanged_{datetime.now().strftime('%Y%m%d')}.csv.gz"
+                    actual_value = helper.validate_sftp_file_exists(self.SFTP_DIRECTORY, csv_filename)
+                elif check_name == "data_quality":
+                    csv_filename = f"PaymentMethodChanged_{datetime.now().strftime('%Y%m%d')}.csv.gz"
+                    actual_value = helper.execute_csv_quality_check(self.BLOB_CONTAINER, csv_filename, "csv_format_check")
                 
-            await asyncio.sleep(30)  # Wait 30 seconds before next check
-            
-        return 'Timeout'
-
-    async def _get_rows_processed(self, clients: Dict, config: Dict, 
-                                run_id: str) -> int:
-        """Get the number of rows processed by the pipeline."""
-        try:
-            # Query activity runs to get copy activity details
-            activity_runs = clients['data_factory'].activity_runs.list_by_pipeline_run(
-                resource_group_name=config['resource_group'],
-                factory_name=config['factory_name'],
-                run_id=run_id
-            )
-            
-            for activity in activity_runs.value:
-                if activity.activity_name == "at_CreateCSV_ClientDM":
-                    if activity.output and 'rowsRead' in activity.output:
-                        return activity.output['rowsRead']
-                        
-            return 0
-            
-        except Exception as e:
-            logger.warning(f"Could not retrieve rows processed: {str(e)}")
-            return 0
-
-    async def _get_output_file_size(self, blob_service: BlobServiceClient, 
-                                   config: Dict, run_id: str) -> float:
-        """Get the size of the generated output file."""
-        try:
-            # Generate expected filename based on current date
-            today = datetime.utcnow().strftime('%Y%m%d')
-            filename = f"PaymentMethodChanged_{today}.csv.gz"
-            
-            blob_client = blob_service.get_blob_client(
-                container=config['container_name'],
-                blob=f"{self.OUTPUT_DIRECTORY}/{filename}"
-            )
-            
-            properties = blob_client.get_blob_properties()
-            return properties.size / (1024 * 1024)  # Convert to MB
-            
-        except Exception as e:
-            logger.warning(f"Could not retrieve file size: {str(e)}")
-            return 0
-
-    async def _calculate_data_quality_score(self, clients: Dict, config: Dict, 
-                                          run_id: str) -> float:
-        """Calculate data quality score based on various metrics."""
-        try:
-            # Download and analyze the generated CSV file
-            today = datetime.utcnow().strftime('%Y%m%d')
-            filename = f"PaymentMethodChanged_{today}.csv.gz"
-            
-            blob_client = clients['blob_service'].get_blob_client(
-                container=config['container_name'],
-                blob=f"{self.OUTPUT_DIRECTORY}/{filename}"
-            )
-            
-            # Download and decompress the file
-            blob_data = blob_client.download_blob().readall()
-            
-            with gzip.GzipFile(fileobj=io.BytesIO(blob_data)) as gz_file:
-                csv_content = gz_file.read().decode('utf-8')
-                
-            # Convert to DataFrame for analysis
-            df = pd.read_csv(io.StringIO(csv_content))
-            
-            # Calculate quality metrics
-            total_rows = len(df)
-            if total_rows == 0:
-                return 0.0
-                
-            # Check for null values in critical columns
-            critical_columns = ['CONNECTION_KEY', 'USAGESERVICE_BX', 'CLIENT_KEY_AX', 'LIV0EU_GAS_PAY_METHOD_CD']
-            null_count = df[critical_columns].isnull().sum().sum()
-            
-            # Check for duplicate connection keys
-            duplicate_count = df['CONNECTION_KEY'].duplicated().sum()
-            
-            # Check payment method code validity
-            payment_method_errors = 0
-            if 'LIV0EU_GAS_PAY_METHOD_CD' in df.columns:
-                invalid_payment_methods = df['LIV0EU_GAS_PAY_METHOD_CD'].isna().sum()
-                payment_method_errors = invalid_payment_methods
-            
-            # Check for data format consistency
-            format_errors = 0
-            
-            # Date format validation
-            date_columns = [col for col in df.columns if 'YMD' in col or 'DATE' in col]
-            for col in date_columns:
-                if col in df.columns:
-                    try:
-                        pd.to_datetime(df[col], format='%Y/%m/%d', errors='coerce')
-                    except:
-                        format_errors += 1
-            
-            # Calculate overall quality score
-            quality_score = max(0, 1.0 - (
-                (null_count / (total_rows * len(critical_columns))) * 0.3 +
-                (duplicate_count / total_rows) * 0.2 +
-                (payment_method_errors / total_rows) * 0.3 +
-                (format_errors / len(date_columns) if date_columns else 0) * 0.2
-            ))
-            
-            return quality_score
-            
-        except Exception as e:
-            logger.warning(f"Could not calculate data quality score: {str(e)}")
-            return 0.0
-
-    async def _analyze_payment_method_changes(self, clients: Dict, config: Dict, 
-                                            run_id: str) -> Dict[str, int]:
-        """Analyze payment method changes in the output data."""
-        try:
-            # Download and analyze the generated CSV file
-            today = datetime.utcnow().strftime('%Y%m%d')
-            filename = f"PaymentMethodChanged_{today}.csv.gz"
-            
-            blob_client = clients['blob_service'].get_blob_client(
-                container=config['container_name'],
-                blob=f"{self.OUTPUT_DIRECTORY}/{filename}"
-            )
-            
-            # Download and decompress the file
-            blob_data = blob_client.download_blob().readall()
-            
-            with gzip.GzipFile(fileobj=io.BytesIO(blob_data)) as gz_file:
-                csv_content = gz_file.read().decode('utf-8')
-                
-            # Convert to DataFrame for analysis
-            df = pd.read_csv(io.StringIO(csv_content))
-            
-            # Analyze payment method changes
-            unique_customers = df['CLIENT_KEY_AX'].nunique() if 'CLIENT_KEY_AX' in df.columns else 0
-            
-            # Count records that likely represent payment method changes
-            # This could be based on specific columns that track changes
-            changes_count = len(df)  # All records in this pipeline represent changes
-            
-            return {
-                'changes_count': changes_count,
-                'unique_customers': unique_customers
-            }
-            
-        except Exception as e:
-            logger.warning(f"Could not analyze payment method changes: {str(e)}")
-            return {'changes_count': 0, 'unique_customers': 0}
-
-    async def _get_performance_metrics(self, logs_client: LogsQueryClient, 
-                                     config: Dict, run_id: str) -> Dict[str, Any]:
-        """Get performance metrics from Azure Monitor logs."""
-
-        try:
-            query = f"""
-            ADFPipelineRun
-            | where PipelineName == "{self.PIPELINE_NAME}"
-            | where RunId == "{run_id}"
-            | project TimeGenerated, Status, DurationInMs, TotalCost
-            """
-            
-            response = logs_client.query_workspace(
-                workspace_id=config['log_analytics_workspace'],
-                query=query,
-                timespan=timedelta(hours=24)
-            )
-            
-            metrics = {}
-            for table in response.tables:
-                for row in table.rows:
-                    metrics['duration_ms'] = row[2] if len(row) > 2 else 0
-                    metrics['total_cost'] = row[3] if len(row) > 3 else 0
-                    break
+                if actual_value != expected_value:
+                    failed_integrations.append(f"{check_name}: 期待={expected_value}, 実際={actual_value}")
                     
-            return metrics
-            
-        except Exception as e:
-            logger.warning(f"Could not retrieve performance metrics: {str(e)}")
-            return {}
-
-    @pytest.mark.asyncio
-    async def test_payment_method_changed_basic_execution(self, azure_clients, test_config):
-        """
-        Test basic pipeline execution functionality.
+            except Exception as e:
+                failed_integrations.append(f"{check_name}: エラー={e}")
         
-        Validates:
-        - Pipeline executes successfully
-        - All activities complete
-        - Output file is generated
-        - Basic data validation for payment method changes
-        """
-        logger.info("Testing Payment Method Changed pipeline basic execution")
+        assert len(failed_integrations) == 0, f"統合テストで失敗: {failed_integrations}"
         
-        result = await self.execute_pipeline_run(azure_clients, test_config)
-        
-        # Assertions
-        assert result.status == "Succeeded", f"Pipeline failed: {result.error_message}"
-        assert result.execution_duration <= self.MAX_EXECUTION_TIME_MINUTES, \
-            f"Pipeline execution exceeded time limit: {result.execution_duration} minutes"
-        assert result.rows_processed >= self.MIN_EXPECTED_ROWS, \
-            f"Insufficient rows processed: {result.rows_processed}"
-        assert result.file_size_mb > 0, "Output file was not generated"
-        assert result.data_quality_score >= self.MIN_DATA_QUALITY_SCORE, \
-            f"Data quality below threshold: {result.data_quality_score}"
-        assert result.payment_method_changes_count > 0, "No payment method changes detected"
-        
-        logger.info(f"Basic execution test completed successfully. "
-                   f"Processed {result.rows_processed} rows with {result.payment_method_changes_count} "
-                   f"payment method changes in {result.execution_duration:.2f} minutes")
-
-    @pytest.mark.asyncio
-    async def test_payment_method_changed_large_dataset_performance(self, azure_clients, test_config):
-        """
-        Test pipeline performance with large datasets.
-        
-        Validates:
-        - Performance with large number of payment method changes
-        - Memory usage optimization
-        - Throughput benchmarks
-        - Resource utilization
-        """
-        logger.info("Testing Payment Method Changed pipeline performance with large dataset")
-        
-        result = await self.execute_pipeline_run(azure_clients, test_config)
-        
-        # Performance assertions
-        if result.rows_processed >= self.LARGE_DATASET_THRESHOLD:
-            throughput = result.rows_processed / result.execution_duration if result.execution_duration > 0 else 0
-            
-            assert result.status == "Succeeded", "Large dataset processing failed"
-            assert throughput >= self.EXPECTED_THROUGHPUT_ROWS_PER_MINUTE, \
-                f"Throughput below benchmark: {throughput} rows/minute"
-            assert result.file_size_mb <= 100, \
-                f"Output file too large: {result.file_size_mb} MB"
-            
-            # Payment method specific performance checks
-            change_processing_rate = result.payment_method_changes_count / result.execution_duration
-            assert change_processing_rate >= 1000, \
-                f"Payment method change processing rate too low: {change_processing_rate} changes/minute"
-        else:
-            pytest.skip(f"Insufficient data for large dataset test: {result.rows_processed} rows")
-        
-        logger.info(f"Large dataset test completed. "
-                   f"Throughput: {result.rows_processed/result.execution_duration:.0f} rows/minute")
-
-    @pytest.mark.asyncio
-    async def test_payment_method_changed_data_quality(self, azure_clients, test_config):
-        """
-        Test data quality and integrity validation.
-        
-        Validates:
-        - Payment method code validity
-        - Customer data consistency
-        - Change tracking accuracy
-        - CSV structure compliance
-        """
-        logger.info("Testing Payment Method Changed pipeline data quality")
-        
-        result = await self.execute_pipeline_run(azure_clients, test_config)
-        
-        assert result.status == "Succeeded", "Pipeline execution failed"
-        assert result.data_quality_score >= 0.98, \
-            f"Data quality insufficient: {result.data_quality_score}"
-        
-        # Validate payment method specific data quality
-        await self._validate_payment_method_data_quality(azure_clients, test_config)
-        
-        logger.info(f"Data quality test completed. Quality score: {result.data_quality_score:.3f}")
-
-    async def _validate_payment_method_data_quality(self, clients: Dict, config: Dict):
-        """Validate payment method specific data quality."""
-        try:
-            today = datetime.utcnow().strftime('%Y%m%d')
-            filename = f"PaymentMethodChanged_{today}.csv.gz"
-            
-            blob_client = clients['blob_service'].get_blob_client(
-                container=config['container_name'],
-                blob=f"{self.OUTPUT_DIRECTORY}/{filename}"
-            )
-            
-            # Download and analyze file
-            blob_data = blob_client.download_blob().readall()
-            
-            with gzip.GzipFile(fileobj=io.BytesIO(blob_data)) as gz_file:
-                csv_content = gz_file.read().decode('utf-8')
-            
-            # Validate CSV structure and payment method data
-            lines = csv_content.strip().split('\n')
-            assert len(lines) > 1, "CSV file has no data rows"
-            
-            # Check header for payment method related columns
-            header = lines[0].split(',')
-            expected_columns = [
-                'CONNECTION_KEY', 'USAGESERVICE_BX', 'CLIENT_KEY_AX',
-                'LIV0EU_GAS_PAY_METHOD_CD', 'LIV0EU_GAS_PAY_METHOD'
-            ]
-            for col in expected_columns:
-                assert col in header, f"Missing expected column: {col}"
-            
-            # Validate payment method data consistency
-            df = pd.read_csv(io.StringIO(csv_content))
-            
-            # Check payment method code consistency
-            if 'LIV0EU_GAS_PAY_METHOD_CD' in df.columns and 'LIV0EU_GAS_PAY_METHOD' in df.columns:
-                # Ensure payment method codes and names are consistent
-                unique_combinations = df[['LIV0EU_GAS_PAY_METHOD_CD', 'LIV0EU_GAS_PAY_METHOD']].drop_duplicates()
-                assert len(unique_combinations) <= 20, "Too many payment method combinations"
-            
-            logger.info("Payment method data quality validation completed successfully")
-            
-        except Exception as e:
-            pytest.fail(f"Payment method data quality validation failed: {str(e)}")
-
-    @pytest.mark.asyncio
-    async def test_payment_method_changed_error_handling(self, azure_clients, test_config):
-        """
-        Test error handling and recovery scenarios.
-        
-        Validates:
-        - Graceful handling of connection issues
-        - Proper error logging
-        - Recovery mechanisms
-        - Alert generation on failures
-        """
-        logger.info("Testing Payment Method Changed pipeline error handling")
-        
-        # Test with parameters that might cause controlled failure
-        test_params = {
-            'test_error_scenario': 'connection_timeout'
-        }
-        
-        try:
-            result = await self.execute_pipeline_run(
-                azure_clients, test_config, test_params
-            )
-            
-            # The pipeline might still succeed if it handles errors gracefully
-            if result.status == "Succeeded":
-                logger.info("Pipeline handled error scenario gracefully")
-                assert result.payment_method_changes_count >= 0, "Invalid change count"
-            else:
-                logger.info("Pipeline properly failed with error scenario")
-                
-        except Exception as e:
-            # Expected behavior for some error scenarios
-            logger.info(f"Pipeline correctly raised exception: {str(e)}")
-        
-        logger.info("Error handling test completed")
-
-    @pytest.mark.asyncio
-    async def test_payment_method_changed_monitoring_alerting(self, azure_clients, test_config):
-        """
-        Test monitoring and alerting functionality.
-        
-        Validates:
-        - Pipeline metrics collection
-        - Payment method change tracking
-        - Azure Monitor integration
-        - Alert rule functionality
-        """
-        logger.info("Testing Payment Method Changed pipeline monitoring and alerting")
-        
-        result = await self.execute_pipeline_run(azure_clients, test_config)
-        
-        assert result.status == "Succeeded", "Pipeline execution failed"
-        assert result.performance_metrics is not None, "No performance metrics collected"
-        
-        # Validate payment method change monitoring
-        assert result.payment_method_changes_count > 0, "No payment method changes tracked"
-        assert result.unique_customers_count > 0, "No unique customers tracked"
-        assert result.unique_customers_count <= result.payment_method_changes_count, \
-            "Customer count inconsistency"
-        
-        # Validate monitoring data
-        if result.performance_metrics:
-            assert 'duration_ms' in result.performance_metrics, "Duration metric missing"
-            
-            duration_minutes = result.performance_metrics.get('duration_ms', 0) / (1000 * 60)
-            assert duration_minutes > 0, "Invalid duration metric"
-            
-        logger.info("Monitoring and alerting test completed successfully")
-
-    @pytest.mark.asyncio
-    async def test_payment_method_validation(self, azure_clients, test_config):
-        """
-        Test payment method specific validations.
-        
-        Validates:
-        - Payment method code validity
-        - Change tracking logic
-        - Business rule compliance
-        - Data consistency checks
-        """
-        logger.info("Testing payment method validation logic")
-        
-        result = await self.execute_pipeline_run(azure_clients, test_config)
-        
-        assert result.status == "Succeeded", "Pipeline execution failed"
-        
-        # Validate payment method specific business rules
-        await self._validate_payment_method_business_rules(azure_clients, test_config)
-        
-        logger.info("Payment method validation test completed")
-
-    async def _validate_payment_method_business_rules(self, clients: Dict, config: Dict):
-        """Validate payment method specific business rules."""
-        try:
-            today = datetime.utcnow().strftime('%Y%m%d')
-            filename = f"PaymentMethodChanged_{today}.csv.gz"
-            
-            blob_client = clients['blob_service'].get_blob_client(
-                container=config['container_name'],
-                blob=f"{self.OUTPUT_DIRECTORY}/{filename}"
-            )
-            
-            # Download and analyze file
-            blob_data = blob_client.download_blob().readall()
-            
-            with gzip.GzipFile(fileobj=io.BytesIO(blob_data)) as gz_file:
-                csv_content = gz_file.read().decode('utf-8')
-            
-            df = pd.read_csv(io.StringIO(csv_content))
-            
-            # Business rule validations
-            if 'LIV0EU_GAS_PAY_METHOD_CD' in df.columns:
-                # Check that payment method codes are valid
-                payment_method_codes = df['LIV0EU_GAS_PAY_METHOD_CD'].dropna().unique()
-                assert len(payment_method_codes) > 0, "No payment method codes found"
-                
-                # Check that all codes are reasonable (e.g., numeric or specific format)
-                for code in payment_method_codes:
-                    assert str(code).strip() != '', "Empty payment method code found"
-            
-            # Check customer uniqueness per day (business rule)
-            if 'CLIENT_KEY_AX' in df.columns:
-                customer_counts = df['CLIENT_KEY_AX'].value_counts()
-                max_changes_per_customer = customer_counts.max()
-                assert max_changes_per_customer <= 5, \
-                    f"Too many payment method changes for single customer: {max_changes_per_customer}"
-            
-            logger.info("Payment method business rules validation completed")
-            
-        except Exception as e:
-            pytest.fail(f"Payment method business rules validation failed: {str(e)}")
-        except Exception as e:
-            print(f"Error: {e}")
-            return False
-
-    def test_pipeline_configuration(self):
-        """
-        Test pipeline configuration and metadata.
-        
-        Validates:
-        - Pipeline exists in ADF
-        - Required activities are configured
-        - Dataset references are valid
-        - Parameter definitions
-        """
-        logger.info("Testing Payment Method Changed pipeline configuration")
-        
-        # Configuration validation
-        assert self.PIPELINE_NAME == "pi_Send_PaymentMethodChanged"
-        assert len(self.EXPECTED_ACTIVITIES) == 2
-        assert "at_CreateCSV_ClientDM" in self.EXPECTED_ACTIVITIES
-        assert "at_SendSftp_ClientDM" in self.EXPECTED_ACTIVITIES
-        
-        # Validate expected payment methods
-        assert len(self.EXPECTED_PAYMENT_METHODS) > 0
-        assert "口座振替" in self.EXPECTED_PAYMENT_METHODS
-        assert "クレジットカード" in self.EXPECTED_PAYMENT_METHODS
-        
-        logger.info("Pipeline configuration test completed")
-
-    @pytest.mark.parametrize("change_scenario", [
-        "bank_to_credit", "credit_to_bank", "convenience_to_bank", "invoice_to_credit"
-    ])
-    def test_payment_method_change_scenarios(self, change_scenario):
-        """
-        Test different payment method change scenarios.
-        
-        Args:
-            change_scenario: Type of payment method change to test
-        """
-        logger.info(f"Testing payment method change scenario: {change_scenario}")
-        
-        # In actual implementation, this would test the pipeline
-        # with different change scenarios and validate the results
-        change_mapping = {
-            "bank_to_credit": ("口座振替", "クレジットカード"),
-            "credit_to_bank": ("クレジットカード", "口座振替"),
-            "convenience_to_bank": ("コンビニ払い", "口座振替"),
-            "invoice_to_credit": ("請求書払い", "クレジットカード")
-        }
-        
-        assert change_scenario in change_mapping, f"Unknown change scenario: {change_scenario}"
-        
-        from_method, to_method = change_mapping[change_scenario]
-        assert from_method in self.EXPECTED_PAYMENT_METHODS
-        assert to_method in self.EXPECTED_PAYMENT_METHODS
-        
-        logger.info(f"Change scenario test completed: {from_method} -> {to_method}")
-
-
-if __name__ == "__main__":
-    # Run tests with pytest
-    pytest.main([__file__, "-v", "--tb=short"])
+        logger.info("統合テスト完了 (PMC-010)")

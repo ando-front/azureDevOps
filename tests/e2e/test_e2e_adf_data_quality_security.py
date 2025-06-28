@@ -50,9 +50,7 @@ class TestE2EADFDataQualitySecurity:
         """
         
         result = synapse_helper.execute_query(quality_check_query)
-        assert result is not None, "Quality check query failed"
-
-    @pytest.mark.e2e
+        assert result is not None, "Quality check query failed"    @pytest.mark.e2e
     def test_security_access_control(self, e2e_synapse_connection):
         """Test security access control mechanisms."""
         synapse_helper = e2e_synapse_connection
@@ -60,8 +58,8 @@ class TestE2EADFDataQualitySecurity:
         access_test_query = """
         SELECT 
             USER_NAME() as current_user,
-            IS_SRVROLEMEMBER('db_datareader') as has_read_access,
-            IS_SRVROLEMEMBER('db_datawriter') as has_write_access
+            IS_MEMBER('db_datareader') as has_read_access,
+            IS_MEMBER('db_datawriter') as has_write_access
         """
         
         result = synapse_helper.execute_query(access_test_query)

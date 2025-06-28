@@ -1,0 +1,25 @@
+{
+  "name": "ds_DamDwhTable",
+  "properties": {
+    "description": "ソースとなるDBの定義",
+    "linkedServiceName": {
+      "referenceName": "li_dam_dwh",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "table": {
+        "type": "string"
+      }
+    },
+    "annotations": [],
+    "type": "AzureSqlDWTable",
+    "schema": [],
+    "typeProperties": {
+      "schema": "omni",
+      "table": {
+        "value": "@dataset().table",
+        "type": "Expression"
+      }
+    }
+  }
+}

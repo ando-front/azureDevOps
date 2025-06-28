@@ -1,0 +1,217 @@
+{
+  "name": "ds_contract_score",
+  "type": "Microsoft.DataFactory/factories/datasets",
+  "properties": {
+    "description": "ソースとなるDBの定義",
+    "linkedServiceName": {
+      "referenceName": "li_dam_dwh",
+      "type": "LinkedServiceReference"
+    },
+    "annotations": [],
+    "type": "AzureSqlDWTable",
+    "schema": [
+      {
+        "name": "HASHED_MTGID",
+        "type": "varchar"
+      },
+      {
+        "name": "INTERNAL_AREA_GAS",
+        "type": "varchar"
+      },
+      {
+        "name": "INTERNAL_AREA_GAS_MENU",
+        "type": "varchar"
+      },
+      {
+        "name": "EXTERNAL_AREA_GAS",
+        "type": "varchar"
+      },
+      {
+        "name": "EXTERNAL_AREA_GAS_MENU",
+        "type": "varchar"
+      },
+      {
+        "name": "POWER",
+        "type": "varchar"
+      },
+      {
+        "name": "POWER_MENU",
+        "type": "varchar"
+      },
+      {
+        "name": "PV_SCORE_POWER",
+        "type": "decimal",
+        "precision": 6,
+        "scale": 5
+      },
+      {
+        "name": "PV_SCORE_RANK_POWER",
+        "type": "varchar"
+      },
+      {
+        "name": "PV_SCORE_GAS",
+        "type": "decimal",
+        "precision": 6,
+        "scale": 5
+      },
+      {
+        "name": "ESTIMATED_PV_HOLDINGS_FLAG_GAS",
+        "type": "decimal",
+        "precision": 3,
+        "scale": 0
+      },
+      {
+        "name": "DG_STN_AGE_0_29",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "DG_STN_AGE_30_39",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "DG_STN_AGE_40_49",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "DG_STN_AGE_50_59",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "DG_STN_AGE_60_69",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "DG_STN_AGE_70_99",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "DG_SITI_ST_NUM",
+        "type": "varchar"
+      },
+      {
+        "name": "DG_STNS_4MLON_LESS",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "DG_STNS_10MLON_OVER",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "TNKYSK_2MONTH",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "TNKYSK_1YEAR",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "SYZI_GS_DTRKSCR_MONTH03",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "SYZI_GS_DTRKSCR_YEAR01",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "SYZI_DK_DTRKSCR_MONTH03",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "SYZI_DK_DTRKSCR_YEAR01",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "SYZI_SGSTB_TBLKNR",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "SYZI_SGSTB_BLTINKNR",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "SYZI_SGSTB_TES",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "SYZI_SGSTB_HRK",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "SYZI_SGSTB_OY",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "SYZI_SGSTB_FNHT",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "SYZI_SGSTB_GSKNSK",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "SYZI_SV_GSKK_SS",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      },
+      {
+        "name": "SYZI_DK_WEB",
+        "type": "decimal",
+        "precision": 5,
+        "scale": 2
+      }
+    ],
+    "typeProperties": {
+      "schema": "omni",
+      "table": {
+        "value": "omni_ods_marketing_trn_karte_contract_score_hashed",
+        "type": "Expression"
+      }
+    }
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/linkedServices/li_dam_dwh')]"
+  ]
+}

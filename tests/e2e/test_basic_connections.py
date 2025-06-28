@@ -11,7 +11,7 @@ from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class,
 # SQL Server接続の試行（ODBCドライバーがない場合のフォールバック付き）
 def get_database_connection_info():
     """データベース接続情報を取得し、接続可能性をチェック"""
-    db_host = os.environ.get('SQL_SERVER_HOST', 'localhost')
+    db_host = os.environ.get('SQL_SERVER_HOST', 'sqlserver-test')  # CIではsqlserver-testコンテナを使用
     db_port = os.environ.get('SQL_SERVER_PORT', '1433')
     db_name = os.environ.get('SQL_SERVER_DATABASE', 'master')
     db_user = os.environ.get('SQL_SERVER_USER', 'sa')
@@ -31,8 +31,7 @@ def get_database_connection_info():
 def test_database_connection():
     """データベース接続の基本テスト（ODBCドライバー対応/フォールバック付き）"""
     db_info = get_database_connection_info()
-    
-    # まずODBCドライバーを試す
+      # まずODBCドライバーを試す
     try:
         import pyodbc
         print("📦 pyodbc ライブラリが利用可能です")
@@ -44,10 +43,26 @@ def test_database_connection():
             f"UID={db_info['user']};"
             f"PWD={db_info['password']};"
             "TrustServerCertificate=yes;"
+            "Connection Timeout=60;"  # 接続タイムアウトを60秒に増加
+            "Command Timeout=60;"     # コマンドタイムアウトも追加
         )
         
         try:
-            conn = pyodbc.connect(conn_str, timeout=10)
+            # リトライ機能付きの接続（接続タイムアウト対策）
+            max_retries = 3
+            conn = None
+            for attempt in range(max_retries):
+                try:
+                    conn = pyodbc.connect(conn_str, timeout=60)  # pyodbc内部タイムアウトも60秒
+                    break
+                except Exception as e:
+                    print(f"Connection attempt {attempt + 1} failed: {e}")
+                    if attempt < max_retries - 1:
+                        import time
+                        time.sleep(5)
+                    else:
+                        raise
+            
             cursor = conn.cursor()
             cursor.execute("SELECT DB_NAME() as current_db, @@VERSION as version")
             result = cursor.fetchone()
@@ -250,20 +265,37 @@ def test_database_tables_and_data():
     """データベースのテーブルとテストデータの確認"""
     try:
         import pyodbc
-        
-        # masterデータベースに接続してテーブルを確認
+    except ImportError:
+        pytest.skip("pyodbc not available - skipping ODBC-dependent test")
+    
+    # masterデータベースに接続してテーブルを確認
         connection_string = (
             "DRIVER={ODBC Driver 18 for SQL Server};"
-            "SERVER=localhost,1433;"
+            "SERVER=sqlserver-test,1433;"  # CIではsqlserver-testコンテナを使用
             "DATABASE=master;"
             "UID=sa;"
             "PWD=YourStrong!Passw0rd123;"
             "TrustServerCertificate=yes;"
             "Encrypt=no;"
-            "Timeout=30;"
+            "Connection Timeout=60;"  # 接続タイムアウトを60秒に増加
+            "Command Timeout=60;"     # コマンドタイムアウトも追加
         )
         
-        conn = pyodbc.connect(connection_string, timeout=30)
+        # リトライ機能付きの接続
+        max_retries = 3
+        conn = None
+        for attempt in range(max_retries):
+            try:
+                conn = pyodbc.connect(connection_string, timeout=60)  # pyodbc内部タイムアウトも60秒
+                break
+            except Exception as e:
+                print(f"Connection attempt {attempt + 1} failed: {e}")
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(5)
+                else:
+                    raise
+        
         cursor = conn.cursor()
         
         # データベースの存在確認

@@ -1,0 +1,15 @@
+{
+  "name": "li_blob_tgomnidevrgsa_container",
+  "properties": {
+    "description": "履歴blob用リンクサービス",
+    "annotations": [],
+    "type": "AzureBlobStorage",
+    "typeProperties": {
+      "connectionString": "DefaultEndpointsProtocol=https;AccountName=tgomnidevrgsa;EndpointSuffix=core.windows.net;AccountKey=PLACEHOLDER"
+    },
+    "connectVia": {
+      "referenceName": "omni-sharing01-d-jpe",
+      "type": "IntegrationRuntimeReference"
+    }
+  }
+}

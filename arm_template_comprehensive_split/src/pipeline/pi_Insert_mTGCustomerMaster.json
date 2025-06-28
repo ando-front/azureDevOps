@@ -1,0 +1,670 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "factoryName": {
+      "type": "string",
+      "metadata": "データ ファクトリ名",
+      "defaultValue": "omni-df-dev"
+    },
+    "li_dam_dwh_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_secretAccessKey": {
+      "type": "secureString",
+      "metadata": "'li_Karte_AmazonS3' の 'secretAccessKey' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomni_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomni_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sqlmi_dwh2_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_sqlmi_dwh2' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sftp_password": {
+      "type": "secureString",
+      "metadata": "'li_sftp' の 'password' のセキュリティで保護された文字列"
+    },
+    "AzureSqlDatabase1_connectionString": {
+      "type": "secureString",
+      "metadata": "'AzureSqlDatabase1' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_ftp_test_password": {
+      "type": "secureString",
+      "metadata": "'li_ftp_test' の 'password' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_dam_dwh_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_damhdinsight_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_damhdinsight_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_properties_typeProperties_accessKeyId": {
+      "type": "string",
+      "defaultValue": "AKIASLGERJSDMDR3YKGF"
+    },
+    "li_sftp_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_sftp_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_ftp_test_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_ftp_test_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_dam_kv_omni_properties_typeProperties_baseUrl": {
+      "type": "string",
+      "defaultValue": "https://tgomnidevkey03.vault.azure.net/"
+    },
+    "li_blob_damhdinsight_container_akv_properties_typeProperties_sasUri_secretName": {
+      "type": "string",
+      "defaultValue": "0001damdevrgsa-damhdinsight-container"
+    },
+    "li_blob_mytokyogas_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_mytokyogas_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.Storage/storageAccounts/0001tgomnidevrgsa"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "0001tgomnidevrgsa.blob.core.windows.net"
+      ]
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Sql/servers/damd-dwh"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "sqlServer"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "damd-dwh.database.windows.net"
+      ]
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Storage/storageAccounts/0001damdevrgsa"
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "AzureSqlMI-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/43d95da1-ff6f-49ae-868b-a427c8bb161e/resourceGroups/dam2-rg-dev/providers/Microsoft.Sql/managedInstances/dam2-sqlmi-dev"
+    },
+    "AzureSqlMI-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "managedInstance"
+    },
+    "AzureSqlMI-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "dam2-sqlmi-dev.6b9b3938f4f4.database.windows.net"
+      ]
+    },
+    "tgomnidevkey03-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.KeyVault/vaults/tgomnidevkey03"
+    },
+    "tgomnidevkey03-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "vault"
+    },
+    "tgomnidevkey03-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "tgomnidevkey03.vault.azure.net"
+      ]
+    }
+  },
+  "variables": {
+    "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('factoryName'), '/pi_Insert_mTGCustomerMaster')]",
+      "type": "Microsoft.DataFactory/factories/pipelines",
+      "apiVersion": "2018-06-01",
+      "properties": {
+        "description": "ODM「mTG会員_契約中フラグ」、「mTG会員_会員マスタ」、「mTG会員契約マスタ」のデータを作成する",
+        "activities": [
+          {
+            "name": "at_Insert_InternalAreaGasAndPower_FullContractFlag_temp",
+            "description": "(f)-4 本人特定契約に電力ＣＩＳ契約情報の域内ガス電気合算契約中フラグを付与し、mTG会員_全量契約中フラグ_tempに出力する",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_ExternalAreaGas_FullContractFlag_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--------------------------------------------------------------------------\n-- (f)-4 域内ガス電気合算契約\n-- 本人特定契約テーブル、電力ＣＩＳ契約情報 → mTG会員_全量契約中フラグ_temp\n-- \n-- 2025/03/04  新規作成\n--------------------------------------------------------------------------\nINSERT INTO [omni].[omni_odm_mytginfo_trn_mtgmaster_full_under_contract_flag_temp]      -- mTG会員_全量契約中フラグ_temp\nSELECT\n     cpkiyk.MTGID                                        -- mTG会員ID\n    ,cpkiyk.EDA_NO                                       -- 枝番\n    ,NULL AS INTERNAL_AREA_GAS_FLAG                      -- ガス契約中フラグ\n    ,99   AS EXTERNAL_AREA_GAS_FLAG                      -- 域外ガス契約中フラグ (99:不明)\n    ,1    AS INTERNAL_AREA_GAS_AND_POWER_FLAG            -- 域内ガス電気合算契約中フラグ (0:契約中ではない 1:契約中)\n    ,NULL AS EXTERNAL_AREA_GAS_AND_POWER_FLAG            -- 域外ガス電気合算契約中フラグ\n    ,NULL AS POWER_FLAG                                  -- 電気単独契約中フラグ\nFROM [omni].[omni_ods_mytginfo_trn_cpkiyk] cpkiyk        -- 本人特定契約\nINNER JOIN [omni].[omni_ods_epcis_trn_contract] epcis    -- 電力ＣＩＳ契約情報\n     ON cpkiyk.CST_REG_NO = epcis.KEY_3X                 -- お客さま登録番号 (3x)\n     AND cpkiyk.SYOKY_NO = epcis.GAS_4X                  -- 使用契約番号 (4x) ＝ ガス使用契約番号 (4x)\n     AND epcis.SA_TYPE_CD = 'ESLVY'                      -- 契約タイプ (低圧電力合算)\n     AND epcis.CONTRACT_STATUS = '20'                    -- 契約ステータス (20:有効)\nWHERE TAIKAI_FLAG = 0                                    -- 退会フラグ (0:活きているレコード)\n;"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          },
+          {
+            "name": "at_Delete_FullContractFlag_temp",
+            "description": "(f)-1 mTG会員_全量契約中フラグ_tempの全レコードを削除する",
+            "type": "Script",
+            "dependsOn": [],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--------------------------------------------------------------------------\r\n-- (f)-1 mTG会員_全量契約中フラグ_tempの全レコードを削除する\r\n-- \r\n-- 2025/03/04  新規作成\r\n--------------------------------------------------------------------------\r\nTRUNCATE TABLE [omni].[omni_odm_mytginfo_trn_mtgmaster_full_under_contract_flag_temp] -- mTG会員_全量契約中フラグ_temp\r\n;\r\n"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          },
+          {
+            "name": "at_Insert_InternalAreaGas_FullContractFlag_temp",
+            "description": "(f)-2 本人特定契約にガス契約（契約中）日次お客さま情報の域内ガス契約中フラグを付与し、mTG会員_全量契約中フラグ_tempに出力する",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Delete_FullContractFlag_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--------------------------------------------------------------------------\r\n-- (f)-2 域内ガス契約\r\n-- 本人特定契約テーブル、ガス契約（契約中）日次お客さま情報 → mTG会員_全量契約中フラグ_temp\r\n-- \r\n-- 2025/03/04  新規作成\r\n--------------------------------------------------------------------------\r\nINSERT INTO [omni].[omni_odm_mytginfo_trn_mtgmaster_full_under_contract_flag_temp]      -- mTG会員_全量契約中フラグ_temp\r\nSELECT\r\n     cpkiyk.MTGID                                              -- mTG会員ID\r\n    ,cpkiyk.EDA_NO                                             -- 枝番\r\n    ,1    AS INTERNAL_AREA_GAS_FLAG                            -- ガス契約中フラグ (0:契約中ではない 1:契約中)\r\n    ,99   AS EXTERNAL_AREA_GAS_FLAG                            -- 域外ガス契約中フラグ (99:不明)\r\n    ,NULL AS INTERNAL_AREA_GAS_AND_POWER_FLAG                  -- 域内ガス電気合算契約中フラグ\r\n    ,NULL AS EXTERNAL_AREA_GAS_AND_POWER_FLAG                  -- 域外ガス電気合算契約中フラグ\r\n    ,NULL AS POWER_FLAG                                        -- 電気単独契約中フラグ\r\nFROM [omni].[omni_ods_mytginfo_trn_cpkiyk] cpkiyk              -- 本人特定契約\r\nINNER JOIN [omni].[omni_odm_gascstmr_trn_gaskiy] gaskiy        -- ガス契約（契約中）日次お客さま情報\r\n     ON cpkiyk.SYOKY_NO = convert(varchar, gaskiy.SVKY_NO)     -- 使用契約番号 (4x) ＝ サービス契約番号 (4x)\r\n     AND gaskiy.GMT_KHS_JTKB = '1'                             -- ガスメーター開閉栓状態区分 (1:開栓中)\r\nWHERE TAIKAI_FLAG = 0                                          -- 退会フラグ (0:活きているレコード)\r\n;"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          },
+          {
+            "name": "at_Insert_ExternalAreaGas_FullContractFlag_temp",
+            "description": "(f)-3 域外ガス契約中フラグは未定",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_InternalAreaGas_FullContractFlag_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--------------------------------------------------------------------------\r\n-- (f)-3 域外ガス契約\r\n-- 未定\r\n-- 空ではエラーになるため、今はmTG会員_全量契約中フラグ_tempからレコードSELECTする\r\n-- \r\n-- 2025/03/04  新規作成\r\n--------------------------------------------------------------------------\r\nSELECT TOP 0 *\r\nFROM [omni].[omni_odm_mytginfo_trn_mtgmaster_full_under_contract_flag_temp]      -- mTG会員_全量契約中フラグ_temp\r\n;\r\n"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          },
+          {
+            "name": "at_Insert_ExternalAreaGasAndPower_FullContractFlag_temp",
+            "description": "(f)-5 本人特定契約に電力ＣＩＳ契約情報の域外ガス電気合算契約中フラグを付与し、mTG会員_全量契約中フラグ_tempに出力する",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_InternalAreaGasAndPower_FullContractFlag_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--------------------------------------------------------------------------\r\n-- (f)-5 域外ガス電気合算契約\r\n-- 本人特定契約テーブル、電力ＣＩＳ契約情報 → mTG会員_全量契約中フラグ_temp\r\n-- \r\n-- 2025/03/04  新規作成\r\n--------------------------------------------------------------------------\r\nINSERT INTO [omni].[omni_odm_mytginfo_trn_mtgmaster_full_under_contract_flag_temp]      -- mTG会員_全量契約中フラグ_temp\r\nSELECT\r\n     cpkiyk.MTGID                                        -- mTG会員ID\r\n    ,cpkiyk.EDA_NO                                       -- 枝番\r\n    ,NULL AS INTERNAL_AREA_GAS_FLAG                      -- ガス契約中フラグ\r\n    ,99   AS EXTERNAL_AREA_GAS_FLAG                      -- 域外ガス契約中フラグ (99:不明)\r\n    ,NULL AS INTERNAL_AREA_GAS_AND_POWER_FLAG            -- 域内ガス電気合算契約中フラグ\r\n    ,1    AS EXTERNAL_AREA_GAS_AND_POWER_FLAG            -- 域外ガス電気合算契約中フラグ (0:契約中ではない 1:契約中)\r\n    ,NULL AS POWER_FLAG                                  -- 電気単独契約中フラグ\r\nFROM [omni].[omni_ods_mytginfo_trn_cpkiyk] cpkiyk        -- 本人特定契約\r\nINNER JOIN [omni].[omni_ods_epcis_trn_contract] epcis    -- 電力ＣＩＳ契約情報\r\n     ON cpkiyk.CST_REG_NO = epcis.KEY_3X                 -- お客さま登録番号 (3x)\r\n     AND epcis.SA_TYPE_CD = 'ESOLY'                      -- 契約タイプ (低圧電力域外合算)\r\n     AND epcis.CONTRACT_STATUS = '20'                    -- 契約ステータス (20:有効)\r\nWHERE TAIKAI_FLAG = 0                                    -- 退会フラグ (0:活きているレコード)\r\n;"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          },
+          {
+            "name": "at_Insert_Power_FullContractFlag_temp",
+            "description": "(f)-6 本人特定契約に電力ＣＩＳ契約情報の電気単独契約中フラグを付与し、mTG会員_全量契約中フラグ_tempに出力する",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_ExternalAreaGasAndPower_FullContractFlag_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--------------------------------------------------------------------------\r\n-- (f)-6 電気単独契約\r\n-- 本人特定契約テーブル、電力ＣＩＳ契約情報 → mTG会員_全量契約中フラグ_temp\r\n-- \r\n-- 2025/03/04  新規作成\r\n--------------------------------------------------------------------------\r\nINSERT INTO [omni].[omni_odm_mytginfo_trn_mtgmaster_full_under_contract_flag_temp]      -- mTG会員_全量契約中フラグ_temp\r\nSELECT\r\n     cpkiyk.MTGID                                        -- mTG会員ID\r\n    ,cpkiyk.EDA_NO                                       -- 枝番\r\n    ,NULL AS INTERNAL_AREA_GAS_FLAG                      -- ガス契約中フラグ\r\n    ,99   AS EXTERNAL_AREA_GAS_FLAG                      -- 域外ガス契約中フラグ (99:不明)\r\n    ,NULL AS INTERNAL_AREA_GAS_AND_POWER_FLAG            -- 域内ガス電気合算契約中フラグ\r\n    ,NULL AS EXTERNAL_AREA_GAS_AND_POWER_FLAG            -- 域外ガス電気合算契約中フラグ\r\n    ,1    AS POWER_FLAG                                  -- 電気単独契約中フラグ (0:契約中ではない 1:契約中)\r\nFROM [omni].[omni_ods_mytginfo_trn_cpkiyk] cpkiyk        -- 本人特定契約\r\nINNER JOIN [omni].[omni_ods_epcis_trn_contract] epcis    -- 電力ＣＩＳ契約情報\r\n     ON cpkiyk.CST_REG_NO = epcis.KEY_3X                 -- お客さま登録番号 (3x)\r\n     AND epcis.SA_TYPE_CD = 'ESLVN'                      -- 契約タイプ (低圧電力単独)\r\n     AND epcis.CONTRACT_STATUS = '20'                    -- 契約ステータス (20:有効)\r\nWHERE TAIKAI_FLAG = 0                                    -- 退会フラグ (0:活きているレコード)\r\n;"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          },
+          {
+            "name": "at_Insert_ContractFlag_temp",
+            "description": "(g)-1 mTG会員_全量契約中フラグ_tempのデータを集約し、mTG会員_契約中フラグ_tempに出力する",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_Power_FullContractFlag_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--------------------------------------------------------------------------\n-- (g)-1 mTG会員_全量契約中フラグ_temp → mTG会員_契約中フラグ_temp\n-- mTG会員ID + 枝番で一意にする\n-- \n-- 2025/03/04  新規作成\n--------------------------------------------------------------------------\nTRUNCATE TABLE [omni].[omni_odm_mytginfo_trn_mtgmaster_under_contract_flag_temp];       -- mTG会員_契約中フラグ_temp\nINSERT INTO [omni].[omni_odm_mytginfo_trn_mtgmaster_under_contract_flag_temp]           -- mTG会員_契約中フラグ_temp\nSELECT\n     MTGID                                                                              -- mTG会員ID\n    ,EDA_NO                                                                             -- 枝番\n    ,MAX(INTERNAL_AREA_GAS_FLAG) AS INTERNAL_AREA_GAS_FLAG                              -- ガス契約中フラグ\n    ,MAX(EXTERNAL_AREA_GAS_FLAG) AS EXTERNAL_AREA_GAS_FLAG                              -- 域外ガス契約中フラグ 99:不明固定\n    ,MAX(INTERNAL_AREA_GAS_AND_POWER_FLAG) AS INTERNAL_AREA_GAS_AND_POWER_FLAG          -- 域内ガス電気合算契約中フラグ\n    ,MAX(EXTERNAL_AREA_GAS_AND_POWER_FLAG) AS EXTERNAL_AREA_GAS_AND_POWER_FLAG          -- 域外ガス電気合算契約中フラグ\n    ,MAX(POWER_FLAG) AS POWER_FLAG                                                      -- 電気単独契約中フラグ\nFROM [omni].[omni_odm_mytginfo_trn_mtgmaster_full_under_contract_flag_temp]             -- mTG会員_全量契約中フラグ_temp\nGROUP BY\n      MTGID\n     ,EDA_NO\n;\n"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          },
+          {
+            "name": "at_Insert_permission_info_temp",
+            "description": "(a) メールサービスの、サービスコードから許諾情報の有無しのフラグを判定し mTG会員_許諾情報_tempに出力",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_ContractFlag_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--------------------------------------------------------------------------\r\n-- (a)メールサービス → mTG会員_許諾情報_temp\r\n-- \r\n-- 2025/05/16  新規作成\r\n--------------------------------------------------------------------------\r\n-- 変数宣言\r\nDECLARE @today_jst datetime ;\r\nDECLARE @today varchar(8);\r\nSET @today_jst = CONVERT(DATE, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time');\r\nSET @today = FORMAT(@today_jst, 'yyyyMMdd');\r\n\r\n-- mTG会員_許諾情報_temp\r\nTRUNCATE TABLE [omni].[omni_ods_mytginfo_trn_mtgmaster_permission_info_temp];\r\n\r\nINSERT INTO [omni].[omni_ods_mytginfo_trn_mtgmaster_permission_info_temp] --mTG会員_許諾情報_tempに登録\r\nSELECT\r\n     ID_NO                                       -- 会員ID\r\n    ,max(PERMISSION_INFO_1) as PERMISSION_INFO_1 -- 許諾情報_サービスコード31フラグ\r\n    ,max(PERMISSION_INFO_2) as PERMISSION_INFO_2 -- 許諾情報_サービスコード32フラグ\r\n    ,max(PERMISSION_INFO_3) as PERMISSION_INFO_3 -- 許諾情報_サービスコード33フラグ\r\n    ,max(PERMISSION_INFO_4) as PERMISSION_INFO_4 -- 許諾情報_サービスコード24フラグ\r\n\r\nFROM(\r\n    SELECT\r\n        ID_NO                                                                         -- 会員ID\r\n        -- 許諾情報_サービスコード31フラグの値の抽出\r\n         ,CASE\r\n             WHEN SVC_CD = '31' AND @today < END_YMD THEN 1\r\n             WHEN SVC_CD = '31' AND (@today >= END_YMD OR END_YMD IS NULL) THEN 0\r\n             ELSE 0\r\n         END AS PERMISSION_INFO_1                                                     -- 許諾情報_サービスコード31フラグ\r\n\r\n        -- 許諾情報_サービスコード32フラグの値の抽出(WebShop廃止で0固定）\r\n         ,0 AS PERMISSION_INFO_2                                                      -- 許諾情報_サービスコード32フラグ\r\n \r\n        -- 許諾情報_サービスコード33フラグの値の抽出\r\n         ,CASE\r\n             WHEN SVC_CD = '33' AND @today < END_YMD THEN 1\r\n             WHEN SVC_CD = '33' AND (@today >= END_YMD OR END_YMD IS NULL) THEN 0\r\n             ELSE 0\r\n         END AS PERMISSION_INFO_3                                                     -- 許諾情報_サービスコード33フラグ\r\n\r\n        -- 許諾情報_サービスコード24フラグの値の抽出SVC_CD\r\n         ,CASE\r\n             WHEN SVC_CD = '24' AND @today < END_YMD THEN 1\r\n             WHEN SVC_CD = '24' AND (@today >= END_YMD OR END_YMD IS NULL) THEN 0\r\n             ELSE 0\r\n         END AS PERMISSION_INFO_4                                                     -- 許諾情報_サービスコード24フラグ\r\n    FROM [omni].[omni_ods_mytginfo_trn_mailsvc]                                       -- メールサービス\r\n    WHERE SVC_CD IN ('31','33','24')                                                  -- サービスコードが31、33、34のどれかに一致するレコード\r\n) tmp\r\n \r\nGROUP BY ID_NO                                                                        -- 会員ID\r\n;"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          },
+          {
+            "name": "at_Insert_point_expiration_date_temp",
+            "description": "(b) ポイント残高連携リストの有効期限が実行日より未来日のポイントをMTGIDごとに合算してmTG会員_ポイント有効期限_temp出力",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_ContractFlag_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--------------------------------------------------------------------------\r\n-- (b)ポイント残高連携リスト → mTG会員_ポイント有効期限_temp\r\n-- \r\n-- 2025/05/16  新規作成\r\n--------------------------------------------------------------------------\r\n-- 変数宣言\r\nDECLARE @today_jst datetime ;\r\nDECLARE @today varchar(8);\r\nSET @today_jst = CONVERT(DATE, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time');\r\nSET @today = FORMAT(@today_jst, 'yyyyMMdd');\r\n\r\n-- mTG会員_ポイント有効期限_temp\r\nTRUNCATE TABLE [omni].[omni_ods_mytginfo_trn_mtgmaster_point_expiration_date_temp];\r\n\r\nINSERT INTO [omni].[omni_ods_mytginfo_trn_mtgmaster_point_expiration_date_temp] --mTG会員_ポイント有効期限_tempに登録\r\nSELECT MTGID                                    -- mTG会員ID\r\n      ,MIN(EXPIRE_DATE) AS EXPIRE_DATE          -- 直近の有効期限\r\n      ,SUM(BALANCE_POINT) AS BALANCE_POINT_ALL  -- 残ポイントを集計\r\nFROM [omni].[omni_ods_mytgpnt_trn_pnt_bal]      -- ポイント残高連携リスト\r\nWHERE EXPIRE_DATE >= @today                     -- 有効期限>=実行日\r\nGROUP BY MTGID                                  -- 会員ID\r\n;\r\n"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          },
+          {
+            "name": "at_Insert_membership_type_temp",
+            "description": "(c) 会員種別において会員IDごとのレコード登録日時が最新のレコードの情報をmTG会員_会員種別_tempに出力",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_ContractFlag_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--------------------------------------------------------------------------\r\n-- (c)会員種別 → mTG会員_会員種別_temp\r\n-- \r\n-- 2025/05/16  新規作成\r\n--------------------------------------------------------------------------\r\n\r\n-- mTG会員_会員種別_temp\r\nTRUNCATE TABLE [omni].[omni_ods_mytginfo_trn_mtgmaster_member_type_temp];\r\n\r\nINSERT INTO [omni].[omni_ods_mytginfo_trn_mtgmaster_member_type_temp] -- mTG会員_会員種別_tempに登録\r\nSELECT ID_NO                              -- 会員ID\r\n      ,MAX(ID_SYB_CD) as ID_SYB_CD        -- 会員種別\r\nFROM [omni].[omni_ods_mytginfo_trn_cpsyb]         -- 会員種別\r\nGROUP BY ID_NO\r\n;"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          },
+          {
+            "name": "at_Insert_lineid_linkageInfo_temp",
+            "description": "(d)LINEID連携累積情報から未連携、連携中の情報をmTG会員_LINEID連携累積情報_tempに出力",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_ContractFlag_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--------------------------------------------------------------------------\r\n-- (d)LINEID連携累積情報 → mTG会員_LINEID連携累積情報_temp\r\n-- \r\n-- 2025/05/16  新規作成\r\n--------------------------------------------------------------------------\r\n\r\n-- mTG会員_LINEID連携累積情報_temp\r\nTRUNCATE TABLE [omni].[omni_ods_mytginfo_trn_mtgmaster_lineid_linkageInfo_temp];\r\n\r\nINSERT INTO [omni].[omni_ods_mytginfo_trn_mtgmaster_lineid_linkageInfo_temp] -- mTG会員_LINEID連携累積情報_tempに登録\r\nSELECT \r\n    ID_NO                                                      -- 会員ID\r\n   ,MAX(CASE\r\n            WHEN KJ_FLG = '0' THEN LINE_U_ID\r\n            ELSE NULL\r\n        END\r\n    ) AS LINE_U_ID                                             -- LINE_uID\r\n   ,MAX(LINE_RNK_KJ_DTTM) as MOST_RECENT_LINEID_UNLINKED_DATE  -- 直近のLINEID連携解除日\r\n   ,MAX(CASE \r\n            WHEN KJ_FLG = '0' THEN 2\r\n            ELSE 1\r\n        END\r\n    ) AS LINEID_LINK_STATUS                                    -- LINEID連携ステータス\r\nFROM [mytg].[mytg_ods_line_mst_line_id_all]                    -- LINEID連携累積情報\r\nGROUP BY ID_NO\r\n;\r\n"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          },
+          {
+            "name": "at_Insert_ContractFlag",
+            "description": "(g)-2  本人特定契約、mTG会員_契約中フラグ_tempからデータを集約し、mTG会員_契約中フラグに出力",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_ContractFlag_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--------------------------------------------------------------------------\r\n-- (g)-2 本人特定契約、mTG会員_契約中フラグ_temp → mTG会員_契約中フラグ\r\n-- \r\n-- 2025/05/16  新規作成\r\n--------------------------------------------------------------------------\r\n-- 変数宣言\r\nDECLARE @today_jst datetime ;\r\nDECLARE @today varchar(8);\r\nDECLARE @empty varchar(1);\r\nSET @today_jst = CONVERT(DATE, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time');\r\nSET @today = FORMAT(@today_jst, 'yyyyMMdd');\r\nSET @empty = '';\r\n\r\n\r\n-- mTG会員_契約中フラグ\r\nTRUNCATE TABLE [omni].[omni_odm_mytginfo_trn_mtgmaster_under_contract_flag];\r\n\r\nINSERT INTO [omni].[omni_odm_mytginfo_trn_mtgmaster_under_contract_flag] -- mTG会員_契約中フラグに登録\r\nSELECT \r\n    cpkiyk.MTGID                                                         -- MTGID\r\n    ,cpkiyk.EDA_NO                                                       -- 枝番\r\n    ,cpkiyk.GMT_SET_NO                                                   -- ガスメータ設置場所番号(1x)\r\n    ,cpkiyk.SYOKY_NO                                                     -- 使用契約番号(4x)\r\n    ,cpkiyk.CST_REG_NO                                                   -- お客さま登録番号(3x)\r\n    ,cpkiyk.SHRKY_NO                                                     -- 支払契約番号(2x)\r\n    ,cpkiyk.HJ_CST_NAME                                                  -- 表示名称\r\n    ,cpkiyk.TKTIYMD                                                      -- 特定年月日\r\n    ,cpkiyk.TRKSBTCD                                                     -- 種別コード\r\n    ,cpkiyk.REC_REG_YMD                                                  -- レコード登録年月日\r\n    ,cpkiyk.REC_REG_JKK                                                  -- レコード登録時刻\r\n    ,cpkiyk.REC_UPD_YMD                                                  -- レコード更新年月日\r\n    ,cpkiyk.REC_UPD_JKK                                                  -- レコード更新時刻\r\n    ,ISNULL(contract.INTERNAL_AREA_GAS_FLAG, 0)\r\n        as INTERNAL_AREA_GAS_FLAG                                        -- 域内ガス契約中フラグ\r\n    ,99 as EXTERNAL_AREA_GAS_FLAG                                        -- 域外ガス契約中フラグ\r\n    ,ISNULL(contract.INTERNAL_AREA_GAS_AND_POWER_FLAG, 0)\r\n        as INTERNAL_AREA_GAS_AND_POWER_FLAG                              -- 域内ガス電気合算契約中フラグ\r\n    ,ISNULL(contract.EXTERNAL_AREA_GAS_AND_POWER_FLAG, 0) \r\n        as EXTERNAL_AREA_GAS_AND_POWER_FLAG                              -- 域外ガス電気合算契約中フラグ\r\n    ,ISNULL(contract.POWER_FLAG, 0)                                      -- 域外ガス電気合算契約中フラグ\r\n        as POWER_FLAG                                                    -- 電気単独契約中フラグ\r\n    ,@today as REC_REG_YMD2                                              -- 登録日\r\n    ,@empty as REC_UPD_YMD2                                              -- 更新日\r\nFROM [omni].[omni_ods_mytginfo_trn_cpkiyk] cpkiyk                        -- 本人特定契約\r\nLEFT JOIN [omni].[omni_odm_mytginfo_trn_mtgmaster_under_contract_flag_temp] contract -- mTG会員_契約中フラグ_temp\r\n-- 本人特定契約.MTGID = mTG会員_契約中フラグ_temp.MTGID\r\nON cpkiyk.MTGID = contract.MTGID\r\n-- 本人特定契約.枝番 = mTG会員_契約中フラグ_temp.枝番\r\nAND cpkiyk.EDA_NO = contract.EDA_NO\r\n\r\n-- 本人特定契約.退会フラグ = 0\r\nWHERE cpkiyk.TAIKAI_FLAG = 0\r\n;"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          },
+          {
+            "name": "at_Insert_mtgmaster_temp",
+            "description": "(e)会員基本情報,myTGID最新統合先マッピング,mTG会員_許諾情報_temp,mTG会員_ポイント有効期限_temp,mTG会員_取引情報_temp,mTG会員_会員種別_temp,mTG会員_LINEID連携累積情報_tempからmTG会員マスタ_tempに必要な情報をmTGIDを結合キーとして出力",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_permission_info_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              },
+              {
+                "activity": "at_Insert_point_expiration_date_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              },
+              {
+                "activity": "at_Insert_membership_type_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              },
+              {
+                "activity": "at_Insert_lineid_linkageInfo_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--------------------------------------------------------------------------\r\n-- (e)会員基本情報,\r\n--    myTGID最新統合先マッピング,\r\n--    mTG会員_許諾情報_temp,\r\n--    mTG会員_ポイント有効期限_temp,\r\n--    mTG会員_取引情報_temp,\r\n--    mTG会員_会員種別_temp,\r\n--    mTG会員_LINEID連携累積情報_temp\r\n--    ↓\r\n--    mTG会員マスタ_temp\r\n-- \r\n-- 2025/05/16  新規作成\r\n--------------------------------------------------------------------------\r\n-- 変数宣言\r\nDECLARE @today_jst datetime ;\r\nDECLARE @today varchar(8);\r\nDECLARE @empty varchar(1);\r\nSET @today_jst = CONVERT(DATE, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time');\r\nSET @today = FORMAT(@today_jst, 'yyyyMMdd');\r\nSET @empty = '';\r\n\r\n-- mTG会員マスタ_temp\r\nTRUNCATE TABLE [omni].[omni_odm_mytginfo_trn_mtgmaster_member_master_temp];\r\n\r\nINSERT INTO [omni].[omni_odm_mytginfo_trn_mtgmaster_member_master_temp] -- mTG会員マスタ_tempに登録\r\nSELECT\r\n    cpinfo.ID_NO as MTGID                                                                 -- 会員ID\r\n    ,cpinfo.MAIL_ADR                                                                      -- メールアドレス\r\n    ,cpinfo.REC_REG_YMD                                                                   -- 登録日\r\n    ,cpinfo.REC_UPD_YMD                                                                   -- 更新日\r\n    ,cpinfo.TAIKAI_FLAG                                                                   -- 退会フラグ\r\n    ,cpinfo.ID_KBN                                                                        -- 会員区分\r\n    ,cpinfo.REG_CD                                                                        -- 会員登録経路\r\n    ,cpinfo.REG_COMP_FLG                                                                  -- 会員登録完了フラグ\r\n    ,CASE WHEN LEN(cpinfo.BIRTHDAY) <> 8 OR                                               -- 生年月日\r\n          NOT (cpinfo.BIRTHDAY LIKE '19%' OR cpinfo.BIRTHDAY LIKE '20%') THEN NULL\r\n          ELSE cpinfo.BIRTHDAY\r\n     END as BIRTHDAY\r\n    ,mapping.myTGID_BEFORE as LATEST_MTGID                                                -- 最新統合先mTGID\r\n    ,ISNULL(permission.PERMISSION_INFO_SERVICE_CODE_31_FLAG, 0) \r\n         as PERMISSION_INFO_SERVICE_CODE_31_FLAG                                          -- 許諾情報_サービスコード31フラグ\r\n    ,0 as PERMISSION_INFO_SERVICE_CODE_32_FLAG                                            -- 許諾情報_サービスコード32フラグ\r\n    ,ISNULL(permission.PERMISSION_INFO_SERVICE_CODE_33_FLAG, 0) \r\n         as PERMISSION_INFO_SERVICE_CODE_33_FLAG                                          -- 許諾情報_サービスコード33フラグ\r\n    ,ISNULL(permission.PERMISSION_INFO_SERVICE_CODE_24_FLAG, 0) \r\n         as PERMISSION_INFO_SERVICE_CODE_24_FLAG                                          -- 許諾情報_サービスコード24フラグ\r\n    ,expiration.LATEST_EXPIRE_DATE                                                        -- 直近有効期限\r\n    ,expiration.REMAINING_POINTS_SUM                                                      -- 残ポイント合算\r\n    ,member.ID_SYB_CD                                                                     -- 会員種別\r\n    ,line.LINE_U_ID                                                                       -- LINE_U_ID\r\n    ,line.MOST_RECENT_LINEID_UNLINKED_DATE                                                -- 直近のLINEID連携解除日\r\n    ,ISNULL(line.LINEID_LINK_STATUS, 0) as LINEID_LINK_STATUS                             -- LINEID連携ステータス\r\n    ,cpinfo.FREE_ITEM01                                                                   -- 予備1\r\n    ,cpinfo.FREE_ITEM02                                                                   -- 予備2\r\n    ,cpinfo.FREE_ITEM03                                                                   -- 予備3\r\n    ,cpinfo.FREE_ITEM04                                                                   -- 予備4\r\n    ,cpinfo.FREE_ITEM05                                                                   -- 予備5\r\n    ,cpinfo.FREE_ITEM06                                                                   -- 予備6\r\n    ,cpinfo.FREE_ITEM07                                                                   -- 予備7\r\n    ,cpinfo.FREE_ITEM08                                                                   -- 予備8\r\n    ,cpinfo.FREE_ITEM09                                                                   -- 予備9\r\n    ,cpinfo.FREE_ITEM10                                                                   -- 予備10\r\n    ,@today as REC_REG_YMD2                                                               -- 登録日\r\n    ,@empty as REC_UPD_YMD2                                                               -- 更新日\r\n\r\nFROM [omni].[omni_ods_mytginfo_trn_cpinfo] cpinfo -- 会員基本情報\r\nLEFT JOIN [omni].[omni_ods_mytginfo_trn_mytgid_merge_latest_mapping] mapping              -- myTGID最新統合先マッピング\r\n-- 会員基本情報.会員ID = myTGID最新統合先マッピング.統合元mTGID\r\nON cpinfo.ID_NO = mapping.myTGID\r\n\r\nLEFT JOIN [omni].[omni_ods_mytginfo_trn_mtgmaster_permission_info_temp] permission        -- mTG会員_許諾情報_temp\r\n-- 会員基本情報.会員ID = mTG会員_許諾情報_temp.会員ID\r\nON cpinfo.ID_NO = permission.ID_NO\r\n\r\nLEFT JOIN [omni].[omni_ods_mytginfo_trn_mtgmaster_point_expiration_date_temp] expiration  -- mTG会員_ポイント有効期限_temp\r\n-- 会員基本情報.会員ID = mTG会員_ポイント有効期限_temp.mTG会員ID\r\nON cpinfo.ID_NO = expiration.MTGID\r\n\r\nLEFT JOIN [omni].[omni_ods_mytginfo_trn_mtgmaster_member_type_temp] member                -- mTG会員_会員種別_temp\r\n-- 会員基本情報.会員ID = mTG会員_会員種別_temp.会員ID\r\nON cpinfo.ID_NO = member.ID_NO\r\n\r\nLEFT JOIN [omni].[omni_ods_mytginfo_trn_mtgmaster_lineid_linkageInfo_temp] line           -- mTG会員_LINEID連携累積情報_temp\r\n-- 会員基本情報.会員ID = mTG会員_LINEID連携累積情報_temp.会員ID\r\nON cpinfo.ID_NO = line.ID_NO\r\n;"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          },
+          {
+            "name": "at_Insert_mtgmaster_Contract",
+            "description": "(h) mTG会員マスタ_temp, mTG会員_契約中フラグからデータを集約し、mTG会員_契約マスタに出力",
+            "type": "Script",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_mtgmaster_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              },
+              {
+                "activity": "at_Insert_ContractFlag",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--------------------------------------------------------------------------\r\n-- (h)mTG会員マスタ_temp, mTG会員_契約中フラグ → mTG会員_契約マスタ\r\n-- \r\n-- 2025/05/16  新規作成\r\n--------------------------------------------------------------------------\r\n-- 変数宣言\r\nDECLARE @today_jst datetime ;\r\nDECLARE @today varchar(8);\r\nDECLARE @empty varchar(8);\r\nSET @today_jst = CONVERT(DATE, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time');\r\nSET @today = FORMAT(@today_jst, 'yyyyMMdd');\r\nSET @empty = '';\r\n\r\n-- 顧客契約マスタ\r\nTRUNCATE TABLE [omni].[omni_odm_mytginfo_trn_mtgmaster_contract_master];\r\n\r\nINSERT INTO [omni].[omni_odm_mytginfo_trn_mtgmaster_contract_master] -- 顧客契約マスタに登録\r\n\r\nSELECT \r\n    mst.MTGID                                                                            -- 会員ID\r\n    ,mst.MAIL_ADR                                                                        -- メールアドレス\r\n    ,mst.REC_REG_YMD                                                                     -- 登録日\r\n    ,mst.REC_UPD_YMD                                                                     -- 更新日\r\n    ,mst.TAIKAI_FLAG                                                                     -- 退会フラグ\r\n    ,mst.ID_KBN                                                                          -- 会員区分\r\n    ,mst.REG_CD                                                                          -- 会員登録経路\r\n    ,mst.REG_COMP_FLG                                                                    -- 会員登録完了フラグ\r\n    ,mst.BIRTHDAY                                                                        -- 生年月日\r\n    ,mst.LATEST_MTGID                                                                    -- 最新統合先mTGID\r\n    ,mst.PERMISSION_INFO_SERVICE_CODE_31_FLAG                                            -- 許諾情報_サービスコード31フラグ\r\n    ,0 as PERMISSION_INFO_SERVICE_CODE_32_FLAG                                           -- 許諾情報_サービスコード32フラグ\r\n    ,mst.PERMISSION_INFO_SERVICE_CODE_33_FLAG                                            -- 許諾情報_サービスコード33フラグ\r\n    ,mst.PERMISSION_INFO_SERVICE_CODE_24_FLAG                                            -- 許諾情報_サービスコード24フラグ\r\n    ,mst.LATEST_EXPIRE_DATE                                                              -- 直近有効期限\r\n    ,mst.REMAINING_POINTS_SUM                                                            -- 残ポイント合算\r\n    ,mst.ID_SYB_CD                                                                       -- 会員種別\r\n    ,mst.LINE_U_ID                                                                       -- LINE_uID\r\n    ,mst.MOST_RECENT_LINEID_UNLINKED_DATE                                                -- 直近のLINEID連携解除日\r\n    ,mst.LINEID_LINK_STATUS                                                              -- LINEID連携ステータス\r\n    ,ISNULL(contract.INTERNAL_AREA_GAS_FLAG, 0)\r\n        as INTERNAL_AREA_GAS_FLAG                                                        -- 域内ガス契約中フラグ\r\n    ,99 as EXTERNAL_AREA_GAS_FLAG                                                        -- 域外ガス契約中フラグ\r\n    ,ISNULL(contract.INTERNAL_AREA_GAS_AND_POWER_FLAG, 0)\r\n        as INTERNAL_AREA_GAS_AND_POWER_FLAG                                              -- 域内ガス電気合算契約中フラグ\r\n    ,ISNULL(contract.EXTERNAL_AREA_GAS_AND_POWER_FLAG, 0)\r\n        as EXTERNAL_AREA_GAS_AND_POWER_FLAG                                              -- 域外ガス電気合算契約中フラグ\r\n    ,ISNULL(contract.POWER_FLAG, 0)\r\n        as POWER_FLAG                                                                    -- 電気単独契約中フラグ\r\n    ,mst.FREE_ITEM01                                                                     -- 予備1\r\n    ,mst.FREE_ITEM02                                                                     -- 予備2\r\n    ,mst.FREE_ITEM03                                                                     -- 予備3\r\n    ,mst.FREE_ITEM04                                                                     -- 予備4\r\n    ,mst.FREE_ITEM05                                                                     -- 予備5\r\n    ,mst.FREE_ITEM06                                                                     -- 予備6\r\n    ,mst.FREE_ITEM07                                                                     -- 予備7\r\n    ,mst.FREE_ITEM08                                                                     -- 予備8\r\n    ,mst.FREE_ITEM09                                                                     -- 予備9\r\n    ,mst.FREE_ITEM10                                                                     -- 予備10\r\n    ,@today as REC_REG_YMD2                                                              -- 登録日\r\n    ,@empty as REC_UPD_YMD2                                                              -- 更新日\r\nFROM [omni].[omni_odm_mytginfo_trn_mtgmaster_member_master_temp] mst                     -- mTG会員マスタ_temp\r\nLEFT JOIN\r\n(\r\n    SELECT\r\n         MTGID                                                                           -- mTG会員ID\r\n        ,MAX(INTERNAL_AREA_GAS_FLAG) as INTERNAL_AREA_GAS_FLAG                           -- ガス契約中フラグ\r\n        ,99 as EXTERNAL_AREA_GAS_FLAG                                                    -- 域外ガス契約中フラグ 99:固定値とする\r\n        ,MAX(INTERNAL_AREA_GAS_AND_POWER_FLAG) as INTERNAL_AREA_GAS_AND_POWER_FLAG       -- 域内ガス電気合算契約中フラグ\r\n        ,MAX(EXTERNAL_AREA_GAS_AND_POWER_FLAG) as EXTERNAL_AREA_GAS_AND_POWER_FLAG       -- 域外ガス電気合算契約中フラグ\r\n        ,MAX(POWER_FLAG) as POWER_FLAG                                                   -- 電気単独契約中フラグ\r\n    FROM [omni].[omni_odm_mytginfo_trn_mtgmaster_under_contract_flag]                    -- mTG会員_契約中フラグ\r\n    GROUP BY MTGID\r\n) contract\r\n-- 結合条件会員IDで結合\r\nON mst.MTGID = contract.MTGID\r\n;"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          }
+        ],
+        "policy": {
+          "elapsedTimeMetric": {}
+        },
+        "folder": {
+          "name": "mTGMaster"
+        },
+        "annotations": [],
+        "lastPublishTime": "2025-05-23T10:42:52Z"
+      },
+      "dependsOn": [
+        "[concat(variables('factoryId'), '/linkedServices/li_dam_dwh')]"
+      ]
+    }
+  ]
+}

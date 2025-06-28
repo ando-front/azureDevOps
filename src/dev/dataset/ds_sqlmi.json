@@ -1,0 +1,16 @@
+{
+  "name": "ds_sqlmi",
+  "properties": {
+    "linkedServiceName": {
+      "referenceName": "li_sqlmi_dwh2",
+      "type": "LinkedServiceReference"
+    },
+    "annotations": [],
+    "type": "AzureSqlMITable",
+    "schema": [],
+    "typeProperties": {
+      "schema": "marketing",
+      "table": "顧客DNA_推定DM"
+    }
+  }
+}

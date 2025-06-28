@@ -1,0 +1,13 @@
+{
+    "name": "DS_TGCRM_Table",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_TGCRM_AzureSqlDatabase",
+            "type": "LinkedServiceReference"
+        },
+        "type": "AzureSqlTable",
+        "typeProperties": {
+            "tableName": "omni_ods_cloak_trn_contract_key_daily"
+        }
+    }
+}

@@ -1,0 +1,115 @@
+{
+  "name": "pi_Insert_ActionPointTransactionHistory",
+  "type": "Microsoft.DataFactory/factories/pipelines",
+  "properties": {
+    "description": "ODM「アクションポイント取引履歴」 および MC向け「アクションポイント直近取引履歴リスト」を作成する",
+    "activities": [
+      {
+        "name": "at_Insert_TransactionHistory_temp",
+        "description": "ポイント取引履歴連携リスト → アクションポイント取引履歴_temp\n",
+        "type": "Script",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 120,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "linkedServiceName": {
+          "referenceName": "li_dam_dwh",
+          "type": "LinkedServiceReference"
+        },
+        "typeProperties": {
+          "scripts": [
+            {
+              "type": "NonQuery",
+              "text": "----------------------------------------------------------------\n-- 1(a)_at_Insert_TransactionHistory_temp\n-- アクションポイント取引履歴_temp 作成\n----------------------------------------------------------------\n\nDECLARE @today date;\nSET @today=CONVERT(DATE, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time');  -- 実行日\n\nDECLARE @isEmpty int;\nSELECT @isEmpty=COUNT(*) FROM [omni].[omni_odm_actionpoint_trn_transaction_history];  -- 「アクションポイント取引履歴」のレコード数取得\nIF @isEmpty=0    -- 初回は全量作成する\nBEGIN\n    SET @today='2023-01-01';\nEND\n\ndeclare @targetDT as datetime;\nset @targetDT=DATEADD(day,-14,@today);   -- 実行日-14日\n\ndeclare @targetYMD as varchar(8);\nset @targetYMD=format(@targetDT,'yyyyMMdd');\n\n\n----------------------------------------------------------------\n\nTRUNCATE TABLE [omni].[omni_odm_actionpoint_trn_transaction_history_temp];\n\nINSERT INTO [omni].[omni_odm_actionpoint_trn_transaction_history_temp]\nSELECT DISTINCT\n     MTGID\n    ,CASE WHEN REMARKS like 'ガス使用量%' THEN 1\n          WHEN REMARKS like '電気使用量%' THEN 2\n          WHEN REMARKS like 'クイズ回答%' THEN 3\n     END as ACTION_POINT_TYPE    -- アクションポイント種別\n    ,convert(date,TRANSACTION_PROCESSING_DATE) as TRANSACTION_PROCESSING_DATE  -- 取引処理年月日\n    ,REMARKS                     -- 備考\nFROM [omni].[omni_ods_mytgpnt_trn_pnt_trd_hist]  -- ポイント取引履歴連携リスト\n\nWHERE\n        ( REMARKS like 'ガス使用量%' or REMARKS like '電気使用量%' or REMARKS like 'クイズ回答%')\n    and POINT_TYPE_CODE in('9002','9009')\n    and TRANSACTION_PROCESSING_DATE >= @targetYMD\n;\n"
+            }
+          ],
+          "scriptBlockExecutionTimeout": "02:00:00"
+        }
+      },
+      {
+        "name": "at_Insert_TransactionHistory",
+        "description": "アクションポイント取引履歴_temp → アクションポイント取引履歴",
+        "type": "Script",
+        "dependsOn": [
+          {
+            "activity": "at_Insert_TransactionHistory_temp",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 120,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "linkedServiceName": {
+          "referenceName": "li_dam_dwh",
+          "type": "LinkedServiceReference"
+        },
+        "typeProperties": {
+          "scripts": [
+            {
+              "type": "NonQuery",
+              "text": "----------------------------------------------------------------\n-- 1(b)_at_Insert_TransactionHistory\n-- アクションポイント取引履歴 作成\n----------------------------------------------------------------\n\nDECLARE @today varchar(8);\nSET @today=format(CONVERT(DATE, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time'),'yyyyMMdd');  -- 実行日\n\n\n-- アクションポイント取引履歴_tempから既存レコード削除\nDELETE tmp\nFROM [omni].[omni_odm_actionpoint_trn_transaction_history_temp] tmp    -- アクションポイント取引履歴_temp\n\nINNER JOIN [omni].[omni_odm_actionpoint_trn_transaction_history] th    -- アクションポイント取引履歴\n        ON\n                th.MTGID=tmp.MTGID                          -- mTG会員ID\n            and th.ACTIONPOINT_TYPE=tmp.ACTIONPOINT_TYPE    -- アクションポイント種別\n            and th.TRANSACTION_PROCESSING_DATE=tmp.TRANSACTION_PROCESSING_DATE  --    取引処理年月日\n;\n\n\n-- アクションポイント取引履歴に挿入\nINSERT INTO [omni].[omni_odm_actionpoint_trn_transaction_history]\nSELECT\n     MTGID                          -- mTG会員ID\n    ,ACTIONPOINT_TYPE               -- アクションポイント種別\n    ,TRANSACTION_PROCESSING_DATE    -- 取引処理年月日\n    ,@today as REC_REG_YMD          -- 登録日\n    ,''     as REC_UPD_YMD          -- 更新日\nFROM [omni].[omni_odm_actionpoint_trn_transaction_history_temp]   -- アクションポイント取引履歴_temp\n;\n"
+            }
+          ],
+          "scriptBlockExecutionTimeout": "02:00:00"
+        }
+      },
+      {
+        "name": "at_Insert_RecentTransactionMembersContractList_temp",
+        "description": "アクションポイント取引履歴、会員基本情報、契約中フラグ_temp → アクションポイント直近取引履歴リスト（契約中会員）_temp",
+        "type": "Script",
+        "dependsOn": [
+          {
+            "activity": "at_Insert_TransactionHistory",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 120,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "linkedServiceName": {
+          "referenceName": "li_dam_dwh",
+          "type": "LinkedServiceReference"
+        },
+        "typeProperties": {
+          "scripts": [
+            {
+              "type": "NonQuery",
+              "text": "----------------------------------------------------------------\n-- 1(c)_at_Insert_RecentTransactionMembersContractList_temp\n-- アクションポイント直近取引履歴リスト（契約中会員）_temp\n----------------------------------------------------------------\n\nDECLARE @today varchar(8);\nSET @today=format(CONVERT(DATE, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time'),'yyyyMMdd');  -- 実行日\n\n\nTRUNCATE TABLE [omni].[omni_odm_actionpoint_trn_recent_transaction_members_contract_list_temp];\n\nINSERT INTO [omni].[omni_odm_actionpoint_trn_recent_transaction_members_contract_list_temp]\nSELECT\n     apthis.MTGID                            -- mTG会員ID\n    ,apthis.ACTIONPOINT_TYPE                 -- アクションポイント種別\n    ,max(apthis.TRANSACTION_PROCESSING_DATE) -- 直近取引年月日\n    ,@today as REC_REG_YMD                   -- 登録日\nFROM [omni].[omni_odm_actionpoint_trn_transaction_history] apthis         -- アクションポイント取引履歴\n\nINNER JOIN [omni].[omni_ods_mytginfo_trn_cpinfo] cpinfo                   -- 会員基本情報\n        ON     apthis.MTGID=cpinfo.ID_NO\n           and cpinfo.TAIKAI_FLAG=0    -- 退会フラグ          =0:現会員\n           and cpinfo.REG_COMP_FLG=1   -- 会員登録完了フラグ  =1:初回ログインし本登録完了済\n\nINNER JOIN [omni].[omni_odm_mytginfo_trn_mtgmaster_under_contract_flag_temp] cfgtmp  -- mTG会員_契約中フラグ_temp\n        ON     apthis.MTGID=cfgtmp.MTGID      -- 「mTG会員_契約中フラグ_temp」は契約中のみのため、MTGIDが一致すれば契約中と判断できる\n\nGROUP BY apthis.MTGID,apthis.ACTIONPOINT_TYPE\n;\n"
+            }
+          ],
+          "scriptBlockExecutionTimeout": "02:00:00"
+        }
+      }
+    ],
+    "policy": {
+      "elapsedTimeMetric": {}
+    },
+    "folder": {
+      "name": "ActionPoint"
+    },
+    "annotations": [],
+    "lastPublishTime": "2025-03-24T02:56:58Z"
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/linkedServices/li_dam_dwh')]"
+  ]
+}

@@ -1,0 +1,321 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "factoryName": {
+      "type": "string",
+      "metadata": "データ ファクトリ名",
+      "defaultValue": "omni-df-dev"
+    }
+  },
+  "variables": {
+    "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('factoryName'), '/pi_CustmNoRegistComp')]",
+      "type": "Microsoft.DataFactory/factories/pipelines",
+      "apiVersion": "2018-06-01",
+      "properties": {
+        "description": "mytokyogas-Blobから「お客さま番号登録完了のお知らせ」IFに必要なデータを抽出、gzipファイルでBLOB出力し、SFMCにSFTP連携する。",
+        "activities": [
+          {
+            "name": "at_GetFiles_CustmNoRegistComp",
+            "description": "Blobのファイル一覧取得",
+            "type": "GetMetadata",
+            "dependsOn": [],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 0,
+              "retryIntervalInSeconds": 30,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "dataset": {
+                "referenceName": "ds_BlobFiles_mTG",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": {
+                    "value": "@concat('forRcvry/',convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'),'/DCPDA019')",
+                    "type": "Expression"
+                  },
+                  "filename": {
+                    "value": "@concat(convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'),'_DAM_CustomerNumberAddCompleted.tsv')",
+                    "type": "Expression"
+                  }
+                }
+              },
+              "fieldList": [
+                "exists"
+              ],
+              "storeSettings": {
+                "type": "AzureBlobStorageReadSettings",
+                "recursive": true,
+                "enablePartitionDiscovery": false
+              },
+              "formatSettings": {
+                "type": "JsonReadSettings"
+              }
+            }
+          },
+          {
+            "name": "IfCondition_CustmNoRegistComp",
+            "description": "該当ファイル有無により、出力を替える",
+            "type": "IfCondition",
+            "dependsOn": [
+              {
+                "activity": "at_GetFiles_CustmNoRegistComp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "userProperties": [],
+            "typeProperties": {
+              "expression": {
+                "value": "@activity('at_GetFiles_CustmNoRegistComp').output.exists",
+                "type": "Expression"
+              },
+              "ifFalseActivities": [
+                {
+                  "name": "at_CreateCSV_CustmNoRegistComp_Header",
+                  "description": "連携ファイルが存在しない場合のヘッダのみBloBに出力する",
+                  "type": "Copy",
+                  "dependsOn": [],
+                  "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 10,
+                    "retryIntervalInSeconds": 60,
+                    "secureOutput": false,
+                    "secureInput": false
+                  },
+                  "userProperties": [],
+                  "typeProperties": {
+                    "source": {
+                      "type": "DelimitedTextSource",
+                      "storeSettings": {
+                        "type": "AzureBlobStorageReadSettings",
+                        "recursive": false,
+                        "enablePartitionDiscovery": false
+                      },
+                      "formatSettings": {
+                        "type": "DelimitedTextReadSettings"
+                      }
+                    },
+                    "sink": {
+                      "type": "DelimitedTextSink",
+                      "storeSettings": {
+                        "type": "AzureBlobStorageWriteSettings"
+                      },
+                      "formatSettings": {
+                        "type": "DelimitedTextWriteSettings",
+                        "quoteAllText": true,
+                        "fileExtension": ".csv"
+                      }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                      "type": "TabularTranslator",
+                      "typeConversion": true,
+                      "typeConversionSettings": {
+                        "allowDataTruncation": true,
+                        "treatBooleanAsNumber": false
+                      }
+                    }
+                  },
+                  "inputs": [
+                    {
+                      "referenceName": "ds_CSV_Blob",
+                      "type": "DatasetReference",
+                      "parameters": {
+                        "directory": "datalake/dev/OMNI/temp/",
+                        "columnDelimiter": ",",
+                        "quoteChar": "\"",
+                        "firstRowAsHeader": true,
+                        "filename": "header_DAM_CustmNoRegistComp.csv"
+                      }
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "referenceName": "ds_CSV_BlobGz",
+                      "type": "DatasetReference",
+                      "parameters": {
+                        "directory": "datalake/OMNI/MA/CustmNoRegistComp",
+                        "columnDelimiter": ",",
+                        "quoteChar": "\"",
+                        "firstRowAsHeader": true,
+                        "filename": {
+                          "value": "@concat('CustmNoRegistComp_',convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'),'.csv.gz')",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "ifTrueActivities": [
+                {
+                  "name": "at_CreateCSV_CustmNoRegistComp",
+                  "description": "連携ファイルから必要なデータのみを抽出しcsvファイルを作成、BLOBに配置する",
+                  "type": "Copy",
+                  "dependsOn": [],
+                  "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 10,
+                    "retryIntervalInSeconds": 60,
+                    "secureOutput": false,
+                    "secureInput": false
+                  },
+                  "userProperties": [],
+                  "typeProperties": {
+                    "source": {
+                      "type": "SqlDWSource",
+                      "sqlReaderQuery": {
+                        "value": "-----------------------------------------------------------------------------------------\n-- MA向けリスト連携 お客さま番号登録完了のお知らせ 出力 at_CreateCSV_CustmNoRegistComp\n-----------------------------------------------------------------------------------------\n\n-- 作成する外部テーブル(お客さま番号登録完了のお知らせ_ext_temp)が存在する場合は削除する\nDECLARE @isAllEventsTemp int;\nSELECT @isAllEventsTemp=count(*) FROM sys.objects WHERE schema_id = schema_id('omni') AND name='omni_ods_mytginfo_trn_customer_number_add_completed_ext_temp';\nIF @isAllEventsTemp = 1\n    DROP EXTERNAL TABLE [omni].[omni_ods_mytginfo_trn_customer_number_add_completed_ext_temp];\n\n\n-- ADFによりTSVをロードする外部テーブルを作成する\n\n-- 外部テーブル作成 omni_ods_mytginfo_trn_customer_number_add_completed_ext_temp(お客さま番号登録完了のお知らせ_ext_temp)\nCREATE EXTERNAL TABLE [omni].[omni_ods_mytginfo_trn_customer_number_add_completed_ext_temp]\n(\n     ID_NO\tNVARCHAR(20)\tNULL\t -- 会員ID\n    ,MAIL_ADR\tNVARCHAR(50)\tNULL\t -- メールアドレス\n)\nWITH (\n    DATA_SOURCE=[mytokyogas],\n    LOCATION='@{concat('/forRcvry/',convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'),'/DCPDA019/',convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'),'_DAM_CustomerNumberAddCompleted.tsv')}',\n    FILE_FORMAT=[TSV2],\n    REJECT_TYPE=VALUE,\n    REJECT_VALUE=0\n)\n;\n\n-- 会員IDの重複を削除する。重複削除するレコードはメールアドレスが最大のもの以外に行う\nSELECT ID_NO, MAIL_ADR,'@{convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd')}'as CSV_YMD ,FORMAT((GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time'),'yyyy/MM/dd HH:mm:ss')as OUTPUT_DATETIME\nFROM (\nSELECT *\n, DupRank = ROW_NUMBER() OVER (\n              PARTITION BY ID_NO\n              ORDER BY MAIL_ADR DESC\n            )\nFROM omni.omni_ods_mytginfo_trn_customer_number_add_completed_ext_temp\n) as table_custmNoRegistComp\nWHERE DupRank = 1\n\n\n-- 作成した外部テーブルが存在する場合は削除行う\nSELECT @isAllEventsTemp=count(*) FROM sys.objects WHERE schema_id = schema_id('omni') AND name='omni_ods_mytginfo_trn_customer_number_add_completed_ext_temp';\nIF @isAllEventsTemp = 1\n    DROP EXTERNAL TABLE [omni].[omni_ods_mytginfo_trn_customer_number_add_completed_ext_temp];\n\n",
+                        "type": "Expression"
+                      },
+                      "queryTimeout": "02:00:00",
+                      "partitionOption": "None"
+                    },
+                    "sink": {
+                      "type": "DelimitedTextSink",
+                      "storeSettings": {
+                        "type": "AzureBlobStorageWriteSettings"
+                      },
+                      "formatSettings": {
+                        "type": "DelimitedTextWriteSettings",
+                        "quoteAllText": true,
+                        "fileExtension": ".csv"
+                      }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                      "type": "TabularTranslator",
+                      "typeConversion": true,
+                      "typeConversionSettings": {
+                        "allowDataTruncation": true,
+                        "treatBooleanAsNumber": false
+                      }
+                    }
+                  },
+                  "inputs": [
+                    {
+                      "referenceName": "ds_DamDwhTable_shir",
+                      "type": "DatasetReference",
+                      "parameters": {
+                        "table": "--"
+                      }
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "referenceName": "ds_CSV_BlobGz",
+                      "type": "DatasetReference",
+                      "parameters": {
+                        "directory": "datalake/OMNI/MA/CustmNoRegistComp",
+                        "columnDelimiter": ",",
+                        "quoteChar": "\"",
+                        "firstRowAsHeader": true,
+                        "filename": {
+                          "value": "@concat('CustmNoRegistComp_',convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "at_SendSftp_CustmNoRegistComp",
+            "description": "SMCへ送信",
+            "type": "Copy",
+            "dependsOn": [
+              {
+                "activity": "IfCondition_CustmNoRegistComp",
+                "dependencyConditions": [
+                  "Skipped"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "7.00:00:00",
+              "retry": 10,
+              "retryIntervalInSeconds": 60,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "source": {
+                "type": "BinarySource",
+                "storeSettings": {
+                  "type": "AzureBlobStorageReadSettings",
+                  "recursive": false,
+                  "deleteFilesAfterCompletion": false
+                },
+                "formatSettings": {
+                  "type": "BinaryReadSettings"
+                }
+              },
+              "sink": {
+                "type": "BinarySink",
+                "storeSettings": {
+                  "type": "SftpWriteSettings",
+                  "operationTimeout": "01:00:00",
+                  "useTempFileRename": false
+                }
+              },
+              "enableStaging": false
+            },
+            "inputs": [
+              {
+                "referenceName": "ds_BlobGz",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "datalake/OMNI/MA/CustmNoRegistComp",
+                  "filename": {
+                    "value": "@concat('CustmNoRegistComp_',convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "referenceName": "ds_Gz_Sftp",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "Import/DAM/1A13b_CustomerAutoAddition",
+                  "filename": {
+                    "value": "@concat('CustmNoRegistComp_',convertFromUtc(pipeline().parameters.executionStartDateTimeUTC, 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "policy": {
+          "elapsedTimeMetric": {}
+        },
+        "parameters": {
+          "executionStartDateTimeUTC": {
+            "type": "string",
+            "defaultValue": "@trigger().startTime"
+          }
+        },
+        "folder": {
+          "name": "検電"
+        },
+        "annotations": [],
+        "lastPublishTime": "2025-03-07T08:51:29Z"
+      },
+      "dependsOn": []
+    }
+  ]
+}

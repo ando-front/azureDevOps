@@ -1,0 +1,38 @@
+{
+  "name": "tr_Schedule_PaymentAlert",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "description": "支払アラート(PaymentAlert)用トリガー",
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [
+      {
+        "pipelineReference": {
+          "referenceName": "pi_Send_PaymentAlert",
+          "type": "PipelineReference"
+        },
+        "parameters": {}
+      }
+    ],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "startTime": "2022-03-29T00:00:00",
+        "timeZone": "Tokyo Standard Time",
+        "schedule": {
+          "minutes": [
+            0
+          ],
+          "hours": [
+            6
+          ]
+        }
+      }
+    }
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/pipelines/pi_Send_PaymentAlert')]"
+  ]
+}

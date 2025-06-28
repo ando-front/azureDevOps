@@ -1,0 +1,154 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "factoryName": {
+      "type": "string",
+      "metadata": "データ ファクトリ名",
+      "defaultValue": "omni-df-dev"
+    }
+  },
+  "variables": {
+    "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('factoryName'), '/pi_Send_karte_contract_score_info_test2')]",
+      "type": "Microsoft.DataFactory/factories/pipelines",
+      "apiVersion": "2018-06-01",
+      "properties": {
+        "description": "---",
+        "activities": [
+          {
+            "name": "at_CreateCSV_testJSON",
+            "type": "Copy",
+            "dependsOn": [],
+            "policy": {
+              "timeout": "7.00:00:00",
+              "retry": 0,
+              "retryIntervalInSeconds": 30,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "source": {
+                "type": "SqlDWSource",
+                "sqlReaderQuery": "SELECT TOP (1000)\n       [HASHED_MTGID] as user_id\n\n       -- contract\n      ,convert(bit,[internal_area_gas])as internal_area_gas\n      ,[internal_area_gas_menu]\n      ,[external_area_gas]\n      ,[external_area_gas_menu]\n      ,[power]\n      ,[power_menu]\n\n      -- score\n\n      ,[pv_siti_scr]\n      ,[dg_stn_age_0_29]\n      ,[dg_stn_age_30_39]\n      ,[dg_stn_age_40_49]\n      ,[dg_stn_age_50_59]\n      ,[dg_stn_age_60_69]\n      ,[dg_stn_age_70_99]\n      ,[dg_stns_4mlon_less]\n      ,[dg_stns_10mlon_over]\n      ,[tnkysk_1year]\n      ,[syzi_gs_dtrkscr_month03]\n      ,[syzi_gs_dtrkscr_year01]\n      ,[syzi_dk_dtrkscr_month03]\n      ,[syzi_dk_dtrkscr_year01]\n      ,[syzi_sgstb_tblknr]\n      ,[syzi_sgstb_bltinknr]\n      ,[syzi_sgstb_tes]\n      ,[syzi_sgstb_hrk]\n      ,[syzi_sgstb_oy]\n      ,[syzi_sgstb_fnht]\n      ,[syzi_sgstb_gsknsk]\n      ,[syzi_sv_gskk_ss]\n      ,[syzi_dk_web]\nFROM [omni].[omni_ods_marketing_trn_karte_contract_score_hashed]\n\n",
+                "queryTimeout": "02:00:00",
+                "partitionOption": "None"
+              },
+              "sink": {
+                "type": "JsonSink",
+                "storeSettings": {
+                  "type": "AzureBlobStorageWriteSettings"
+                },
+                "formatSettings": {
+                  "type": "JsonWriteSettings",
+                  "filePattern": "arrayOfObjects"
+                }
+              },
+              "enableStaging": false,
+              "translator": {
+                "type": "TabularTranslator",
+                "mappings": [
+                  {
+                    "source": {
+                      "name": "user_id",
+                      "type": "String"
+                    },
+                    "sink": {
+                      "path": "$['user_id']"
+                    }
+                  },
+                  {
+                    "source": {
+                      "name": "internal_area_gas",
+                      "type": "String"
+                    },
+                    "sink": {
+                      "path": "$['contract']['internal_area_gas']"
+                    }
+                  },
+                  {
+                    "source": {
+                      "name": "internal_area_gas_menu",
+                      "type": "String"
+                    },
+                    "sink": {
+                      "path": "$['contract']['internal_area_gas_menu']"
+                    }
+                  },
+                  {
+                    "source": {
+                      "name": "power",
+                      "type": "String"
+                    },
+                    "sink": {
+                      "path": "$['contract']['power']"
+                    }
+                  },
+                  {
+                    "source": {
+                      "name": "power_menu",
+                      "type": "String"
+                    },
+                    "sink": {
+                      "path": "$['contract']['power_menu']"
+                    }
+                  },
+                  {
+                    "source": {
+                      "name": "pv_siti_scr",
+                      "type": "String"
+                    },
+                    "sink": {
+                      "path": "$['score']['pv_siti_scr']"
+                    }
+                  },
+                  {
+                    "source": {
+                      "name": "dg_stn_age_0_29",
+                      "type": "String"
+                    },
+                    "sink": {
+                      "path": "$['score']['dg_stn_age_0_29']"
+                    }
+                  }
+                ]
+              }
+            },
+            "inputs": [
+              {
+                "referenceName": "ds_DamDwhTable",
+                "type": "DatasetReference",
+                "parameters": {
+                  "table": "--"
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "referenceName": "Json1",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "datalake/dev/OMNI/test",
+                  "filename": "test.json"
+                }
+              }
+            ]
+          }
+        ],
+        "policy": {
+          "elapsedTimeMetric": {}
+        },
+        "folder": {
+          "name": "IT"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-11-18T05:20:40Z"
+      },
+      "dependsOn": []
+    }
+  ]
+}

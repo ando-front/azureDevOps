@@ -1,0 +1,28 @@
+{
+  "name": "tr_Schedule_PointGrantEmail",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "description": "ポイント付与メール(PointGrantEmail)用のトリガー",
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "startTime": "2023-03-20T01:00:00",
+        "timeZone": "Tokyo Standard Time",
+        "schedule": {
+          "minutes": [
+            20
+          ],
+          "hours": [
+            9
+          ]
+        }
+      }
+    }
+  },
+  "dependsOn": []
+}

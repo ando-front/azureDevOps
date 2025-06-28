@@ -1,0 +1,130 @@
+{
+  "name": "df_json_data_blob_only_test",
+  "type": "Microsoft.DataFactory/factories/dataflows",
+  "properties": {
+    "type": "MappingDataFlow",
+    "typeProperties": {
+      "sources": [
+        {
+          "dataset": {
+            "referenceName": "ds_contract_score",
+            "type": "DatasetReference"
+          },
+          "name": "dataimport",
+          "description": "ds_contract_scoreからデータをインポートする"
+        }
+      ],
+      "sinks": [
+        {
+          "dataset": {
+            "referenceName": "ds_Json_Blob_test",
+            "type": "DatasetReference"
+          },
+          "name": "dataexportblob",
+          "description": "データを ds_Json_Blob にエクスポートする"
+        }
+      ],
+      "transformations": [
+        {
+          "name": "contractscoreColumn",
+          "description": "TG契約情報をJSON形式に変換する"
+        }
+      ],
+      "scriptLines": [
+        "parameters{",
+        "     filename as string",
+        "}",
+        "source(output(",
+        "          HASHED_MTGID as string,",
+        "          INTERNAL_AREA_GAS as string,",
+        "          INTERNAL_AREA_GAS_MENU as string,",
+        "          EXTERNAL_AREA_GAS as string,",
+        "          EXTERNAL_AREA_GAS_MENU as string,",
+        "          POWER as string,",
+        "          POWER_MENU as string,",
+        "          PV_SCORE_POWER as decimal(10,9),",
+        "          PV_SCORE_RANK_POWER as string,",
+        "          PV_SCORE_GAS as decimal(10,9),",
+        "          ESTIMATED_PV_HOLDINGS_FLAG_GAS as integer,",
+        "          DG_STN_AGE_0_29 as decimal(5,2),",
+        "          DG_STN_AGE_30_39 as decimal(5,2),",
+        "          DG_STN_AGE_40_49 as decimal(5,2),",
+        "          DG_STN_AGE_50_59 as decimal(5,2),",
+        "          DG_STN_AGE_60_69 as decimal(5,2),",
+        "          DG_STN_AGE_70_99 as decimal(5,2),",
+        "          DG_SITI_ST_NUM as string,",
+        "          DG_STNS_4MLON_LESS as decimal(5,2),",
+        "          DG_STNS_10MLON_OVER as decimal(5,2),",
+        "          TNKYSK_2MONTH as decimal(5,2),",
+        "          TNKYSK_1YEAR as decimal(5,2),",
+        "          SYZI_GS_DTRKSCR_MONTH03 as decimal(5,2),",
+        "          SYZI_GS_DTRKSCR_YEAR01 as decimal(5,2),",
+        "          SYZI_DK_DTRKSCR_MONTH03 as decimal(5,2),",
+        "          SYZI_DK_DTRKSCR_YEAR01 as decimal(5,2),",
+        "          SYZI_SGSTB_TBLKNR as decimal(5,2),",
+        "          SYZI_SGSTB_BLTINKNR as decimal(5,2),",
+        "          SYZI_SGSTB_TES as decimal(5,2),",
+        "          SYZI_SGSTB_HRK as decimal(5,2),",
+        "          SYZI_SGSTB_OY as decimal(5,2),",
+        "          SYZI_SGSTB_FNHT as decimal(5,2),",
+        "          SYZI_SGSTB_GSKNSK as decimal(5,2),",
+        "          SYZI_SV_GSKK_SS as decimal(5,2),",
+        "          SYZI_DK_WEB as decimal(5,2)",
+        "     ),",
+        "     allowSchemaDrift: false,",
+        "     validateSchema: false,",
+        "     isolationLevel: 'READ_UNCOMMITTED',",
+        "     format: 'table',",
+        "     staged: false) ~> dataimport",
+        "dataimport derive(user_id = HASHED_MTGID,",
+        "          contract = @(internal_area_gas=iif(isNull(INTERNAL_AREA_GAS),'Null',toString(toBoolean(INTERNAL_AREA_GAS))),",
+        "          internal_area_gas_menu=iif(isNull(INTERNAL_AREA_GAS_MENU),'Null',toString(INTERNAL_AREA_GAS_MENU)),",
+        "          external_area_gas=iif(isNull(EXTERNAL_AREA_GAS),'Null',toString(toBoolean(EXTERNAL_AREA_GAS))),",
+        "          external_area_gas_menu=iif(isNull(EXTERNAL_AREA_GAS_MENU),'Null',toString(EXTERNAL_AREA_GAS_MENU)),",
+        "          power=iif(isNull(POWER),'Null',toString(toBoolean(POWER))),",
+        "          power_menu=iif(isNull(POWER_MENU),'Null',toString(POWER_MENU))),",
+        "          score = @(pv_siti_scr=iif(isNull(PV_SCORE_POWER),'Null',toString(PV_SCORE_POWER)),",
+        "          PV_SCORE_RANK_POWER=iif(isNull(PV_SCORE_RANK_POWER),'Null',toString(PV_SCORE_RANK_POWER)),",
+        "          PV_SCORE_GAS=iif(isNull(PV_SCORE_GAS),'Null',toString(PV_SCORE_GAS)),",
+        "          ESTIMATED_PV_HOLDINGS_FLAG_GAS=iif(isNull(ESTIMATED_PV_HOLDINGS_FLAG_GAS),'Null',toString(ESTIMATED_PV_HOLDINGS_FLAG_GAS)),",
+        "          dg_stn_age_0_29=iif(isNull(DG_STN_AGE_0_29),'Null',toString(DG_STN_AGE_0_29)),",
+        "          dg_stn_age_30_39=iif(isNull(DG_STN_AGE_30_39),'Null',toString(DG_STN_AGE_30_39)),",
+        "          dg_stn_age_40_49=iif(isNull(DG_STN_AGE_40_49),'Null',toString(DG_STN_AGE_40_49)),",
+        "          dg_stn_age_50_59=iif(isNull(DG_STN_AGE_50_59),'Null',toString(DG_STN_AGE_50_59)),",
+        "          dg_stn_age_60_69=iif(isNull(DG_STN_AGE_60_69),'Null',toString(DG_STN_AGE_60_69)),",
+        "          dg_stn_age_70_99=iif(isNull(DG_STN_AGE_70_99),'Null',toString(DG_STN_AGE_70_99)),",
+        "          DG_SITI_ST_NUM=iif(isNull(DG_SITI_ST_NUM),'Null',toString(DG_SITI_ST_NUM)),",
+        "          dg_stns_4mlon_less=iif(isNull(DG_STNS_4MLON_LESS),'Null',toString(DG_STNS_4MLON_LESS)),",
+        "          dg_stns_10mlon_over=iif(isNull(DG_STNS_10MLON_OVER),'Null',toString(DG_STNS_10MLON_OVER)),",
+        "          TNKYSK_2MONTH=iif(isNull(TNKYSK_2MONTH),'Null',toString(TNKYSK_2MONTH)),",
+        "          tnkysk_1year=iif(isNull(TNKYSK_1YEAR),'Null',toString(TNKYSK_1YEAR)),",
+        "          syzi_gs_dtrkscr_month03=iif(isNull(SYZI_GS_DTRKSCR_MONTH03),'Null',toString(SYZI_GS_DTRKSCR_MONTH03)),",
+        "          syzi_gs_dtrkscr_year01=iif(isNull(SYZI_GS_DTRKSCR_YEAR01),'Null',toString(SYZI_GS_DTRKSCR_YEAR01)),",
+        "          syzi_dk_dtrkscr_month03=iif(isNull(SYZI_DK_DTRKSCR_MONTH03),'Null',toString(SYZI_DK_DTRKSCR_MONTH03)),",
+        "          syzi_dk_dtrkscr_year01=iif(isNull(SYZI_DK_DTRKSCR_YEAR01),'Null',toString(SYZI_DK_DTRKSCR_YEAR01)),",
+        "          syzi_sgstb_tblknr=iif(isNull(SYZI_SGSTB_TBLKNR),'Null',toString(SYZI_SGSTB_TBLKNR)),",
+        "          syzi_sgstb_bltinknr=iif(isNull(SYZI_SGSTB_BLTINKNR),'Null',toString(SYZI_SGSTB_BLTINKNR)),",
+        "          syzi_sgstb_tes=iif(isNull(SYZI_SGSTB_TES),'Null',toString(SYZI_SGSTB_TES)),",
+        "          syzi_sgstb_hrk=iif(isNull(SYZI_SGSTB_HRK),'Null',toString(SYZI_SGSTB_HRK)),",
+        "          syzi_sgstb_oy=iif(isNull(SYZI_SGSTB_OY),'Null',toString(SYZI_SGSTB_OY)),",
+        "          syzi_sgstb_fnht=iif(isNull(SYZI_SGSTB_FNHT),'Null',toString(SYZI_SGSTB_FNHT)),",
+        "          syzi_sgstb_gsknsk=iif(isNull(SYZI_SGSTB_GSKNSK),'Null',toString(SYZI_SGSTB_GSKNSK)),",
+        "          syzi_sv_gskk_ss=iif(isNull(SYZI_SV_GSKK_SS),'Null',toString(SYZI_SV_GSKK_SS)),",
+        "          syzi_dk_web=iif(isNull(SYZI_DK_WEB),'Null',toString(SYZI_DK_WEB)))) ~> contractscoreColumn",
+        "contractscoreColumn sink(allowSchemaDrift: true,",
+        "     validateSchema: false,",
+        "     partitionFileNames:[($filename)],",
+        "     mapColumn(",
+        "          user_id,",
+        "          contract,",
+        "          score",
+        "     ),",
+        "     partitionBy('hash', 1)) ~> dataexportblob"
+      ]
+    }
+  },
+  "dependsOn": [
+    "[concat(variables('factoryId'), '/datasets/ds_contract_score')]",
+    "[concat(variables('factoryId'), '/datasets/ds_Json_Blob_test')]"
+  ]
+}

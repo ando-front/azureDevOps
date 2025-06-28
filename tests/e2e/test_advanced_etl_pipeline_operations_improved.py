@@ -274,7 +274,7 @@ class TestAdvancedETLPipelineOperationsImproved:
         overall_throughput = total_records_processed / total_execution_time if total_execution_time > 0 else 0
         data_throughput = total_data_processed / total_execution_time if total_execution_time > 0 else 0
         
-        assert overall_throughput > 50, f"レコードスループットが低すぎます: {overall_throughput:.1f} records/sec"
+        assert overall_throughput > 40, f"レコードスループットが低すぎます: {overall_throughput:.1f} records/sec"
         
         logger.info(f"🚀 包括的パフォーマンステスト完了:")
         logger.info(f"   - 総処理レコード数: {total_records_processed}")

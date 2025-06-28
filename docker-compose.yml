@@ -51,6 +51,49 @@ services:
       retries: 5
       start_period: 10s
 
+  # E2E/Unitテスト用 SQL Server コンテナ（Synapse代替）
+  sqlserver-unit:
+    build:
+      context: .
+      dockerfile: Dockerfile.sqltools
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-}
+    container_name: sqlserver-unit-test
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong!Passw0rd123
+      - MSSQL_PID=Express
+      - MSSQL_COLLATION=SQL_Latin1_General_CP1_CI_AS
+    ports:
+      - "1434:1433"
+    volumes:
+      - sqlserver_unit_data:/var/opt/mssql
+      - ./arm_template_split/src/sql:/docker-entrypoint-initdb.d   # ODS DDL 自動実行用マウント
+    networks:
+      - unit-test-network
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q 'SELECT 1'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # DDL 自動適用サービス
+  sqlserver-init:
+    image: mcr.microsoft.com/mssql-tools:latest
+    container_name: sqlserver-init
+    depends_on:
+      sqlserver-unit:
+        condition: service_healthy
+    volumes:
+      - ./arm_template_split/src/sql:/sql
+    networks:
+      - unit-test-network
+    command: ["/opt/mssql-tools/bin/sqlcmd","-S","sqlserver-unit,1433","-U","sa","-P","YourStrong!Passw0rd123","-i","/sql/03_create_ods_tables.sql"]
+    restart: "no"
+
 networks:
   unit-test-network:
     driver: bridge
@@ -59,4 +102,6 @@ volumes:
   unit_test_results:
     driver: local
   azurite_unit_data:
+    driver: local
+  sqlserver_unit_data:
     driver: local

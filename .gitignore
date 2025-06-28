@@ -113,14 +113,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Azure Data Factory specific
-linkedService/
-dataset/
-pipeline/
-dataflow/
-trigger/
-adf_config.json
-arm_template.json
 
 # IDE specific files
 .vscode/

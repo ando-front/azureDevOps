@@ -1,0 +1,23 @@
+{
+  "name": "li_sftp",
+  "properties": {
+    "description": "開発sftpの設定→エラーで使えない。原因不明\n→SHIR経由による接続設定完了（OMNI_1_MA-9037）",
+    "annotations": [],
+    "type": "Sftp",
+    "typeProperties": {
+      "host": "sftp.example.com",
+      "port": 22,
+      "skipHostKeyValidation": true,
+      "authenticationType": "Basic",
+      "userName": "sftpuser",
+      "password": {
+        "type": "SecureString",
+        "value": "PLACEHOLDER_PASSWORD"
+      }
+    },
+    "connectVia": {
+      "referenceName": "OmniLinkedSelfHostedIntegrationRuntime",
+      "type": "IntegrationRuntimeReference"
+    }
+  }
+}

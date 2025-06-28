@@ -32,11 +32,64 @@ class TestPiSendActionPointCurrentMonthEntryList(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
-        cls.json_path = os.path.join(
-            "src", "dev", "pipeline", "pi_Send_ActionPointCurrentMonthEntryList.json"
-        )
-        with open(cls.json_path, encoding="utf-8") as f:
-            cls.pipeline = json.load(f)
+        # 詳細なデバッグ情報を出力
+        print(f"[DEBUG] Current working directory: {os.getcwd()}")
+        print(f"[DEBUG] PYTHONPATH: {os.environ.get('PYTHONPATH', 'Not set')}")
+        print(f"[DEBUG] Checking for pipeline file...")
+        
+        # より包括的なパス候補
+        base_paths = [
+            # Docker環境での優先パス
+            "/tests/src/dev/pipeline/pi_Send_ActionPointCurrentMonthEntryList.json",
+            "/app/src/dev/pipeline/pi_Send_ActionPointCurrentMonthEntryList.json",
+            # 相対パス候補（現在のディレクトリから）
+            "src/dev/pipeline/pi_Send_ActionPointCurrentMonthEntryList.json",
+            "../../src/dev/pipeline/pi_Send_ActionPointCurrentMonthEntryList.json",
+            "../../../src/dev/pipeline/pi_Send_ActionPointCurrentMonthEntryList.json",
+            # ワークスペースルートからの相対パス
+            os.path.join(os.getcwd(), "src", "dev", "pipeline", "pi_Send_ActionPointCurrentMonthEntryList.json"),
+            os.path.join(os.path.dirname(os.getcwd()), "src", "dev", "pipeline", "pi_Send_ActionPointCurrentMonthEntryList.json"),
+            # 絶対パス候補
+            os.path.join("/tests", "src", "dev", "pipeline", "pi_Send_ActionPointCurrentMonthEntryList.json"),
+            os.path.join("/app", "src", "dev", "pipeline", "pi_Send_ActionPointCurrentMonthEntryList.json"),
+        ]
+        
+        # パスの存在確認と詳細ログ
+        for i, path in enumerate(base_paths):
+            print(f"[DEBUG] Checking path {i+1}: {path}")
+            if os.path.exists(path):
+                print(f"[DEBUG] ✓ Found pipeline file at: {path}")
+                cls.json_path = path
+                with open(path, encoding="utf-8") as f:
+                    cls.pipeline = json.load(f)
+                return
+            else:
+                print(f"[DEBUG] ✗ Not found: {path}")
+        
+        # ファイルが見つからない場合の詳細ディレクトリ構造表示
+        print(f"[ERROR] Pipeline file not found. Exploring directory structure...")
+        print(f"[DEBUG] Current directory contents:")
+        try:
+            current_files = os.listdir(os.getcwd())
+            for f in current_files[:10]:  # 最初の10個のみ表示
+                print(f"  - {f}")
+        except Exception as e:
+            print(f"  Error listing current directory: {e}")
+        
+        # 重要なディレクトリの存在確認
+        important_dirs = ["/tests", "/app", "/tests/src", "/app/src", "/tests/src/dev", "/app/src/dev"]
+        for dir_path in important_dirs:
+            if os.path.exists(dir_path):
+                print(f"[DEBUG] Directory exists: {dir_path}")
+                try:
+                    contents = os.listdir(dir_path)
+                    print(f"  Contents: {contents[:5]}...")  # 最初の5個のみ
+                except Exception as e:
+                    print(f"  Error listing {dir_path}: {e}")
+            else:
+                print(f"[DEBUG] Directory missing: {dir_path}")
+        
+        raise FileNotFoundError(f"Pipeline file not found in any of these paths: {base_paths}")
 
     def test_pipeline_name(self):
         print("[INFO] パイプライン名テスト")

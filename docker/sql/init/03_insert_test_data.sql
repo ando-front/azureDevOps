@@ -9,8 +9,8 @@ DELETE FROM [dbo].[point_grant_email];
 DELETE FROM [dbo].[marketing_client_dm];
 DELETE FROM [dbo].[ClientDmBx];
 DELETE FROM [dbo].[client_dm];
-DELETE FROM [staging].[client_raw];
-DELETE FROM [etl].[pipeline_execution_log];
+-- Note: staging.client_raw table does not exist in current schema
+DELETE FROM [etl].[e2e_test_execution_log];
 GO
 
 -- Insert test client data

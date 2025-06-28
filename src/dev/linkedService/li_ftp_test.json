@@ -1,0 +1,23 @@
+{
+  "name": "li_ftp_test",
+  "properties": {
+    "annotations": [],
+    "type": "FtpServer",
+    "typeProperties": {
+      "host": "ftp.example.com",
+      "port": "22",
+      "enableSsl": true,
+      "enableServerCertificateValidation": true,
+      "authenticationType": "Basic",
+      "userName": "ftpuser",
+      "password": {
+        "type": "SecureString",
+        "value": "PLACEHOLDER_PASSWORD"
+      }
+    },
+    "connectVia": {
+      "referenceName": "omni-sharing01-d-jpe",
+      "type": "IntegrationRuntimeReference"
+    }
+  }
+}

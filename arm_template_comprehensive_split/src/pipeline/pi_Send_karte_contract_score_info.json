@@ -1,0 +1,254 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "factoryName": {
+      "type": "string",
+      "metadata": "データ ファクトリ名",
+      "defaultValue": "omni-df-dev"
+    },
+    "li_dam_dwh_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_secretAccessKey": {
+      "type": "secureString",
+      "metadata": "'li_Karte_AmazonS3' の 'secretAccessKey' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomni_container_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomni_container' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sqlmi_dwh2_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_sqlmi_dwh2' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_sftp_password": {
+      "type": "secureString",
+      "metadata": "'li_sftp' の 'password' のセキュリティで保護された文字列"
+    },
+    "AzureSqlDatabase1_connectionString": {
+      "type": "secureString",
+      "metadata": "'AzureSqlDatabase1' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_ftp_test_password": {
+      "type": "secureString",
+      "metadata": "'li_ftp_test' の 'password' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_blob_tgomnidevrgsa_container_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_dam_dwh_shir_connectionString": {
+      "type": "secureString",
+      "metadata": "'li_dam_dwh_shir' の 'connectionString' のセキュリティで保護された文字列"
+    },
+    "li_blob_damhdinsight_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_damhdinsight_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_Karte_AmazonS3_properties_typeProperties_accessKeyId": {
+      "type": "string",
+      "defaultValue": "AKIASLGERJSDMDR3YKGF"
+    },
+    "li_sftp_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_sftp_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_ftp_test_properties_typeProperties_host": {
+      "type": "string",
+      "defaultValue": "mclj7jp741mk97tnrhl441zv7dy0.ftp.marketingcloudops.com"
+    },
+    "li_ftp_test_properties_typeProperties_userName": {
+      "type": "string",
+      "defaultValue": "534003419_2"
+    },
+    "li_dam_kv_omni_properties_typeProperties_baseUrl": {
+      "type": "string",
+      "defaultValue": "https://tgomnidevkey03.vault.azure.net/"
+    },
+    "li_blob_damhdinsight_container_akv_properties_typeProperties_sasUri_secretName": {
+      "type": "string",
+      "defaultValue": "0001damdevrgsa-damhdinsight-container"
+    },
+    "li_blob_mytokyogas_container_sasUri": {
+      "type": "secureString",
+      "metadata": "'li_blob_mytokyogas_container' の 'sasUri' のセキュリティで保護された文字列"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.Storage/storageAccounts/0001tgomnidevrgsa"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "li_blob_tgomnidevrgsa_container_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "0001tgomnidevrgsa.blob.core.windows.net"
+      ]
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Sql/servers/damd-dwh"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "sqlServer"
+    },
+    "AzureSynapseAnalytics-dam-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "damd-dwh.database.windows.net"
+      ]
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-dam-dev-rg/providers/Microsoft.Storage/storageAccounts/0001damdevrgsa"
+    },
+    "omni-df-dev_AzureBlobStorage-dam-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "blob"
+    },
+    "AzureSqlMI-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/43d95da1-ff6f-49ae-868b-a427c8bb161e/resourceGroups/dam2-rg-dev/providers/Microsoft.Sql/managedInstances/dam2-sqlmi-dev"
+    },
+    "AzureSqlMI-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "managedInstance"
+    },
+    "AzureSqlMI-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "dam2-sqlmi-dev.6b9b3938f4f4.database.windows.net"
+      ]
+    },
+    "tgomnidevkey03-dev_properties_privateLinkResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/25370ec0-e2ac-4a3c-b242-3772024988b2/resourceGroups/0001-tgomni-dev-rg/providers/Microsoft.KeyVault/vaults/tgomnidevkey03"
+    },
+    "tgomnidevkey03-dev_properties_groupId": {
+      "type": "string",
+      "defaultValue": "vault"
+    },
+    "tgomnidevkey03-dev_properties_fqdns": {
+      "type": "array",
+      "defaultValue": [
+        "tgomnidevkey03.vault.azure.net"
+      ]
+    }
+  },
+  "variables": {
+    "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('factoryName'), '/pi_Send_karte_contract_score_info')]",
+      "type": "Microsoft.DataFactory/factories/pipelines",
+      "apiVersion": "2018-06-01",
+      "properties": {
+        "description": "日次お客さま、電力ＣＩＳ契約情報、顧客ＤＮＡよりデータを取得し、MTGIDをハッシュ化してKARTE S3に送信する",
+        "activities": [
+          {
+            "name": "at_To_BLOB_KARTE",
+            "type": "ExecuteDataFlow",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_karte_contract_score_hashed",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 0,
+              "retryIntervalInSeconds": 30,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "dataflow": {
+                "referenceName": "df_json_data_blob_only",
+                "type": "DataFlowReference",
+                "parameters": {
+                  "filename": {
+                    "value": "'@{concat('TGContractScore_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.json')}'",
+                    "type": "Expression"
+                  }
+                },
+                "datasetParameters": {
+                  "dataimport": {},
+                  "dataexportblob": {
+                    "directory": "TGContractScore",
+                    "filename": {
+                      "value": "@concat('TGContractScore_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.json')",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              },
+              "staging": {},
+              "integrationRuntime": {
+                "referenceName": "omni-sharing01-d-jpe",
+                "type": "IntegrationRuntimeReference"
+              },
+              "traceLevel": "Fine"
+            }
+          },
+          {
+            "name": "at_Insert_karte_contract_score_hashed",
+            "description": "mTGIDベースの利用サービスを軸に、日次お客さま情報の契約種別、電力ＣＩＳ契約情報の料金メニュー、顧客DNA情報を取得し、TG契約情報を作成する",
+            "type": "Script",
+            "dependsOn": [],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 0,
+              "retryIntervalInSeconds": 30,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "--処理(f)\n--KARTE連携用契約有無tempを作成\nTRUNCATE TABLE [omni].[omni_ods_cloak_trn_karte_contract_temp];\n\nINSERT INTO [omni].[omni_ods_cloak_trn_karte_contract_temp]\nSELECT\n     [MTGID]\n    ,MAX(CASE WHEN SERVICE_TYPE = '001' THEN '1'\n            ELSE '0'\n     END) AS INTERNAL_AREA_GAS                           -- 域内ガス契約フラグ\n    ,MAX(CASE WHEN SERVICE_TYPE = '010' THEN '1'\n            ELSE '0'\n     END) AS EXTERNAL_AREA_GAS                           -- 域外ガス契約フラグ\n    ,MAX(CASE WHEN SERVICE_TYPE = '006' THEN '1'\n            ELSE '0'\n     END) AS POWER                                       -- 電気契約フラグ\nFROM [omni].[omni_ods_cloak_trn_karte_usageservice_mtgid]        -- KARTE連携用利用サービス\nGROUP BY [MTGID]\n;\n\n\n--処理(g)\n--KARTE連携用ガス契約種別tempを作成\nTRUNCATE TABLE [omni].[omni_ods_gascstmr_trn_karte_gas_contract_temp];\n\nINSERT INTO [omni].[omni_ods_gascstmr_trn_karte_gas_contract_temp]\nSELECT\n     key_mtgid.[MTGID]\n    ,key_mtgid.[KEY_3X]\n    ,key_mtgid.[KEY_4X]\n    ,gaskiy.[KIY_SHBT]\n    ,gaskiy.[RKKI_STT_YMD]\nFROM [omni].[omni_ods_cloak_trn_karte_usageservice_mtgid] key_mtgid        -- KARTE連携用利用サービス\nINNER JOIN [omni].[omni_odm_gascstmr_trn_gaskiy] gaskiy                    -- 日次お客さま情報\n      ON key_mtgid.[KEY_3X]  = CONVERT(varchar,gaskiy.[SYO_KYO_TRNO])\n      AND key_mtgid.[KEY_4X]  = CONVERT(varchar,gaskiy.[SVKY_NO])\n      AND key_mtgid.[SERVICE_TYPE] = '001'\n;\n\n\n--処理(h)\n--KARTE連携用電力契約種別tempを作成\nTRUNCATE TABLE [omni].[omni_ods_epcis_trn_karte_el_contract_temp];\n\nINSERT INTO [omni].[omni_ods_epcis_trn_karte_el_contract_temp]\nSELECT\n     usv.[MTGID]\n    ,usv.[SA_ID]\n    ,epcis.[RS_CD]\n    ,epcis.[GAS_START_DT]\nFROM [omni].[omni_ods_cloak_trn_karte_usageservice_mtgid] usv        -- KARTE連携用利用サービス\nINNER JOIN [omni].[omni_ods_epcis_trn_contract] epcis                -- 電力ＣＩＳ契約情報\n      ON usv.[SA_ID] = epcis.[SA_ID]\n      AND epcis.CONTRACT_STATUS  = '20'\n      AND usv.[SERVICE_TYPE] = '006'\n;\n\n\n--処理(i)\n--KARTE連携用スコア情報tempを作成\nTRUNCATE TABLE [omni].[omni_ods_marketing_trn_karte_score_temp];\n\nINSERT INTO [omni].[omni_ods_marketing_trn_karte_score_temp]\nSELECT\n     usv.[MTGID]\n    ,usv.[KEY_4X]\n    --,dna.[PV_SITI_SCR]                            -- PV推定スコア         削除 2024/12\n    ,dna.[PV_SCORE_POWER]                         -- PVスコア_電力          追加 2024/12\n    ,dna.[PV_SCORE_RANK_POWER]                    -- PVスコアランク_電力    追加 2024/12\n    ,dna.[PV_SCORE_GAS]                           -- PVスコア_ガス          追加 2024/12\n    ,dna.[ESTIMATED_PV_HOLDINGS_FLAG_GAS]         -- 推定PV保有フラグ_ガス  追加 2024/12\n    ,dna.[DG_STN_AGE_0_29]                        -- デモグラフィック情報_世帯主年代_0-29歳\n    ,dna.[DG_STN_AGE_30_39]                       -- デモグラフィック情報_世帯主年代_30-39歳\n    ,dna.[DG_STN_AGE_40_49]                       -- デモグラフィック情報_世帯主年代_40-49歳\n    ,dna.[DG_STN_AGE_50_59]                       -- デモグラフィック情報_世帯主年代_50-59歳\n    ,dna.[DG_STN_AGE_60_69]                       -- デモグラフィック情報_世帯主年代_60-69歳\n    ,dna.[DG_STN_AGE_70_99]                       -- デモグラフィック情報_世帯主年代_70-99歳\n    ,dna.[DG_SITI_ST_NUM]\t                      -- デモグラフィック情報_推定世帯人数　追加 2024/12\n    ,dna.[DG_STNS_4MLON_LESS]                     -- デモグラフィック情報_世帯年収_400万円未満\n    ,dna.[DG_STNS_10MLON_OVER]                    -- デモグラフィック情報_世帯年収_1000万円以上\n    ,dna.[TNKYSK_2MONTH]                          -- 転居予測_2か月以内     追加 2024/12\n    ,dna.[TNKYSK_1YEAR]                           -- 転居予測_1年以内\n    ,dna.[SYZI_GS_DTRKSCR_MONTH03]                -- 商材_ガス脱落スコア_直近3ヶ月\n    ,dna.[SYZI_GS_DTRKSCR_YEAR01]                 -- 商材_ガス脱落スコア_直近1年\n    ,dna.[SYZI_DK_DTRKSCR_MONTH03]                -- 商材_電気脱落スコア_直近3ヶ月\n    ,dna.[SYZI_DK_DTRKSCR_YEAR01]                 -- 商材_電気脱落スコア_直近1年\n    ,dna.[SYZI_SGSTB_TBLKNR]                      -- 商材_総合設備_テーブルコンロ\n    ,dna.[SYZI_SGSTB_BLTINKNR]                    -- 商材_総合設備_ビルトインコンロ\n    ,dna.[SYZI_SGSTB_TES]                         -- 商材_総合設備_TES\n    ,dna.[SYZI_SGSTB_HRK]                         -- 商材_総合設備_風呂給\n    ,dna.[SYZI_SGSTB_OY]                          -- 商材_総合設備_大湯\n    ,dna.[SYZI_SGSTB_FNHT]                        -- 商材_総合設備_ファンヒーター\n    ,dna.[SYZI_SGSTB_GSKNSK]                      -- 商材_総合設備_ガス式衣類乾燥機\n    ,dna.[SYZI_SV_GSKK_SS]                        -- 商材_サービス_ガス機器SS\n    ,dna.[SYZI_DK_WEB]                            -- 商材_電気WEB\n    ,usv.[TRANSFER_YMD]                                             --サービス契約異動日\nFROM [omni].[omni_ods_cloak_trn_karte_usageservice_mtgid] usv       -- KARTE連携用利用サービス\nINNER JOIN [omni].[omni_ods_marketing_trn_client_dna] dna                -- 顧客DNA  --<<<test用\n      ON usv.[KEY_4X]=dna.[LIV0EU_4X]\n;\n\n\n--処理(j)\n--KARTE連携用契約・スコア情報を作成\nTRUNCATE TABLE [omni].[omni_ods_marketing_trn_karte_contract_score_info];\n\nINSERT INTO [omni].[omni_ods_marketing_trn_karte_contract_score_info]\nSELECT\n     cntr.[MTGID]\n\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0'\n            ELSE cntr.INTERNAL_AREA_GAS\n     END AS INTERNAL_AREA_GAS                             -- 域内ガス契約フラグ\n    ,gaskiy.KIY_SHBT AS INTERNAL_AREA_GAS_MENU            -- 域内ガス契約種別\n    ,cntr.EXTERNAL_AREA_GAS                               -- 域外ガス契約フラグ\n    ,NULL AS EXTERNAL_AREA_GAS_MENU                       -- 域外ガス契約種別\n    ,CASE WHEN epcis.RS_CD IS NULL THEN '0'\n            ELSE cntr.POWER\n     END AS POWER                                         -- 電気契約フラグ\n    ,epcis.RS_CD AS POWER_MENU                            -- 電気契約種別 \n\n    --,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[PV_SITI_SCR] END AS PV_SITI_SCR                     -- PV推定スコア    削除 2024/12\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0'\n          ELSE dna.[PV_SCORE_POWER] END AS PV_SCORE_POWER                                          -- PVスコア_電力          追加 2024/12\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN ''\n          ELSE dna.[PV_SCORE_RANK_POWER] END AS PV_SCORE_RANK_POWER                                -- PVスコアランク_電力    追加 2024/12\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0'\n          ELSE dna.[PV_SCORE_GAS] END AS PV_SCORE_GAS                                              -- PVスコア_ガス          追加 2024/12\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0'\n          ELSE dna.[ESTIMATED_PV_HOLDINGS_FLAG_GAS] END AS ESTIMATED_PV_HOLDINGS_FLAG_GAS          -- 推定PV保有フラグ_ガス  追加 2024/12\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[DG_STN_AGE_0_29] END AS DG_STN_AGE_0_29             -- デモグラフィック情報_世帯主年代_0-29歳\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[DG_STN_AGE_30_39] END AS DG_STN_AGE_30_39           -- デモグラフィック情報_世帯主年代_30-39歳\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[DG_STN_AGE_40_49] END AS DG_STN_AGE_40_49           -- デモグラフィック情報_世帯主年代_40-49歳\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[DG_STN_AGE_50_59] END AS DG_STN_AGE_50_59           -- デモグラフィック情報_世帯主年代_50-59歳\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[DG_STN_AGE_60_69] END AS DG_STN_AGE_60_69           -- デモグラフィック情報_世帯主年代_60-69歳\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[DG_STN_AGE_70_99] END AS DG_STN_AGE_70_99           -- デモグラフィック情報_世帯主年代_70-99歳\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN ''\n          ELSE dna.[DG_SITI_ST_NUM] END AS DG_SITI_ST_NUM                                          -- デモグラフィック情報_推定世帯人数　追加 2024/12\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[DG_STNS_4MLON_LESS] END AS DG_STNS_4MLON_LESS       -- デモグラフィック情報_世帯年収_400万円未満\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[DG_STNS_10MLON_OVER] END AS DG_STNS_10MLON_OVER     -- デモグラフィック情報_世帯年収_1000万円以上\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0'\n          ELSE dna.[TNKYSK_2MONTH] END AS TNKYSK_2MON                                              -- 転居予測_2か月以内    追加 2024/12\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[TNKYSK_1YEAR] END AS TNKYSK_1YEAR                   -- 転居予測_1年以内\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[SYZI_GS_DTRKSCR_MONTH03] END AS SYZI_GS_DTRKSCR_MONTH03   -- 商材_ガス脱落スコア_直近3ヶ月\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[SYZI_GS_DTRKSCR_YEAR01] END AS SYZI_GS_DTRKSCR_YEAR01     -- 商材_ガス脱落スコア_直近1年\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[SYZI_DK_DTRKSCR_MONTH03] END AS SYZI_DK_DTRKSCR_MONTH03   -- 商材_電気脱落スコア_直近3ヶ月\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[SYZI_DK_DTRKSCR_YEAR01] END AS SYZI_DK_DTRKSCR_YEAR01     -- 商材_電気脱落スコア_直近1年\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[SYZI_SGSTB_TBLKNR] END AS SYZI_SGSTB_TBLKNR         -- 商材_総合設備_テーブルコンロ\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[SYZI_SGSTB_BLTINKNR] END AS SYZI_SGSTB_BLTINKNR     -- 商材_総合設備_ビルトインコンロ\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[SYZI_SGSTB_TES] END AS SYZI_SGSTB_TES               -- 商材_総合設備_TES\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[SYZI_SGSTB_HRK] END AS SYZI_SGSTB_HRK               -- 商材_総合設備_風呂給\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[SYZI_SGSTB_OY] END AS SYZI_SGSTB_OY                 -- 商材_総合設備_大湯\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[SYZI_SGSTB_FNHT] END AS SYZI_SGSTB_FNHT             -- 商材_総合設備_ファンヒーター\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[SYZI_SGSTB_GSKNSK] END AS SYZI_SGSTB_GSKNSK         -- 商材_総合設備_ガス式衣類乾燥機\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[SYZI_SV_GSKK_SS] END AS SYZI_SV_GSKK_SS             -- 商材_サービス_ガス機器SS\n    ,CASE WHEN gaskiy.KIY_SHBT IS NULL THEN '0' ELSE dna.[SYZI_DK_WEB] END AS SYZI_DK_WEB                     -- 商材_電気WEB\nFROM [omni].[omni_ods_cloak_trn_karte_contract_temp] cntr                -- KARTE連携用契約有無temp\nLEFT JOIN ( SELECT *,\n                   row_number() over (PARTITION BY [MTGID] ORDER BY[RKKI_STT_YMD] DESC) AS desc_date\n            FROM [omni].[omni_ods_gascstmr_trn_karte_gas_contract_temp]\n          )gaskiy  -- KARTE連携用ガス契約種別temp\n      ON cntr.[MTGID] = gaskiy.[MTGID] \n      AND gaskiy.desc_date = 1 \nLEFT JOIN ( SELECT *,\n                   row_number() over (PARTITION BY [MTGID] ORDER BY [GAS_START_DT] DESC) AS desc_date\n            FROM [omni].[omni_ods_epcis_trn_karte_el_contract_temp]\n           ) epcis       -- KARTE連携用電力契約種別temp\n      ON cntr.[MTGID] = epcis.[MTGID]\n      AND epcis.desc_date = 1 \nLEFT JOIN ( SELECT *,\n                   row_number() over (PARTITION BY [MTGID] ORDER BY [TRANSFER_YMD] DESC) AS desc_date\n            FROM [omni].[omni_ods_marketing_trn_karte_score_temp]\n           )dna           -- KARTE連携用スコア情報temp\n      ON cntr.[MTGID] = dna.[MTGID] \n      AND dna.desc_date = 1 \n;\n\n\n--処理(k)\n--ハッシュ済KARTE連携用契約・スコア情報を作成\nTRUNCATE TABLE [omni].[omni_ods_marketing_trn_karte_contract_score_hashed];\n\nINSERT INTO [omni].[omni_ods_marketing_trn_karte_contract_score_hashed]\nSELECT\n     karte_mtgid.[HASHEDMTGID] AS HASHED_MTGID\n    ,score_info.[INTERNAL_AREA_GAS]\n    ,score_info.[INTERNAL_AREA_GAS_MENU]\n    ,score_info.[EXTERNAL_AREA_GAS]\n    ,score_info.[EXTERNAL_AREA_GAS_MENU]\n    ,score_info.[POWER]\n    ,score_info.[POWER_MENU]\n    --,score_info.[PV_SITI_SCR]\t                       -- PV推定スコア         削除 2024/12\n    ,score_info.[PV_SCORE_POWER]                       -- PVスコア_電力          追加 2024/12\n    ,score_info.[PV_SCORE_RANK_POWER]                  -- PVスコアランク_電力    追加 2024/12\n    ,score_info.[PV_SCORE_GAS]                         -- PVスコア_ガス          追加 2024/12\n    ,score_info.[ESTIMATED_PV_HOLDINGS_FLAG_GAS]       -- 推定PV保有フラグ_ガス  追加 2024/12\n    ,score_info.[DG_STN_AGE_0_29]\n    ,score_info.[DG_STN_AGE_30_39]\n    ,score_info.[DG_STN_AGE_40_49]\n    ,score_info.[DG_STN_AGE_50_59]\n    ,score_info.[DG_STN_AGE_60_69]\n    ,score_info.[DG_STN_AGE_70_99]\n    ,score_info.[DG_SITI_ST_NUM]\t                   -- デモグラフィック情報_推定世帯人数　追加 2024/12\n    ,score_info.[DG_STNS_4MLON_LESS]\n    ,score_info.[DG_STNS_10MLON_OVER]\n    ,score_info.[TNKYSK_2MONTH]                        -- 転居予測_2か月以内     追加 2024/12\n    ,score_info.[TNKYSK_1YEAR]\n    ,score_info.[SYZI_GS_DTRKSCR_MONTH03]\n    ,score_info.[SYZI_GS_DTRKSCR_YEAR01]\n    ,score_info.[SYZI_DK_DTRKSCR_MONTH03]\n    ,score_info.[SYZI_DK_DTRKSCR_YEAR01]\n    ,score_info.[SYZI_SGSTB_TBLKNR]\n    ,score_info.[SYZI_SGSTB_BLTINKNR]\n    ,score_info.[SYZI_SGSTB_TES]\n    ,score_info.[SYZI_SGSTB_HRK]\n    ,score_info.[SYZI_SGSTB_OY]\n    ,score_info.[SYZI_SGSTB_FNHT]\n    ,score_info.[SYZI_SGSTB_GSKNSK]\n    ,score_info.[SYZI_SV_GSKK_SS]\n    ,score_info.[SYZI_DK_WEB]\nFROM [omni].[omni_ods_marketing_trn_karte_contract_score_info] score_info        -- KARTE連携用契約・スコア情報\nINNER JOIN [omni].[omni_ods_mytginfo_trn_karte_mtgid] karte_mtgid               -- ハッシュ化マッピングテーブル\n      ON score_info.[MTGID]=karte_mtgid.[MTGID] \n;\n"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          }
+        ],
+        "policy": {
+          "elapsedTimeMetric": {}
+        },
+        "folder": {
+          "name": "TGContractScore"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-12-25T00:30:54Z"
+      },
+      "dependsOn": [
+        "[concat(variables('factoryId'), '/dataflows/df_json_data_blob_only')]",
+        "[concat(variables('factoryId'), '/integrationRuntimes/omni-sharing01-d-jpe')]",
+        "[concat(variables('factoryId'), '/linkedServices/li_dam_dwh')]"
+      ]
+    }
+  ]
+}

@@ -1,9 +1,7 @@
 {
   "name": "OmniLinkedSelfHostedIntegrationRuntime",
-  "type": "Microsoft.DataFactory/factories/integrationRuntimes",
   "properties": {
     "type": "SelfHosted",
     "typeProperties": {}
-  },
-  "dependsOn": []
+  }
 }

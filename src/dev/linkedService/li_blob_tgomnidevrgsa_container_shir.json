@@ -1,0 +1,15 @@
+{
+  "name": "li_blob_tgomnidevrgsa_container_shir",
+  "properties": {
+    "description": "tgomnidevrgsaコンテナへSHIRで接続する。",
+    "annotations": [],
+    "type": "AzureBlobStorage",
+    "typeProperties": {
+      "connectionString": "DefaultEndpointsProtocol=https;AccountName=tgomnidevrgsa;EndpointSuffix=core.windows.net;AccountKey=PLACEHOLDER"
+    },
+    "connectVia": {
+      "referenceName": "OmniLinkedSelfHostedIntegrationRuntime",
+      "type": "IntegrationRuntimeReference"
+    }
+  }
+}

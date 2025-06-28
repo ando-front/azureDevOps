@@ -1,0 +1,205 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "factoryName": {
+      "type": "string",
+      "metadata": "データ ファクトリ名",
+      "defaultValue": "omni-df-dev"
+    }
+  },
+  "variables": {
+    "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('factoryName'), '/pi_Send_MovingPromotionList')]",
+      "type": "Microsoft.DataFactory/factories/pipelines",
+      "apiVersion": "2018-06-01",
+      "properties": {
+        "description": "「引越し予測2か月以内リスト」を作成し、SFMCに連携する。",
+        "activities": [
+          {
+            "name": "at_CreateCSV_MovingPromotionList",
+            "description": "「顧客DNA」「ガス契約中お客さま情報_temp」からIFに必要なデータを抽出、gzipファイルでBLOB出力",
+            "type": "Copy",
+            "dependsOn": [
+              {
+                "activity": "at_Insert_UnderContract_temp",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "7.00:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "source": {
+                "type": "SqlDWSource",
+                "sqlReaderQuery": "{{EXTERNAL_SQL:moving_promotion_template4_e6f7g8.sql}}",
+                "queryTimeout": "02:00:00",
+                "partitionOption": "None"
+              },
+              "sink": {
+                "type": "DelimitedTextSink",
+                "storeSettings": {
+                  "type": "AzureBlobStorageWriteSettings"
+                },
+                "formatSettings": {
+                  "type": "DelimitedTextWriteSettings",
+                  "quoteAllText": true,
+                  "fileExtension": ".csv"
+                }
+              },
+              "enableStaging": false,
+              "translator": {
+                "type": "TabularTranslator",
+                "typeConversion": true,
+                "typeConversionSettings": {
+                  "allowDataTruncation": true,
+                  "treatBooleanAsNumber": false
+                }
+              }
+            },
+            "inputs": [
+              {
+                "referenceName": "ds_DamDwhTable_shir",
+                "type": "DatasetReference",
+                "parameters": {
+                  "table": "--"
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "referenceName": "ds_CSV_BlobGz",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "datalake/OMNI/MA/MovingPromotion",
+                  "columnDelimiter": ",",
+                  "quoteChar": "\"",
+                  "firstRowAsHeader": true,
+                  "filename": {
+                    "value": "@concat('MovingPromotionList_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "at_SendSftp_MovingPromotionList",
+            "description": "Blobに出力されたgzipファイルをSFMCにSFTP連携",
+            "type": "Copy",
+            "dependsOn": [
+              {
+                "activity": "at_CreateCSV_MovingPromotionList",
+                "dependencyConditions": [
+                  "Skipped"
+                ]
+              }
+            ],
+            "policy": {
+              "timeout": "7.00:00:00",
+              "retry": 0,
+              "retryIntervalInSeconds": 30,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "typeProperties": {
+              "source": {
+                "type": "BinarySource",
+                "storeSettings": {
+                  "type": "AzureBlobStorageReadSettings",
+                  "recursive": false,
+                  "deleteFilesAfterCompletion": false
+                },
+                "formatSettings": {
+                  "type": "BinaryReadSettings"
+                }
+              },
+              "sink": {
+                "type": "BinarySink",
+                "storeSettings": {
+                  "type": "SftpWriteSettings",
+                  "operationTimeout": "01:20:00",
+                  "useTempFileRename": false
+                }
+              },
+              "enableStaging": false
+            },
+            "inputs": [
+              {
+                "referenceName": "ds_BlobGz",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "datalake/OMNI/MA/MovingPromotion",
+                  "filename": {
+                    "value": "@concat('MovingPromotionList_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "referenceName": "ds_Gz_Sftp",
+                "type": "DatasetReference",
+                "parameters": {
+                  "directory": "Import/DAM/MovingPromotion",
+                  "filename": {
+                    "value": "@concat('MovingPromotionList_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "at_Insert_UnderContract_temp",
+            "description": "ガス契約（契約中）日次お客さま情報 → ガス契約中お客さま情報_temp",
+            "type": "Script",
+            "dependsOn": [],
+            "policy": {
+              "timeout": "0.12:00:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 120,
+              "secureOutput": false,
+              "secureInput": false
+            },
+            "userProperties": [],
+            "linkedServiceName": {
+              "referenceName": "li_dam_dwh",
+              "type": "LinkedServiceReference"
+            },
+            "typeProperties": {
+              "scripts": [
+                {
+                  "type": "NonQuery",
+                  "text": "---------------------------------------------------------\n-- at_Insert_UnderContract_temp\n-- ガス契約中お客さま情報_temp作成 test\n---------------------------------------------------------\n\n-- 実行日の月の1日\nDECLARE @today_jst date;\nSET @today_jst=CONVERT(date,format(CONVERT(DATETIME, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time'), 'yyyy/MM/01'));\n\n-- 実行日から2か月前の1日\nDECLARE @two_months_ago varchar(8);\nSET @two_months_ago=format(DATEADD(month,-2,@today_jst),'yyyyMMdd');\n\n\n\n--ガス契約（契約中）日次お客さま情報 → ガス契約中お客さま情報_temp\nTRUNCATE TABLE [omni].[omni_odm_ma_trn_under_contract_temp];  -- ガス契約中お客さま情報_temp\n\nINSERT INTO [omni].[omni_odm_ma_trn_under_contract_temp]      -- ガス契約中お客さま情報_temp\nSELECT\n     convert(varchar(11),MTST_NO) as MTST_NO   -- メーター設置場所番号\n    ,convert(varchar(11),SVKY_NO) as SVKY_NO   -- サービス契約番号\n    ,KAS_YMD                                   -- 開栓年月日\nFROM [omni].[omni_odm_gascstmr_trn_gaskiyx] -- ガス契約（契約中）日次お客さま情報　…test用\n\nWHERE   GMT_KHS_JTKB='1'            -- ガスメーター開閉栓状態区分 =開栓\n    and KAS_YMD < @two_months_ago   -- 開栓年月日 < 抽出日2か月前\n    and HESN_YMD='0'                -- 閉栓年月日 =閉栓していない\n;\n"
+                }
+              ],
+              "scriptBlockExecutionTimeout": "02:00:00"
+            }
+          }
+        ],
+        "policy": {
+          "elapsedTimeMetric": {}
+        },
+        "folder": {
+          "name": "SMC"
+        },
+        "annotations": [],
+        "lastPublishTime": "2025-05-14T07:34:47Z"
+      },
+      "dependsOn": []
+    }
+  ]
+}

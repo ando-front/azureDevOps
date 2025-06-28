@@ -1,0 +1,28 @@
+{
+  "name": "tr_Schedule_mTGMailPermission",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "description": "メール許諾(mTGMailPermission)用トリガー",
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "startTime": "2022-03-29T00:00:00",
+        "timeZone": "Tokyo Standard Time",
+        "schedule": {
+          "minutes": [
+            30
+          ],
+          "hours": [
+            2
+          ]
+        }
+      }
+    }
+  },
+  "dependsOn": []
+}

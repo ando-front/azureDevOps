@@ -1,0 +1,154 @@
+{
+  "name": "pi_Send_ActionPointRecentTransactionHistoryList",
+  "type": "Microsoft.DataFactory/factories/pipelines",
+  "properties": {
+    "description": "ODS「アクションポイント直近取引履歴リスト （契約中会員）_temp」からIFに必要なデータを抽出、gzipファイルでBLOB出力し、SFMCにSFTP連携する。",
+    "activities": [
+      {
+        "name": "at_CreateCSV_ActionPointRecentTransactionHistoryList",
+        "description": "ODS「アクションポイント直近取引履歴リスト （契約中会員）_temp」からIFに必要なデータを抽出、gzipファイルでBLOB出力",
+        "type": "Copy",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 120,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "SqlDWSource",
+            "sqlReaderQuery": "--------------------------------------------------------------------------\n-- アクションポイント直近取引履歴リスト＞ADF整備（SFTP送信）\n-- \n-- 2025/03/17  新規作成\n--------------------------------------------------------------------------\n\n-- テーブル「アクションポイント直近取引履歴リスト （契約中会員）_temp」からMA向けの項目を抽出する\n-- IF出力日時の宣言\nDECLARE @outputDT varchar(20);\n-- 取得した日時をyyyy/MM/dd HH:mm:ssに変換する\nSET @outputDT = FORMAT(CONVERT(DATETIME, GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'Tokyo Standard Time'), 'yyyy/MM/dd HH:mm:ss');\n\nSELECT\n     MTGID                                                                     -- mTG会員ID\n    ,ACTIONPOINT_TYPE                                                          -- アクションポイント種別\n    ,FORMAT(RECENT_TRANSACTION_DATE, 'yyyy/MM/dd') AS RECENT_TRANSACTION_DATE  -- 直近取引年月日\n    ,@outputDT AS OUTPUT_DATETIME                                              -- IF出力日時\nFROM [omni].[omni_odm_actionpoint_trn_recent_transaction_members_contract_list_temp] -- アクションポイント直近取引履歴リスト（契約中会員）_temp\n;\n",
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "sink": {
+            "type": "DelimitedTextSink",
+            "storeSettings": {
+              "type": "AzureBlobStorageWriteSettings"
+            },
+            "formatSettings": {
+              "type": "DelimitedTextWriteSettings",
+              "quoteAllText": true,
+              "fileExtension": ".csv"
+            }
+          },
+          "enableStaging": false,
+          "translator": {
+            "type": "TabularTranslator",
+            "typeConversion": true,
+            "typeConversionSettings": {
+              "allowDataTruncation": true,
+              "treatBooleanAsNumber": false
+            }
+          }
+        },
+        "inputs": [
+          {
+            "referenceName": "ds_DamDwhTable_shir",
+            "type": "DatasetReference",
+            "parameters": {
+              "table": "--"
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "ds_CSV_BlobGz",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "datalake/OMNI/MA/ActionPointRecentTransactionHistoryList",
+              "columnDelimiter": ",",
+              "quoteChar": "\"",
+              "firstRowAsHeader": true,
+              "filename": {
+                "value": "@concat('ActionPointRecentTransactionHistoryList_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "at_SendSftp_ActionPointRecentTransactionHistoryList",
+        "description": "Blobに出力されたgzipファイルをSFMCにSFTP連携",
+        "type": "Copy",
+        "dependsOn": [
+          {
+            "activity": "at_CreateCSV_ActionPointRecentTransactionHistoryList",
+            "dependencyConditions": [
+              "Skipped"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 120,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "BinarySource",
+            "storeSettings": {
+              "type": "AzureBlobStorageReadSettings",
+              "recursive": false,
+              "deleteFilesAfterCompletion": false
+            },
+            "formatSettings": {
+              "type": "BinaryReadSettings"
+            }
+          },
+          "sink": {
+            "type": "BinarySink",
+            "storeSettings": {
+              "type": "SftpWriteSettings",
+              "operationTimeout": "01:20:00",
+              "useTempFileRename": false
+            }
+          },
+          "enableStaging": false
+        },
+        "inputs": [
+          {
+            "referenceName": "ds_BlobGz",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "datalake/OMNI/MA/ActionPointRecentTransactionHistoryList",
+              "filename": {
+                "value": "@concat('ActionPointRecentTransactionHistoryList_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "ds_Gz_Sftp",
+            "type": "DatasetReference",
+            "parameters": {
+              "directory": "Import/DAM/ActionPointRecentTransactionHistoryList",
+              "filename": {
+                "value": "@concat('ActionPointRecentTransactionHistoryList_', convertFromUtc(utcNow(), 'Tokyo Standard Time', 'yyyyMMdd'), '.csv.gz')",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "policy": {
+      "elapsedTimeMetric": {}
+    },
+    "folder": {
+      "name": "SMC"
+    },
+    "annotations": [],
+    "lastPublishTime": "2025-03-19T06:43:01Z"
+  },
+  "dependsOn": []
+}

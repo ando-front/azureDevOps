@@ -6,7 +6,7 @@ pytest-html==4.1.1
 pytest-cov==4.1.0
 
 # データベース接続
-pyodbc==5.0.1
+# pyodbc==5.0.1  # TODO: ODBC driver dependency - conditionally imported in test code
 sqlalchemy==2.0.23
 
 # Azure関連（最新安定版）

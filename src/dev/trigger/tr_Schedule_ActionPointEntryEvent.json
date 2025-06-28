@@ -1,0 +1,28 @@
+{
+  "name": "tr_Schedule_ActionPointEntryEvent",
+  "type": "Microsoft.DataFactory/factories/triggers",
+  "properties": {
+    "description": "ODM「アクションポイントエントリーevent」作成(pi_Instert_ActionPointEntryEvent)用のトリガー",
+    "annotations": [],
+    "runtimeState": "Stopped",
+    "pipelines": [],
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "startTime": "2025-04-03T00:05:00",
+        "timeZone": "Tokyo Standard Time",
+        "schedule": {
+          "minutes": [
+            0
+          ],
+          "hours": [
+            3
+          ]
+        }
+      }
+    }
+  },
+  "dependsOn": []
+}
