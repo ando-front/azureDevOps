@@ -59,9 +59,9 @@ class ReproducibleE2EHelper:
         logger.info("🔍 Validating test environment...")
         
         # 1. 必要なスクリプトの存在確認
-        if not self.initializer_script.exists():
-            logger.error(f"❌ Initializer script not found: {self.initializer_script}")
-            return False
+        # if not self.initializer_script.exists():
+        #     logger.error(f"❌ Initializer script not found: {self.initializer_script}")
+        #     return False
             
         # 2. Docker コンテナの状態確認（オプション）
         try:

@@ -44,9 +44,15 @@ services:  # E2Eテスト用データベース (Enhanced with Idempotent Initial
         echo 'Step 2: Initializing TGMATestDB (Fixed)...' &&
         /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -i /docker-entrypoint-initdb.d/01_init_database_fixed.sql -C -b &&
         echo 'Step 3: Creating test tables...' &&
-        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -i /docker-entrypoint-initdb.d/02_create_test_tables.sql -C -b &&
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -i /docker-entrypoint-initdb.d/02_create_test_tables.sql -C -b && \
+        echo 'Step 3.1: Creating staging tables...' && \
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -i /docker-entrypoint-initdb.d/02_create_staging_tables.sql -C -b && \
+        echo 'Step 3.2: Creating additional schema objects...' && \
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -i /docker-entrypoint-initdb.d/07_additional_schema_objects.sql -C -b && \
         echo 'Step 4: Inserting test data...' &&
-        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -i /docker-entrypoint-initdb.d/03_insert_test_data.sql -C -b &&
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -i /docker-entrypoint-initdb.d/03_insert_test_data.sql -C -b && \
+        echo 'Step 5: Creating raw data source table...' && \
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -i /docker-entrypoint-initdb.d/08_create_raw_data_source_table.sql -C -b &&
         echo 'Database initialization completed successfully!' &&
         echo 'SQL Server is ready for connections' &&
         wait $$SERVER_PID
@@ -141,7 +147,7 @@ services:  # E2Eテスト用データベース (Enhanced with Idempotent Initial
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
     volumes:
-      - ./tests:/app/tests:ro
+      - ./tests:/app/tests
       - ./src:/app/src:ro
       - ./input:/app/input:ro
       - ./output:/app/output
@@ -155,7 +161,7 @@ services:  # E2Eテスト用データベース (Enhanced with Idempotent Initial
     command: >
       sh -c "
         echo '⏳ 完全なE2Eテスト環境の準備を開始します...' &&
-        sleep 30 &&
+        sleep 60 &&
         echo '🚀 完全なE2Eテストスイートを実行します...' &&
         echo '📁 テスト結果ディレクトリを作成...' &&
         mkdir -p /app/test_results &&
