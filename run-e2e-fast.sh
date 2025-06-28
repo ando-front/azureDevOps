@@ -227,11 +227,7 @@ run_tests() {
     docker-compose -f "$COMPOSE_FILE" exec -T e2e-test-runner mkdir -p /app/test_results 2>/dev/null || true
     
     # テストの実行
-    
-    
-    log_info "実行コマンド: /usr/local/bin/run_e2e_tests_in_container.sh"
-    
-    if docker-compose -f "$(cygpath -u "$COMPOSE_FILE")" run --rm e2e-test-runner bash -c "/usr/local/bin/run_e2e_tests_in_container.sh"; then
+    if docker-compose -f "$COMPOSE_FILE" up --abort-on-container-exit --exit-code-from e2e-test-runner e2e-test-runner; then
         log_success "E2Eテストが正常に完了しました"
         return 0
     else

@@ -159,8 +159,14 @@ services:  # E2Eテスト用データベース (Enhanced with Idempotent Initial
     working_dir: /app
     networks:
       - e2e-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import pyodbc; print('pyodbc is available')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     # プロファイルを削除してデフォルトで実行可能にする
-    command: tail -f /dev/null
+    command: /usr/local/bin/run_e2e_tests_in_container.sh
 
   # ホストフォールバック用テストランナー（Docker問題時の代替）
   host-test-runner:

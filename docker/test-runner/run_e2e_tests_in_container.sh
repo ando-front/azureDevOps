@@ -10,7 +10,7 @@ find /app/tests/e2e -name 'test_*.py' -type f | wc -l
 echo '📊 フェーズ1: 基本接続テストを実行...'
 python -m pytest /app/tests/e2e/test_basic_connections.py -v --tb=short --junitxml=/app/test_results/basic_connections.xml --timeout=300
 echo '🔄 フェーズ2: Docker統合テストを実行...'
-python -m pytest /app/tests/e2e/test_docker_e2e_integration.py -v --tb=short --junitxml=/app/test_results/docker_integration.xml --timeout=300 || echo 'Docker統合テスト一部失敗'
+python -m pytest /app/tests/e2e/test_docker_simple_integration.py -v --tb=short --junitxml=/app/test_results/docker_integration.xml --timeout=300 || echo 'Docker統合テスト一部失敗'
 echo '📦 フェーズ3: パイプライン個別テストを実行...'
 python -m pytest /app/tests/e2e/test_e2e_pipeline_marketing_client_dm_comprehensive_fixed.py -v --tb=short --junitxml=/app/test_results/client_dm.xml --timeout=300 || echo 'ClientDMテスト一部失敗'
 echo 'ポイント付与テスト一部失敗'
