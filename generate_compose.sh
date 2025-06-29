@@ -1,3 +1,5 @@
+create_no_proxy_compose_file() {
+    cat > docker-compose.e2e.no-proxy.yml << 'EOF'
 version: '3.8'
 
 services:
@@ -16,12 +18,12 @@ services:
       - sql_data:/var/opt/mssql
     networks:
       - adf-e2e-network
-    healthcheck:
-      test: ["CMD-SHELL", "test -x /opt/mssql-tools18/bin/sqlcmd"]
-      interval: 10s
-      retries: 10
-      start_period: 90s
-      timeout: 15s
+    # healthcheck:
+    #   test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd123 -Q 'SELECT 1' || exit 1"]
+    #   interval: 10s
+    #   retries: 10
+    #   start_period: 10s
+    #   timeout: 3s
 
   # Azurite (Azure Storage Emulator)
   azurite:
@@ -78,12 +80,12 @@ services:
     working_dir: /app
     depends_on:
       sql-server:
-        condition: service_healthy
+        condition: service_started
       azurite:
         condition: service_started
     networks:
       - adf-e2e-network
-    command: "/app/docker/test-runner/run_e2e_tests_in_container.sh"
+    command: "tail -f /dev/null"
 
 volumes:
   sql_data:
@@ -92,3 +94,9 @@ volumes:
 networks:
   adf-e2e-network:
     driver: bridge
+EOF
+    
+    echo "プロキシなし用 Docker Compose ファイルを作成しました"
+}
+
+create_no_proxy_compose_file

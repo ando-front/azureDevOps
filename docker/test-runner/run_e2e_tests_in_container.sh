@@ -1,6 +1,50 @@
 #!/bin/sh
 
+wait_for_sql_server() {
+  echo "Waiting for SQL Server instance and SynapseTestDB to be ready..."
+  local host="$SQL_SERVER_HOST"
+  local database="$SQL_SERVER_DATABASE"
+  local user="$SQL_SERVER_USER"
+  local password="$SQL_SERVER_PASSWORD"
+  local timeout=300 # seconds
+  local start_time=$(date +%s)
+  local error_log="/tmp/sqlcmd_error.log"
+
+  while true; do
+    # 1. Check if SQL Server instance is up and accepting connections (connect to master)
+    /opt/mssql-tools18/bin/sqlcmd -S "$host" -d master -U "$user" -P "$password" -Q "SELECT 1" > /dev/null 2> "$error_log"
+    if [ $? -eq 0 ]; then
+      echo "SQL Server instance is up. Checking for SynapseTestDB..."
+      # 2. Check if SynapseTestDB exists
+      DB_EXISTS=$(/opt/mssql-tools18/bin/sqlcmd -S "$host" -d master -U "$user" -P "$password" -Q "SELECT name FROM sys.databases WHERE name = 'SynapseTestDB'" -h -1 2> "$error_log" | tr -d '[:space:]')
+      if [ "$DB_EXISTS" = "SynapseTestDB" ]; then
+        echo "SynapseTestDB exists. Attempting to connect to it..."
+        # 3. Check if SynapseTestDB is accessible (connect to SynapseTestDB)
+        /opt/mssql-tools18/bin/sqlcmd -S "$host" -d "$database" -U "$user" -P "$password" -Q "SELECT 1" > /dev/null 2> "$error_log"
+        if [ $? -eq 0 ]; then
+          echo "SQL Server and SynapseTestDB are fully ready."
+          break
+        fi
+      fi
+    fi
+
+    current_time=$(date +%s)
+    elapsed_time=$((current_time - start_time))
+    if [ "$elapsed_time" -ge "$timeout" ]; then
+      echo "SQL Server or SynapseTestDB did not become ready within the timeout period."
+      echo "Last sqlcmd error output:"
+      cat "$error_log"
+      exit 1
+    fi
+
+    echo "SQL Server instance or SynapseTestDB not ready yet, waiting 5 seconds..."
+    sleep 5
+  done
+}
+
 echo '⏳ 完全なE2Eテスト環境の準備を開始します...'
+
+wait_for_sql_server
 
 echo '🚀 完全なE2Eテストスイートを実行します...'
 echo '📁 テスト結果ディレクトリを作成...'

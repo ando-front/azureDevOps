@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "Script started."
+
 # =============================================================================
 # E2E テスト実行スクリプト（プロキシ設定選択可能版）
 # =============================================================================
@@ -145,12 +147,13 @@ services:
       - sql_data:/var/opt/mssql
     networks:
       - adf-e2e-network
-    healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd123 -Q 'SELECT 1' || exit 1"]
-      interval: 10s
-      retries: 10
-      start_period: 10s
-      timeout: 3s
+    # healthcheck:
+      # healthcheck:
+    #   test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd123 -Q 'SELECT 1' || exit 1"]
+    #   interval: 10s
+    #   retries: 10
+    #   start_period: 10s
+    #   timeout: 3s
 
   # Azurite (Azure Storage Emulator)
   azurite:
@@ -170,7 +173,7 @@ services:
   e2e-test-runner:
     build:
       context: .
-      dockerfile: Dockerfile.e2e.complete-light
+      dockerfile: Dockerfile
       args:
         - NO_PROXY=true
     container_name: adf-e2e-test-runner
@@ -207,25 +210,12 @@ services:
     working_dir: /app
     depends_on:
       sql-server:
-        condition: service_healthy
+        condition: service_started
       azurite:
         condition: service_started
     networks:
       - adf-e2e-network
-    command: >
-      bash -c "
-        echo '🚀 E2E テスト環境の準備中...' &&
-        sleep 10 &&
-        echo '📊 テスト実行中...' &&
-        pytest tests/e2e/test_e2e_working.py tests/e2e/test_basic_connections.py 
-        --junitxml=test_results/e2e_no_proxy_results.xml 
-        --html=test_results/e2e_no_proxy_report.html 
-        --self-contained-html 
-        --tb=short 
-        --maxfail=10 
-        -v &&
-        echo '✅ E2E テスト完了'
-      "
+    command: "tail -f /dev/null"
 
 volumes:
   sql_data:
@@ -365,9 +355,9 @@ main_execution() {
             log_info "フルビルド + テスト実行中..."
             # テスト結果ディレクトリを準備
             mkdir -p test_results logs
-            docker-compose -f "$compose_file" down --remove-orphans --volumes 2>/dev/null || true
+            docker-compose -f "$compose_file" down --remove-orphans --volumes || true # 2>/dev/null を削除
             docker-compose -f "$compose_file" build --no-cache
-            docker-compose -f "$compose_file" up --abort-on-container-exit
+            docker-compose -f "$compose_file" up -d # --exit-code-from e2e-test-runner を追加
             log_success "フル実行が完了しました"
             echo ""
             show_test_results

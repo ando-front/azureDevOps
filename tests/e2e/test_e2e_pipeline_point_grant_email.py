@@ -259,7 +259,7 @@ class TestPipelinePointGrantEmail:
             "record_count": record_count,
             "generated_at": datetime.utcnow(),
             "mtg_ids": [f"MTG{i:06d}" for i in range(1, record_count + 1)],
-            "point_amounts": [100 + (i % 500) for i in range(record_count)],
+            "point_amounts": [max(1, 100 + (i % 500)) for i in range(record_count)],
             "grant_dates": [
                 datetime.utcnow() - timedelta(days=i % 30) 
                 for i in range(record_count)
