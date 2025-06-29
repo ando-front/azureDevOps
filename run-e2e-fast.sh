@@ -160,21 +160,33 @@ cleanup_containers() {
 start_test_environment() {
     log_step "E2Eテスト環境を起動中..."
     
-    # バックグラウンドサービスを起動
+    # バックグラウンドサービスを起動し、ヘルスチェックが通るまで待機
+    log_info "Dockerコンテナを起動し、サービスの準備が整うのを待っています..."
     if [[ "$VERBOSE" == true ]]; then
-        docker-compose -f "$COMPOSE_FILE" up -d sqlserver-test azurite-test ir-simulator
+        docker-compose -f "$COMPOSE_FILE" up -d --wait sqlserver-test azurite-test ir-simulator
     else
-        docker-compose -f "$COMPOSE_FILE" up -d sqlserver-test azurite-test ir-simulator >/dev/null 2>&1
+        docker-compose -f "$COMPOSE_FILE" up -d --wait sqlserver-test azurite-test ir-simulator >/dev/null 2>&1
     fi
-    
-    # サービスの健全性チェック
-    log_step "サービスの起動を待機中..."
-    
-    # Azuriteの起動を確認
-    if curl -s http://localhost:10000/ >/dev/null 2>&1; then
+
+    # 各サービスの最終ステータスを確認
+    log_step "各サービスのステータスを最終確認中..."
+    local sql_status=$(docker-compose -f "$COMPOSE_FILE" ps sqlserver-test | grep 'healthy')
+    local azurite_status=$(docker-compose -f "$COMPOSE_FILE" ps azurite-test | grep 'healthy')
+
+    if [[ -n "$sql_status" ]]; then
+        log_success "SQL Serverが準備完了"
+    else
+        log_error "SQL Serverの起動に失敗しました。ログを確認してください。"
+        docker-compose -f "$COMPOSE_FILE" logs sqlserver-test
+        exit 1
+    fi
+
+    if [[ -n "$azurite_status" ]]; then
         log_success "Azuriteが準備完了"
     else
-        log_warning "Azuriteに接続できません（一部テストに影響する可能性があります）"
+        log_error "Azuriteの起動に失敗しました。ログを確認してください。"
+        docker-compose -f "$COMPOSE_FILE" logs azurite-test
+        exit 1
     fi
     
     log_success "テスト環境の起動完了"
@@ -184,12 +196,13 @@ start_test_environment() {
 run_tests() {
     log_step "E2Eテストを実行中..."
     
+    local pytest_command="python -m pytest"
     local pytest_options="-v --tb=short --junitxml=/app/test_results/results.xml"
     local test_files=""
     
     # 並列実行の設定
     if [[ "$PARALLEL_EXECUTION" == true ]]; then
-        pytest_options="$pytest_options -n 2"
+        pytest_options="$pytest_options -n auto"
     fi
     
     # タイムアウトの設定
@@ -205,29 +218,35 @@ run_tests() {
     # テストモードに応じたテストファイルの選択
     case "$TEST_MODE" in
         quick)
-            test_files="/app/tests/e2e/test_basic_connections.py"
+            test_files="tests/e2e/test_basic_connections.py"
             log_info "クイックテスト実行中（約1-2分）..."
             ;;
         standard)
-            test_files="/app/tests/e2e/test_basic_connections.py /app/tests/e2e/test_docker_e2e_integration.py /app/tests/e2e/test_e2e_pipeline_client_dm_new.py"
+            test_files="tests/e2e/test_basic_connections.py tests/e2e/test_docker_e2e_integration.py tests/e2e/test_e2e_pipeline_client_dm_new.py"
             log_info "標準テスト実行中（約5-10分）..."
             ;;
         full)
-            test_files="/app/tests/e2e/"
+            test_files="tests/e2e/"
             pytest_options="$pytest_options --maxfail=10"
             log_info "全テスト実行中（約15-20分）..."
             ;;
         single)
-            test_files="/app/tests/e2e/$SINGLE_TEST_FILE"
+            test_files="tests/e2e/$SINGLE_TEST_FILE"
             log_info "単一テストファイル実行中: $SINGLE_TEST_FILE"
             ;;
     esac
     
-    # テスト結果ディレクトリの作成
-    docker-compose -f "$COMPOSE_FILE" exec -T e2e-test-runner mkdir -p /app/test_results 2>/dev/null || true
-    
+    # 最終的なコマンドを組み立て
+    local full_command="$pytest_command $pytest_options $test_files"
+
+    log_info "実行コマンド: docker-compose run --rm e2e-test-runner bash -c \"$full_command\""
+
     # テストの実行
-    if docker-compose -f "$COMPOSE_FILE" up --abort-on-container-exit --exit-code-from e2e-test-runner e2e-test-runner; then
+    # `docker-compose run` を使用して、指定したテストコマンドを実行
+    # `--rm` でテストコンテナを自動削除
+    # ホストのtest_resultsディレクトリをマウントしてテスト結果を保存
+    local current_dir="$(pwd)"
+    if docker-compose -f "$COMPOSE_FILE" run --rm -v "${current_dir}/test_results:/app/test_results" e2e-test-runner bash -c "$full_command"; then
         log_success "E2Eテストが正常に完了しました"
         return 0
     else
@@ -238,21 +257,68 @@ run_tests() {
 
 # テスト結果の表示
 show_test_results() {
-    log_step "テスト結果を取得中..."
+    log_step "テスト結果を処理中..."
     
-    # テスト結果ファイルをホストにコピー
-    local results_dir="./test_results"
-    mkdir -p "$results_dir"
+    local results_file="./test_results/results.xml"
     
-    # XML結果ファイルを取得
-    if docker-compose -f "$COMPOSE_FILE" exec -T e2e-test-runner test -f /app/test_results/results.xml 2>/dev/null; then
-        docker cp "$(docker-compose -f "$COMPOSE_FILE" ps -q e2e-test-runner):/app/test_results/results.xml" "$results_dir/" 2>/dev/null || true
-        log_success "テスト結果を $results_dir/results.xml に保存しました"
+    if [[ ! -f "$results_file" ]]; then
+        log_warning "テスト結果ファイル ($results_file) が見つかりませんでした。"
+        log_warning "テストが失敗したか、結果が出力されなかった可能性があります。"
+        return
     fi
+
+    log_success "テスト結果をホストの $results_file で確認できます。"
+    log_info "テスト結果の概要:"
+
+    # XMLからテスト結果を抽出
+    # `grep` と `sed` を使ってXMLをパースするのは脆弱ですが、外部ツールなしで動かすための簡単な方法です。
+    local testsuite_line=$(grep '<testsuite ' "$results_file")
     
-    # 簡易テスト結果サマリー
-    log_info "テスト実行サマリー:"
-    docker-compose -f "$COMPOSE_FILE" exec -T e2e-test-runner find /app/test_results -name '*.xml' -exec echo '  結果ファイル: {}' \; 2>/dev/null || true
+    if [[ -z "$testsuite_line" ]]; then
+        log_error "結果ファイルから <testsuite> タグが見つかりませんでした。"
+        # ファイルの内容を少し表示してデバッグしやすくする
+        head -n 5 "$results_file"
+        return
+    fi
+
+    # 正規表現を使用して属性を抽出 (macOS/BSD grepでも動くように調整)
+    local total=$(echo "$testsuite_line" | sed -n 's/.*tests="\([0-9]*\)".*/\1/p')
+    local failures=$(echo "$testsuite_line" | sed -n 's/.*failures="\([0-9]*\)".*/\1/p')
+    local errors=$(echo "$testsuite_line" | sed -n 's/.*errors="\([0-9]*\)".*/\1/p')
+    local skipped=$(echo "$testsuite_line" | sed -n 's/.*skipped="\([0-9]*\)".*/\1/p')
+    
+    # 数値が空の場合は0を設定
+    total=${total:-0}
+    failures=${failures:-0}
+    errors=${errors:-0}
+    skipped=${skipped:-0}
+
+    local passed=$((total - failures - errors - skipped))
+
+    # 結果の表示
+    echo -e "${CYAN}==================== TEST SUMMARY ====================${NC}"
+    echo -e "  Total tests:    ${YELLOW}$total${NC}"
+    echo -e "  ${GREEN}Passed:         ${GREEN}$passed${NC}"
+    echo -e "  ${RED}Failed:         ${RED}$failures${NC}"
+    echo -e "  ${PURPLE}Errors:         ${PURPLE}$errors${NC}"
+    echo -e "  ${BLUE}Skipped:        ${BLUE}$skipped${NC}"
+    echo -e "${CYAN}====================================================${NC}"
+
+    # 失敗またはエラーがある場合に詳細を表示
+    if [[ "$failures" -gt 0 || "$errors" -gt 0 ]]; then
+        log_warning "失敗またはエラーしたテストの詳細:"
+        
+        # 失敗またはエラーを含むtestcaseタグを抽出し、その中のfailure/errorタグも表示
+        # `awk` を使って、<testcase>から</testcase>のブロックを処理
+        awk '/<testcase/,/<\/testcase>/' "$results_file" | grep -E '<failure|<error' -B 1 | grep -v -- '--' | while read -r line1 && read -r line2; do
+            local classname=$(echo "$line1" | sed -n 's/.*classname="\([^"]*\)".*/\1/p')
+            local name=$(echo "$line1" | sed -n 's/.*name="\([^"]*\)".*/\1/p')
+            local failure_message=$(echo "$line2" | sed -n 's/.*message="\([^"]*\)".*/\1/p')
+            
+            echo -e "${RED}- [FAILED/ERROR] ${classname}.${name}${NC}"
+            echo -e "    Message: $failure_message"
+        done
+    fi
 }
 
 # クリーンアップ（終了時）

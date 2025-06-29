@@ -131,3 +131,4 @@ Thumbs.db
 *.backup
 .env
 .env
+test_results/results.xml

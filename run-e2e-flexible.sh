@@ -132,6 +132,28 @@ create_no_proxy_compose_file() {
 version: '3.8'
 
 services:
+  # SQL Server 初期化サービス
+  sql-server-init:
+    image: mcr.microsoft.com/mssql-tools
+    container_name: adf-sql-server-init
+    volumes:
+      - ./docker/sql/init:/docker-sql-init
+    entrypoint: /bin/bash
+    command: >
+      -c "
+      echo 'Waiting for SQL Server to be healthy...'
+      sleep 30
+      echo 'Starting database initialization...'
+      # The init-databases.sh script is executed here
+      /opt/mssql-tools/bin/sqlcmd -S sql-server -U sa -P 'YourStrong!Passw0rd123' -i /docker-sql-init/init-databases.sh &&
+      echo 'Database initialization complete.'
+      "
+    depends_on:
+      sql-server:
+        condition: service_healthy
+    networks:
+      - adf-e2e-network
+
   # SQL Server サービス
   sql-server:
     image: mcr.microsoft.com/mssql/server:2019-latest
@@ -147,10 +169,10 @@ services:
       - sql_data:/var/opt/mssql
     networks:
       - adf-e2e-network
-    healthcheck: # Uncommented and enabled
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd123 -Q 'SELECT 1' || exit 1"]
-      interval: 5s
-      retries: 5
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      retries: 10
       start_period: 30s
       timeout: 10s
 
@@ -167,7 +189,7 @@ services:
       - azurite_data:/data
     networks:
       - adf-e2e-network
-    healthcheck: # Added healthcheck
+    healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:10000/devstoreaccount1"]
       interval: 5s
       timeout: 3s
@@ -212,23 +234,16 @@ services:
       - .:/app
       - ./test_results:/app/test_results
       - ./logs:/app/logs
-      - ./test_results:/app/test_results
-      - ./logs:/app/logs
     working_dir: /app
     depends_on:
-      sql-server:
-        condition: service_healthy # Changed to service_healthy
+      sql-server-init:
+        condition: service_completed_successfully
       azurite:
-        condition: service_healthy # Changed to service_healthy
+        condition: service_healthy
     networks:
       - adf-e2e-network
-    command: "/app/docker/test-runner/run_e2e_tests_in_container.sh" # Execute the test script
-    healthcheck: # Added healthcheck
-      test: ["CMD", "python", "-c", "import pyodbc; import os; conn_str = f'DRIVER={{ODBC Driver 18 for SQL Server}};SERVER={os.getenv(\'SQL_SERVER_HOST\')},{os.getenv(\'SQL_SERVER_PORT\')};DATABASE={os.getenv(\'SQL_SERVER_DATABASE\')};UID={os.getenv(\'SQL_SERVER_USER\')};PWD={os.getenv(\'SQL_SERVER_PASSWORD\')};TrustServerCertificate=yes;Encrypt=no;LoginTimeout=5;'; try: pyodbc.connect(conn_str); sys.exit(0) except Exception: sys.exit(1)"]
-      interval: 5s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
+    # The command to run the tests inside the container
+    command: "/app/docker/test-runner/run_e2e_tests_in_container.sh"
 
 volumes:
   sql_data:
@@ -238,7 +253,7 @@ networks:
   adf-e2e-network:
     driver: bridge
 EOF
-    
+
     log_success "プロキシなし用 Docker Compose ファイルを作成しました"
 }
 
@@ -368,14 +383,18 @@ main_execution() {
             log_info "フルビルド + テスト実行中..."
             # テスト結果ディレクトリを準備
             mkdir -p test_results logs
-            docker-compose -f "$compose_file" down --remove-orphans --volumes || true # 2>/dev/null を削除
+            docker-compose -f "$compose_file" down --remove-orphans --volumes || true
             docker-compose -f "$compose_file" build --no-cache
             docker-compose -f "$compose_file" up -d
+
+            log_info "Waiting for services to start..."
+            sleep 5 # Add a short delay to allow containers to be created
 
             log_info "E2Eテストランナーコンテナの終了を待機中..."
             e2e_test_runner_cid=$(docker-compose -f "$compose_file" ps -q e2e-test-runner)
             if [ -z "$e2e_test_runner_cid" ]; then
                 log_error "E2Eテストランナーコンテナが見つかりません。"
+                docker-compose -f "$compose_file" logs
                 exit 1
             fi
 
@@ -384,9 +403,12 @@ main_execution() {
 
             # テスト結果をコンテナからホストにコピー
             log_info "Copying test results from container..."
-            docker cp "$e2e_test_runner_cid":/app/test_results.tar.gz .
-            tar -xzvf test_results.tar.gz
-            rm test_results.tar.gz
+            if docker cp "$e2e_test_runner_cid":/app/test_results.tar.gz . 2>/dev/null; then
+                tar -xzvf test_results.tar.gz -C test_results
+                rm test_results.tar.gz
+            else
+                log_warning "Could not copy test results from container. It might have already been written to the volume."
+            fi
 
             if [ "$test_exit_code" -ne 0 ]; then
                 log_error "E2Eテストが終了コード $test_exit_code で失敗しました。"

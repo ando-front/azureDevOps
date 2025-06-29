@@ -115,7 +115,7 @@ def e2e_db_connection():
     # 環境変数から接続情報を取得
     host = os.getenv('SQL_SERVER_HOST', 'sqlserver-test')
     port = os.getenv('SQL_SERVER_PORT', '1433')
-    database = os.getenv('SQL_SERVER_DATABASE', 'TGMATestDB')
+    database = os.getenv('SQL_SERVER_DATABASE', 'master')
     user = os.getenv('SQL_SERVER_USER', 'sa')
     password = os.getenv('SQL_SERVER_PASSWORD', 'YourStrong!Passw0rd123')
     

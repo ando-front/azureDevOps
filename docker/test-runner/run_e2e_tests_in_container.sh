@@ -8,7 +8,7 @@ chmod +x /usr/local/bin/check_db_connection.py
 
 # Wait for SQL Server using the Python script
 echo '⏳ 完全なE2Eテスト環境の準備を開始します...'
-check_db_connection
+python /usr/local/bin/check_db_connection.py
 
 echo '🚀 完全なE2Eテストスイートを実行します...'
 
