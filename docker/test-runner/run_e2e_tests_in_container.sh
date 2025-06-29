@@ -47,8 +47,28 @@ echo '⏳ 完全なE2Eテスト環境の準備を開始します...'
 wait_for_sql_server
 
 echo '🚀 完全なE2Eテストスイートを実行します...'
-echo '📁 テスト結果ディレクトリを作成...'
+
+# テスト結果ディレクトリを作成
 mkdir -p /app/test_results
+
+# pytest を実行
+# 環境変数 PYTEST_ARGS が設定されていればそれを使用
+# 設定されていなければデフォルトの引数を使用
+if [ -z "$PYTEST_ARGS" ]; then
+  PYTEST_ARGS="--tb=short --maxfail=5"
+fi
+
+# テスト実行
+pytest tests/e2e $PYTEST_ARGS
+
+# テスト結果の確認と終了コードの設定
+if [ $? -eq 0 ]; then
+  echo "✅ E2E テストが正常に完了しました。"
+  exit 0
+else
+  echo "❌ E2E テストで失敗が発生しました。"
+  exit 1
+fi
 echo '🔍 利用可能なE2Eテストファイルを確認...'
 find /app/tests/e2e -name 'test_*.py' -type f | wc -l
 echo '📊 フェーズ1: 基本接続テストを実行...'

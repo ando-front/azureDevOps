@@ -147,13 +147,12 @@ services:
       - sql_data:/var/opt/mssql
     networks:
       - adf-e2e-network
-    # healthcheck:
-      # healthcheck:
-    #   test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd123 -Q 'SELECT 1' || exit 1"]
-    #   interval: 10s
-    #   retries: 10
-    #   start_period: 10s
-    #   timeout: 3s
+    healthcheck: # Uncommented and enabled
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd123 -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      retries: 10
+      start_period: 90s
+      timeout: 15s
 
   # Azurite (Azure Storage Emulator)
   azurite:
@@ -168,6 +167,12 @@ services:
       - azurite_data:/data
     networks:
       - adf-e2e-network
+    healthcheck: # Added healthcheck
+      test: ["CMD", "curl", "-f", "http://localhost:10000/devstoreaccount1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   # E2E テストランナー
   e2e-test-runner:
@@ -210,12 +215,18 @@ services:
     working_dir: /app
     depends_on:
       sql-server:
-        condition: service_started
+        condition: service_healthy # Changed to service_healthy
       azurite:
-        condition: service_started
+        condition: service_healthy # Changed to service_healthy
     networks:
       - adf-e2e-network
-    command: "tail -f /dev/null"
+    command: "/app/docker/test-runner/run_e2e_tests_in_container.sh" # Execute the test script
+    healthcheck: # Added healthcheck
+      test: ["CMD", "python", "-c", "import sys; import pyodbc; sys.exit(0)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   sql_data:
