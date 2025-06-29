@@ -24,6 +24,12 @@ fi
 
 # テスト実行
 echo "Running pytest..."
+
+# First, collect tests to see what pytest is discovering
+echo "Collecting tests..."
+pytest tests/e2e --collect-only -q
+
+echo "Executing tests..."
 pytest tests/e2e $PYTEST_ARGS --junitxml=/app/test_results/e2e_no_proxy_results.xml --html=/app/test_results/e2e_no_proxy_report.html --self-contained-html
 pytest_exit_code=$?
 

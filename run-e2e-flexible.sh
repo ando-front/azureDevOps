@@ -342,31 +342,73 @@ main_execution() {
             log_success "ビルドが完了しました"
             ;;
             
-        "test")
-            log_info "テストを実行中..."
-            # テスト結果ディレクトリを準備
-            mkdir -p test_results logs
-            docker-compose -f "$compose_file" up --abort-on-container-exit --exit-code-from e2e-test-runner
-            log_success "テストが完了しました"
-            echo ""
-            show_test_results
-            ;;
-            
-        "full")
-            log_info "フルビルド + テスト実行中..."
-            # テスト結果ディレクトリを準備
-            mkdir -p test_results logs
-            docker-compose -f "$compose_file" down --remove-orphans --volumes || true
-            docker-compose -f "$compose_file" build --no-cache
-            
-            log_info "テストコンテナを起動し、実行します..."
-            docker-compose -f "$compose_file" up --abort-on-container-exit --exit-code-from e2e-test-runner
+        "test" | "full")
+            if [[ "$operation" == "full" ]]; then
+                log_info "フルビルド + テスト実行を開始します..."
+                cleanup_environment
+                log_info "Docker イメージをビルドしています..."
+                docker-compose -f "$compose_file" build --no-cache
+            else
+                log_info "テスト実行を開始します..."
+            fi
 
-            log_success "フル実行が完了しました"
+            # テスト結果とログ用のディレクトリを準備
+            mkdir -p test_results logs
+            
+            log_info "テスト環境をバックグラウンドで起動しています..."
+            docker-compose -f "$compose_file" up -d
+
+            log_info "データベースの初期化完了を待機しています... (最大5分)"
+            if ! docker wait adf-sql-server-init; then
+                log_error "データベースの初期化に失敗しました。ログを確認してください。"
+                docker logs adf-sql-server-init
+                docker logs adf-sql-server-test
+                cleanup_environment
+                exit 1
+            fi
+            log_success "データベースの初期化が完了しました。"
+
+            log_info "テストランナーのログをストリーミングします... (Ctrl+Cで停止)"
+            docker logs -f adf-e2e-test-runner &
+            local log_pid=$!
+
+            # Ctrl+Cでログのフォローを停止できるようにする
+            trap "kill $log_pid 2>/dev/null" INT
+
+            log_info "テストランナーの実行完了を待機しています..."
+            local exit_code=$(docker wait adf-e2e-test-runner)
+            
+            # ログのフォローを停止
+            kill $log_pid 2>/dev/null
+            wait $log_pid 2>/dev/null
+            trap - INT
+
+            log_info "ログをファイルに収集しています..."
+            docker logs adf-e2e-test-runner > logs/e2e-test-runner.log 2>&1
+            docker logs adf-sql-server-test > logs/sql-server.log 2>&1
+            docker logs adf-sql-server-init > logs/sql-server-init.log 2>&1
+            docker logs adf-azurite-test > logs/azurite.log 2>&1
+
+            if [[ "$exit_code" -eq 0 ]]; then
+                log_success "テスト実行が正常に完了しました。"
+            else
+                log_error "テスト実行でエラーが検出されました (終了コード: $exit_code)。"
+                log_error "詳細は logs/e2e-test-runner.log を確認してください。"
+            fi
+
+            log_info "テスト環境をクリーンアップしています..."
+            cleanup_environment
+            
             echo ""
+            log_info "最終的なテスト結果:"
             show_test_results
+            
+            if [[ "$exit_code" -ne 0 ]]; then
+                exit "$exit_code"
+            fi
             ;;
-              "cleanup")
+            
+        "cleanup")
             cleanup_environment
             ;;
             
