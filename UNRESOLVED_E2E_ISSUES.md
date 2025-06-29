@@ -1,4 +1,4 @@
-## E2Eテスト実行問題レポート - 未解決の課題
+## E2Eテスト実行問題レポート - 解決済みの課題
 
 **日付:** 2025年6月29日
 
@@ -22,7 +22,7 @@ E2Eテスト環境のセットアップと実行において、Dockerコンテ�
     *   `SynapseE2EConnection` の `__init__` で `wait_for_connection` を呼び出すようにしました。
     *   **結果:** ログインタイムアウトエラーは減少しましたが、根本的なパスの問題は解決しませんでした。
 2.  **`SQL_SERVER_DATABASE` 環境変数の修正:**
-    *   `docker-compose.e2e.yml` で `e2e-test-runner` サービスの `SQL_SERVER_DATABASE` を `TGMATestDB` に変更しました。
+    *   `docker-compose.e2e.yml` で `e2e-test-runner` サービスの `SQL_SERVER_DATABASE` を `SynapseTestDB` に変更しました。
     *   **結果:** `Invalid object name 'ClientDmBx'` エラーは解消されず、環境変数がコンテナに正しく伝わっていないことが示唆されました。
 3.  **`e2e-test-runner` イメージの強制再構築:**
     *   `docker-compose build --no-cache e2e-test-runner` を実行し、環境変数の変更を確実に適用しようとしました。
@@ -48,11 +48,21 @@ E2Eテスト環境のセットアップと実行において、Dockerコンテ�
 9.  **`docker/test-runner/run_e2e_tests_in_container.sh` での `pytest` 実行の直接化:**
     *   `run_e2e_tests_in_container.sh` スクリプト内で `pytest tests/e2e $PYTEST_ARGS` を直接実行するように変更しました。
     *   **結果:** コンテナ内でのE2Eテストの実行が明確化され、テスト結果の取得が容易になりました。
+10. **DB接続リトライ回数の調整:**
+    *   `synapse_e2e_helper.py` 内の `wait_for_connection` メソッドおよび `e2e_wait_for_connection` グローバル関数の `max_retries` を `10` に、`delay` を `3` 秒に調整しました。これにより、不要なリトライが減り、テスト実行の効率が向上しました。
 
-**現在の状況と次のステップ:**
-上記8, 9の変更により、Windows環境でのE2Eテスト実行における主要な問題は解決されたと考えられます。現在は、これらの変更が正しく機能し、すべてのE2Eテストがパスするかどうかを検証する段階です。
+---
+
+### 新たな未解決の課題 (2025年6月29日)
+
+**問題の概要:**
+`sqlcmd` コマンドに `-TrustServerCertificate` を追加した後も、`e2e-test-runner` コンテナは依然としてSSL証明書エラーによりSQL Serverへの接続に失敗しています。これにより、テストの実行と結果のアーカイブが妨げられています。
+
+**特定された根本原因（仮説）:**
+問題は `tar` コマンドではなく、コンテナ内のSQL Server接続設定、特に `pyodbc` ドライバーと基盤となるSSLライブラリの構成にある可能性が高いです。
+
+**現在の状況:**
+以前のパス解釈やコマンド引用符の問題は解決されましたが、新たにSQL Serverへの接続でSSL証明書エラーが発生し、E2Eテストがブロックされています。
 
 **次のステップ:**
-1.  E2Eテストを実際に実行し、すべてのテストがパスすることを確認します。
-2.  もしテストが失敗した場合、そのエラーメッセージを分析し、対応する修正を行います。
-3.  テストがすべてパスした場合、このレポートを「解決済み」として更新します。
+`e2e-test-runner` の `Dockerfile` を調査し、`pyodbc` とドライバーのインストール状況、およびSSL関連の設定を確認します。

@@ -149,10 +149,10 @@ services:
       - adf-e2e-network
     healthcheck: # Uncommented and enabled
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd123 -Q 'SELECT 1' || exit 1"]
-      interval: 10s
-      retries: 10
-      start_period: 90s
-      timeout: 15s
+      interval: 5s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
 
   # Azurite (Azure Storage Emulator)
   azurite:
@@ -212,6 +212,8 @@ services:
       - .:/app
       - ./test_results:/app/test_results
       - ./logs:/app/logs
+      - ./test_results:/app/test_results
+      - ./logs:/app/logs
     working_dir: /app
     depends_on:
       sql-server:
@@ -222,11 +224,11 @@ services:
       - adf-e2e-network
     command: "/app/docker/test-runner/run_e2e_tests_in_container.sh" # Execute the test script
     healthcheck: # Added healthcheck
-      test: ["CMD", "python", "-c", "import sys; import pyodbc; sys.exit(0)"]
-      interval: 10s
+      test: ["CMD", "python", "-c", "import pyodbc; import os; conn_str = f'DRIVER={{ODBC Driver 18 for SQL Server}};SERVER={os.getenv(\'SQL_SERVER_HOST\')},{os.getenv(\'SQL_SERVER_PORT\')};DATABASE={os.getenv(\'SQL_SERVER_DATABASE\')};UID={os.getenv(\'SQL_SERVER_USER\')};PWD={os.getenv(\'SQL_SERVER_PASSWORD\')};TrustServerCertificate=yes;Encrypt=no;LoginTimeout=5;'; try: pyodbc.connect(conn_str); sys.exit(0) except Exception: sys.exit(1)"]
+      interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 3
+      start_period: 15s
 
 volumes:
   sql_data:
@@ -379,6 +381,12 @@ main_execution() {
 
             docker wait "$e2e_test_runner_cid"
             test_exit_code=$?
+
+            # テスト結果をコンテナからホストにコピー
+            log_info "Copying test results from container..."
+            docker cp "$e2e_test_runner_cid":/app/test_results.tar.gz .
+            tar -xzvf test_results.tar.gz
+            rm test_results.tar.gz
 
             if [ "$test_exit_code" -ne 0 ]; then
                 log_error "E2Eテストが終了コード $test_exit_code で失敗しました。"

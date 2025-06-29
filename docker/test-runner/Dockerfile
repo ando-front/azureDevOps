@@ -21,6 +21,9 @@ RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
     && ACCEPT_EULA=Y apt-get install -y msodbcsql18 \
     && rm -rf /var/lib/apt/lists/*
 
+# Configure ODBC to trust the server certificate
+RUN echo "[ODBC Driver 18 for SQL Server]\nTrustServerCertificate=Yes" >> /etc/odbcinst.ini
+
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

@@ -67,7 +67,7 @@ class SynapseE2EConnection:
             f"UID={username};"
             f"PWD={password};"
             "TrustServerCertificate=yes;"
-            "Encrypt=no;"
+            "Encrypt=yes;"
             "LoginTimeout=30;"
         )
         
@@ -109,7 +109,7 @@ class SynapseE2EConnection:
             logger.error(f"E2E Query execution failed: {e}")
             raise
     
-    def wait_for_connection(self, max_retries: int = 60, delay: int = 5) -> bool:
+    def wait_for_connection(self, max_retries: int = 10, delay: int = 3) -> bool:
         """データベース接続が利用可能になるまで待機"""
         logger.info(f"E2E Waiting for database connection (max {max_retries} retries)...")
         
@@ -452,7 +452,7 @@ def e2e_execute_query(query: str, params: tuple = None) -> List[tuple]:
         return []
 
 
-def e2e_wait_for_connection(max_retries: int = 10, delay: int = 5) -> bool:
+def e2e_wait_for_connection(max_retries: int = 10, delay: int = 3) -> bool:
     """
     E2Eテスト用データベース接続待機（グローバル関数版）
     
