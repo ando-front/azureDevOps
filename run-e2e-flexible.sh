@@ -368,7 +368,27 @@ main_execution() {
             mkdir -p test_results logs
             docker-compose -f "$compose_file" down --remove-orphans --volumes || true # 2>/dev/null を削除
             docker-compose -f "$compose_file" build --no-cache
-            docker-compose -f "$compose_file" up -d # --exit-code-from e2e-test-runner を追加
+            docker-compose -f "$compose_file" up -d
+
+            log_info "E2Eテストランナーコンテナの終了を待機中..."
+            e2e_test_runner_cid=$(docker-compose -f "$compose_file" ps -q e2e-test-runner)
+            if [ -z "$e2e_test_runner_cid" ]; then
+                log_error "E2Eテストランナーコンテナが見つかりません。"
+                exit 1
+            fi
+
+            docker wait "$e2e_test_runner_cid"
+            test_exit_code=$?
+
+            if [ "$test_exit_code" -ne 0 ]; then
+                log_error "E2Eテストが終了コード $test_exit_code で失敗しました。"
+                # コンテナのログを出力してデバッグ情報を提供する
+                docker logs "$e2e_test_runner_cid"
+                exit 1
+            else
+                log_success "E2Eテストが正常に完了しました。"
+            fi
+
             log_success "フル実行が完了しました"
             echo ""
             show_test_results

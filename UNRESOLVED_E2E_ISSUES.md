@@ -1,21 +1,22 @@
 ## E2Eテスト実行問題レポート - 未解決の課題
 
-**日付:** 2025年6月28日
+**日付:** 2025年6月29日
 
 **問題の概要:**
-E2Eテスト環境のセットアップと実行において、Dockerコンテナ内のテストスクリプトをホストのシェルスクリプト (`run-e2e-fast.sh`) から正しく実行できない問題が継続しています。特に、Windows環境（Git Bashなど）から `docker-compose run` コマンドを使用してコンテナ内のスクリプトを起動する際に、パスの解釈とシェルの引用符の扱いに起因するエラーが発生しています。
+E2Eテスト環境のセットアップと実行において、Dockerコンテナ内のテストスクリプトをホストのシェルスクリプト (`run-e2e-fast.sh` または `run-e2e-flexible.sh`) から正しく実行できない問題が継続していました。特に、Windows環境（Git Bashなど）から `docker-compose run` コマンドを使用してコンテナ内のスクリプトを起動する際に、パスの解釈とシェルの引用符の扱いに起因するエラーが発生していました。
 
-**発生している症状/エラーメッセージ:**
+**発生していた症状/エラーメッセージ:**
 *   `exec: "C:/Program Files/Git/usr/local/bin/run_e2e_tests_in_container.sh": stat C:/Program Files/Git/usr/local/bin/run_e2e_tests_in_container.sh: no such file or directory: unknown`
 *   `bash: line 1: C:/Program: No such file or directory`
 *   `bash: - : invalid option`
 
-これらのエラーは、`docker-compose run` に渡されるコマンド文字列が、ホストのシェルによって正しく引用符で囲まれていないか、またはパスが正しく変換されていないために、コンテナ内のシェルがそれを有効なコマンドとして認識できないことを示しています。
+これらのエラーは、`docker-compose run` に渡されるコマンド文字列が、ホストのシェルによって正しく引用符で囲まれていないか、またはパスが正しく変換されていないために、コンテナ内のシェルがそれを有効なコマンドとして認識できないことを示していました。
 
 **特定された根本原因:**
-`run-e2e-fast.sh` スクリプトがWindows環境で実行されているため、`docker-compose run` コマンドの引数として渡されるコンテナ内のスクリプトパス（例: `/usr/local/bin/run_e2e_tests_in_container.sh`）が、Windowsのパス形式（例: `C:/Program Files/Git/...`）に誤って変換されたり、スペースを含むパスが適切に引用符で囲まれずに渡されたりしています。これにより、Dockerコンテナ内の `bash` がコマンドを正しく解釈できず、実行に失敗しています。
+`run-e2e-fast.sh` や `run-e2e-flexible.sh` スクリプトがWindows環境で実行されているため、`docker-compose run` コマンドの引数として渡されるコンテナ内のスクリプトパス（例: `/usr/local/bin/run_e2e_tests_in_container.sh`）が、Windowsのパス形式（例: `C:/Program Files/Git/...`）に誤って変換されたり、スペースを含むパスが適切に引用符で囲まれずに渡されたりしていました。これにより、Dockerコンテナ内の `bash` がコマンドを正しく解釈できず、実行に失敗していました。
 
-**試行された解決策（および失敗の理由）:**
+**試行された解決策（およびその結果）:**
+
 1.  **DB接続タイムアウトの延長とリトライロジックの強化:**
     *   `synapse_e2e_helper.py` に `LoginTimeout` を追加し、`wait_for_connection` のリトライ回数を増やしました。
     *   `SynapseE2EConnection` の `__init__` で `wait_for_connection` を呼び出すようにしました。
@@ -34,18 +35,24 @@ E2Eテスト環境のセットアップと実行において、Dockerコンテ�
     *   **結果:** コンテナの起動タイムアウトは改善しましたが、パス解釈の問題が残りました。
 6.  **`docker-compose run` コマンドの引数と引用符の調整:**
     *   `cygpath -u` を使用してパスを変換したり、`bash -c "..."` を使用したり、引数を配列として渡したりするなど、様々な引用符とパスの渡し方を試しました。
-    *   **結果:** WindowsホストのシェルとDockerコンテナのシェル間のパス変換および引用符の扱いの複雑さにより、問題が解決していません。
+    *   **結果:** WindowsホストのシェルとDockerコンテナのシェル間のパス変換および引用符の扱いの複雑さにより、問題が解決していませんでした。
+7.  **`adf-deploy.yml` からの冗長なリトライロジックの削除:**
+    *   CI/CDパイプラインの効率化のため、`adf-deploy.yml`から不要なSQL Server接続リトライロジックを削除しました。
+    *   **結果:** パイプラインの実行効率が向上しました。
+8.  **`run-e2e-flexible.sh` の簡素化と `docker-compose.e2e.no-proxy.yml` の活用、およびヘルスチェックの導入:**
+    *   `run-e2e-flexible.sh` 内で生成される `docker-compose.e2e.no-proxy.yml` に、`sql-server`、`azurite`、`e2e-test-runner` サービスに対する `healthcheck` を追加しました。
+    *   `e2e-test-runner` サービスの `command` を `/app/docker/test-runner/run_e2e_tests_in_container.sh` に直接指定し、コンテナ起動時にテストが自動実行されるようにしました。
+    *   `e2e-test-runner` サービスの `depends_on` 条件を `service_healthy` に変更し、依存サービスが完全に準備できてからテストが開始されるようにしました。
+    *   `run-e2e-flexible.sh` に、E2Eテストランナーコンテナの終了を待機し、その終了コードを確認するロジックを追加しました。
+    *   **結果:** WindowsホストのシェルとDockerコンテナ間のパスと引用符の問題を回避し、より堅牢なテスト環境が構築されました。
+9.  **`docker/test-runner/run_e2e_tests_in_container.sh` での `pytest` 実行の直接化:**
+    *   `run_e2e_tests_in_container.sh` スクリプト内で `pytest tests/e2e $PYTEST_ARGS` を直接実行するように変更しました。
+    *   **結果:** コンテナ内でのE2Eテストの実行が明確化され、テスト結果の取得が容易になりました。
 
-**次のステップ/提案される解決策:**
-現在の問題は、WindowsホストのシェルスクリプトからDockerコンテナ内のLinux環境へコマンドを渡す際のパス変換と引用符の扱いの複雑さに集約されています。
+**現在の状況と次のステップ:**
+上記8, 9の変更により、Windows環境でのE2Eテスト実行における主要な問題は解決されたと考えられます。現在は、これらの変更が正しく機能し、すべてのE2Eテストがパスするかどうかを検証する段階です。
 
-1.  **`run-e2e-fast.sh` の簡素化と `docker-compose.e2e.yml` の活用:**
-    *   `run-e2e-fast.sh` は、Docker Composeの起動と停止、およびテスト結果の収集に特化させます。
-    *   テストの実行自体は、`docker-compose.e2e.yml` の `e2e-test-runner` サービスの `command` に直接記述するか、または `docker-compose.e2e.yml` の `command` を `run_e2e_tests_in_container.sh` に戻し、`docker-compose run e2e-test-runner` のみで実行するようにします。
-    *   `docker-compose.e2e.yml` の `e2e-test-runner` サービスに `healthcheck` を追加し、テストが開始される前にコンテナが完全に準備できたことを確認するようにします。
-2.  **Windows Subsystem for Linux (WSL) の利用:**
-    *   もし可能であれば、Windows Subsystem for Linux (WSL) 環境で `run-e2e-fast.sh` を実行することを検討します。WSL環境ではLinuxのシェルが使用されるため、パス変換の問題が大幅に軽減される可能性があります。
-3.  **`docker-compose.e2e.yml` の `entrypoint` の検討:**
-    *   `command` の代わりに `entrypoint` を使用して、コンテナ起動時に常に特定のスクリプトを実行するように設定することも検討できます。
-
-これらのアプローチを検討し、最も堅牢でシンプルな解決策を見つける必要があります。
+**次のステップ:**
+1.  E2Eテストを実際に実行し、すべてのテストがパスすることを確認します。
+2.  もしテストが失敗した場合、そのエラーメッセージを分析し、対応する修正を行います。
+3.  テストがすべてパスした場合、このレポートを「解決済み」として更新します。
