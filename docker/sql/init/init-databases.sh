@@ -38,3 +38,10 @@ for script in "${scripts[@]}"; do
 done
 
 echo "Database initialization completed successfully!"
+
+# 初期化完了を示すマーカーファイルを作成
+touch /tmp/init-complete
+echo "=============== MSSQL SERVER HAS BEEN INITIALIZED ================"
+
+# 初期化完了を示すマーカーテーブルを作成
+/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -d master -Q "CREATE TABLE InitializationComplete (id INT);"

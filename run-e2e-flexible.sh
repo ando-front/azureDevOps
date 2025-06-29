@@ -129,32 +129,7 @@ ensure_compose_file() {
 # プロキシなし用 Docker Compose ファイルの作成
 create_no_proxy_compose_file() {
     cat > docker-compose.e2e.no-proxy.yml << 'EOF'
-version: '3.8'
-
 services:
-  # SQL Server 初期化サービス
-  sql-server-init:
-    image: mcr.microsoft.com/mssql-tools
-    container_name: adf-sql-server-init
-    volumes:
-      - ./docker/sql/init:/docker-sql-init
-    entrypoint: /bin/bash
-    command: >
-      -c "
-      echo 'Waiting for SQL Server to be healthy...'
-      sleep 30
-      echo 'Starting database initialization...'
-      # The init-databases.sh script is executed here
-      /opt/mssql-tools/bin/sqlcmd -S sql-server -U sa -P 'YourStrong!Passw0rd123' -i /docker-sql-init/init-databases.sh &&
-      echo 'Database initialization complete.'
-      "
-    depends_on:
-      sql-server:
-        condition: service_healthy
-    networks:
-      - adf-e2e-network
-
-  # SQL Server サービス
   sql-server:
     image: mcr.microsoft.com/mssql/server:2019-latest
     container_name: adf-sql-server-test
@@ -165,7 +140,7 @@ services:
     ports:
       - "1433:1433"
     volumes:
-      - ./sql/init:/docker-entrypoint-initdb.d
+      - ./docker/sql/init:/docker-entrypoint-initdb.d
       - sql_data:/var/opt/mssql
     networks:
       - adf-e2e-network
@@ -176,15 +151,37 @@ services:
       start_period: 30s
       timeout: 10s
 
-  # Azurite (Azure Storage Emulator)
+  sql-server-init:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: adf-sql-server-init
+    entrypoint: /bin/bash
+    command: >
+      -c "
+      set -e
+      echo 'Waiting for SQL Server to be healthy...'
+      # depends_onでhealthcheckは確認済み
+
+      echo 'Waiting for database initialization to complete...'
+      until /opt/mssql-tools/bin/sqlcmd -S sql-server -U sa -P 'YourStrong!Passw0rd123' -d master -Q 'SELECT 1 FROM sys.tables WHERE name = \'"'"'InitializationComplete'"'"';' | grep -q '1'; do
+        echo '... still waiting for init table ...'
+        sleep 5
+      done
+      echo 'Database initialization complete!'
+      "
+    depends_on:
+      sql-server:
+        condition: service_healthy
+    networks:
+      - adf-e2e-network
+
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite:latest
     container_name: adf-azurite-test
     command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0"
     ports:
-      - "10000:10000"  # Blob service
-      - "10001:10001"  # Queue service
-      - "10002:10002"  # Table service
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
     volumes:
       - azurite_data:/data
     networks:
@@ -196,45 +193,16 @@ services:
       retries: 5
       start_period: 10s
 
-  # E2E テストランナー
   e2e-test-runner:
     build:
       context: .
-      dockerfile: Dockerfile
-      args:
-        - NO_PROXY=true
+      dockerfile: docker/test-runner/Dockerfile
+    image: azuredevops-e2e-test-runner:latest
     container_name: adf-e2e-test-runner
-    environment:
-      # データベース接続設定
-      - SQL_SERVER_HOST=sql-server
-      - SQL_SERVER_PORT=1433
-      - SQL_SERVER_DATABASE=SynapseTestDB
-      - SQL_SERVER_USER=sa
-      - SQL_SERVER_PASSWORD=YourStrong!Passw0rd123
-      
-      # Azure Storage 接続設定
-      - AZURITE_HOST=azurite
-      - AZURITE_BLOB_PORT=10000
-      - AZURITE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
-      
-      # テスト設定
-      - E2E_TIMEOUT=300
-      - E2E_RETRY_COUNT=3
-      - PYTEST_ARGS=--tb=short --maxfail=5
-      
-      # プロキシ無効化
-      - HTTP_PROXY=
-      - HTTPS_PROXY=
-      - http_proxy=
-      - https_proxy=
-      - NO_PROXY=*
-      - no_proxy=*
-      
     volumes:
       - .:/app
       - ./test_results:/app/test_results
       - ./logs:/app/logs
-    working_dir: /app
     depends_on:
       sql-server-init:
         condition: service_completed_successfully
@@ -242,19 +210,23 @@ services:
         condition: service_healthy
     networks:
       - adf-e2e-network
-    # The command to run the tests inside the container
-    command: "/app/docker/test-runner/run_e2e_tests_in_container.sh"
+    environment:
+      - PYTHONPATH=/app
+      - SQL_SERVER_HOST=sql-server
+      - AZURITE_HOST=azurite
+      - E2E_TEST_MODE=flexible
+    entrypoint: /usr/local/bin/run_e2e_tests_in_container.sh
+
+networks:
+  adf-e2e-network:
+    driver: bridge
 
 volumes:
   sql_data:
   azurite_data:
 
-networks:
-  adf-e2e-network:
-    driver: bridge
 EOF
-
-    log_success "プロキシなし用 Docker Compose ファイルを作成しました"
+    log_success "docker-compose.e2e.no-proxy.yml を作成しました"
 }
 
 # 環境のクリーンアップ
@@ -367,13 +339,14 @@ main_execution() {
         "build")
             log_info "Docker イメージをビルド中..."
             docker-compose -f "$compose_file" build --no-cache
-            log_success "ビルドが完了しました"            ;;
+            log_success "ビルドが完了しました"
+            ;;
             
         "test")
             log_info "テストを実行中..."
             # テスト結果ディレクトリを準備
             mkdir -p test_results logs
-            docker-compose -f "$compose_file" up --abort-on-container-exit
+            docker-compose -f "$compose_file" up --abort-on-container-exit --exit-code-from e2e-test-runner
             log_success "テストが完了しました"
             echo ""
             show_test_results
@@ -385,39 +358,9 @@ main_execution() {
             mkdir -p test_results logs
             docker-compose -f "$compose_file" down --remove-orphans --volumes || true
             docker-compose -f "$compose_file" build --no-cache
-            docker-compose -f "$compose_file" up -d
-
-            log_info "Waiting for services to start..."
-            sleep 5 # Add a short delay to allow containers to be created
-
-            log_info "E2Eテストランナーコンテナの終了を待機中..."
-            e2e_test_runner_cid=$(docker-compose -f "$compose_file" ps -q e2e-test-runner)
-            if [ -z "$e2e_test_runner_cid" ]; then
-                log_error "E2Eテストランナーコンテナが見つかりません。"
-                docker-compose -f "$compose_file" logs
-                exit 1
-            fi
-
-            docker wait "$e2e_test_runner_cid"
-            test_exit_code=$?
-
-            # テスト結果をコンテナからホストにコピー
-            log_info "Copying test results from container..."
-            if docker cp "$e2e_test_runner_cid":/app/test_results.tar.gz . 2>/dev/null; then
-                tar -xzvf test_results.tar.gz -C test_results
-                rm test_results.tar.gz
-            else
-                log_warning "Could not copy test results from container. It might have already been written to the volume."
-            fi
-
-            if [ "$test_exit_code" -ne 0 ]; then
-                log_error "E2Eテストが終了コード $test_exit_code で失敗しました。"
-                # コンテナのログを出力してデバッグ情報を提供する
-                docker logs "$e2e_test_runner_cid"
-                exit 1
-            else
-                log_success "E2Eテストが正常に完了しました。"
-            fi
+            
+            log_info "テストコンテナを起動し、実行します..."
+            docker-compose -f "$compose_file" up --abort-on-container-exit --exit-code-from e2e-test-runner
 
             log_success "フル実行が完了しました"
             echo ""

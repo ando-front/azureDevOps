@@ -1,4 +1,3 @@
-
 import pyodbc
 import os
 import time
@@ -10,8 +9,8 @@ def check_db_connection():
     user = os.getenv('SQL_SERVER_USER')
     password = os.getenv('SQL_SERVER_PASSWORD')
     port = os.getenv('SQL_SERVER_PORT', '1433')
-    timeout = int(os.getenv('E2E_DB_TIMEOUT', '300'))
-    retry_interval = int(os.getenv('E2E_DB_RETRY_INTERVAL', '5'))
+    timeout = int(os.getenv('E2E_DB_TIMEOUT', '60'))
+    retry_interval = int(os.getenv('E2E_DB_RETRY_INTERVAL', '10'))
 
     conn_str = (
         f"DRIVER={{ODBC Driver 18 for SQL Server}};"
@@ -21,7 +20,7 @@ def check_db_connection():
         f"PWD={password};"
         f"TrustServerCertificate=yes;"
         f"Encrypt=no;"
-        f"LoginTimeout=5;"
+        f"LoginTimeout=10;"
     )
 
     start_time = time.time()
