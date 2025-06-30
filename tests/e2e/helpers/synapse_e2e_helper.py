@@ -54,24 +54,27 @@ class SynapseE2EConnection:
     
     def _get_connection_string(self) -> str:
         """環境変数から接続文字列を構築"""
-        server = os.getenv('SQL_SERVER_HOST', 'sqlserver-test')
+        # ホストとポートを環境変数から取得
+        server = os.getenv('SQL_SERVER_HOST', 'sql-server')
+        port = os.getenv('SQL_SERVER_PORT', '1433')
         database = os.getenv('SQL_SERVER_DATABASE', 'master')
         username = os.getenv('SQL_SERVER_USER', 'sa')
         password = os.getenv('SQL_SERVER_PASSWORD', 'YourStrong!Passw0rd123')
         driver = os.getenv('E2E_SQL_DRIVER', 'ODBC Driver 18 for SQL Server')
         
+        # ポートを指定し、TrustServerCertificate を有効化
         connection_string = (
             f"DRIVER={{{driver}}};"
-            f"SERVER={server};"
+            f"SERVER={server},{port};"
             f"DATABASE={database};"
             f"UID={username};"
             f"PWD={password};"
-            "TrustServerCertificate=yes;"
-            "Encrypt=yes;"
+            
+            ""
             "LoginTimeout=30;"
         )
         
-        logger.info(f"E2E Connection string: {connection_string.replace(password, '***')}")
+        logger.info(f"E2E Connection string: {connection_string}")
         return connection_string
     
     def get_connection(self):

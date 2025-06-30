@@ -1,28 +1,31 @@
+#!/usr/bin/env python3
 import pyodbc
+print(f"Available ODBC drivers: {pyodbc.drivers()}")
 import os
 import time
 import sys
 
 def check_db_connection():
-    host = os.getenv('SQL_SERVER_HOST')
-    database = os.getenv('SQL_SERVER_DATABASE')
-    user = os.getenv('SQL_SERVER_USER')
-    password = os.getenv('SQL_SERVER_PASSWORD')
+    # 環境変数が設定されていない場合にデフォルト値を使用するように修正
+    host = os.getenv('SQL_SERVER_HOST', 'sql-server')
+    database = os.getenv('SQL_SERVER_DATABASE', 'master')
+    user = os.getenv('SQL_SERVER_USER', 'sa')
+    password = os.getenv('SQL_SERVER_PASSWORD', 'YourStrong!Passw0rd123')
     port = os.getenv('SQL_SERVER_PORT', '1433')
     timeout = int(os.getenv('E2E_DB_TIMEOUT', '60'))
     retry_interval = int(os.getenv('E2E_DB_RETRY_INTERVAL', '10'))
 
+    # 接続文字列: 暗号化を無効化してSQL Serverに接続
     conn_str = (
-        f"DRIVER={{ODBC Driver 18 for SQL Server}};"
+        "DRIVER={ODBC Driver 18 for SQL Server};"
         f"SERVER={host},{port};"
         f"DATABASE={database};"
         f"UID={user};"
         f"PWD={password};"
-        f"TrustServerCertificate=yes;"
-        f"Encrypt=no;"
-        f"LoginTimeout=10;"
+        "Encrypt=no;"
+        "LoginTimeout=10;"
     )
-
+    
     start_time = time.time()
     while time.time() - start_time < timeout:
         try:

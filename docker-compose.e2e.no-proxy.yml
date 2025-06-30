@@ -52,17 +52,17 @@ services:
       - SQL_SERVER_DATABASE=SynapseTestDB
       - SQL_SERVER_USER=sa
       - SQL_SERVER_PASSWORD=YourStrong!Passw0rd123
-      
+
       # Azure Storage 接続設定
       - AZURITE_HOST=azurite
       - AZURITE_BLOB_PORT=10000
       - AZURITE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
-      
+
       # テスト設定
       - E2E_TIMEOUT=300
       - E2E_RETRY_COUNT=3
       - PYTEST_ARGS=--tb=short --maxfail=5
-      
+
       # プロキシ無効化
       - HTTP_PROXY=
       - HTTPS_PROXY=
@@ -70,7 +70,7 @@ services:
       - https_proxy=
       - NO_PROXY=*
       - no_proxy=*
-      
+
     volumes:
       - .:/app
       - ./test_results:/app/test_results
