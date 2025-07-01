@@ -33,9 +33,20 @@ def check_db_connection():
             conn = pyodbc.connect(conn_str)
             cursor = conn.cursor()
             cursor.execute("SELECT 1")
-            print("SQL Server and SynapseTestDB are fully ready.")
-            conn.close()
-            return 0
+            print(f"Successfully connected to SQL Server and database {database}.")
+
+            # Check for the existence of ClientDmBx table
+            print(f"Checking for existence of ClientDmBx table in {database}...")
+            cursor.execute("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'ClientDmBx'")
+            if cursor.fetchone()[0] > 0:
+                print("ClientDmBx table found. Database and required tables are fully ready.")
+                conn.close()
+                return 0
+            else:
+                print("ClientDmBx table not found. Retrying...")
+                conn.close()
+                time.sleep(retry_interval)
+                continue
         except pyodbc.Error as ex:
             sqlstate = ex.args[0]
             print(f"Connection failed. SQLSTATE: {sqlstate}. Retrying in {retry_interval} seconds...")

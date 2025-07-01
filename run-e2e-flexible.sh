@@ -140,39 +140,48 @@ services:
     ports:
       - "1433:1433"
     volumes:
-      - ./docker/sql/init:/docker-entrypoint-initdb.d
       - sql_data:/var/opt/mssql
     networks:
       - adf-e2e-network
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q 'SELECT 1' || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q 'SELECT 1'"]
       interval: 10s
       retries: 10
       start_period: 30s
-      timeout: 10s
+      timeout: 5s
 
   sql-server-init:
     image: mcr.microsoft.com/mssql/server:2019-latest
     container_name: adf-sql-server-init
-    entrypoint: /bin/bash
-    command: >
-      -c "
-      set -e
-      echo 'Waiting for SQL Server to be healthy...'
-      # depends_onでhealthcheckは確認済み
-
-      echo 'Waiting for database initialization to complete...'
-      until /opt/mssql-tools/bin/sqlcmd -S sql-server -U sa -P 'YourStrong!Passw0rd123' -d master -Q 'SELECT 1 FROM sys.tables WHERE name = \'"'"'InitializationComplete'"'"';' | grep -q '1'; do
-        echo '... still waiting for init table ...'
-        sleep 5
-      done
-      echo 'Database initialization complete!'
-      "
+    volumes:
+      - ./docker/sql/init:/docker-entrypoint-initdb.d
+    networks:
+      - adf-e2e-network
+    environment:
+      - SA_PASSWORD=YourStrong!Passw0rd123
     depends_on:
       sql-server:
         condition: service_healthy
-    networks:
-      - adf-e2e-network
+    command: >
+      /bin/bash -c "
+      echo 'Starting database initialization...'
+      
+      # Wait for SQL Server to be ready
+      for i in {1..30}; do
+        if /opt/mssql-tools/bin/sqlcmd -S sql-server -U sa -P 'YourStrong!Passw0rd123' -Q 'SELECT 1' > /dev/null 2>&1; then
+          echo 'SQL Server is ready'
+          break
+        fi
+        echo 'Waiting for SQL Server... (\$i/30)'
+        sleep 2
+      done
+      
+      # Execute initialization script
+      echo 'Executing database initialization script...'
+      /opt/mssql-tools/bin/sqlcmd -S sql-server -U sa -P 'YourStrong!Passw0rd123' -i /docker-entrypoint-initdb.d/01-create-databases.sql
+      
+      echo 'Database initialization completed successfully'
+      "
 
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite:latest
@@ -204,6 +213,8 @@ services:
       - ./test_results:/app/test_results
       - ./logs:/app/logs
     depends_on:
+      sql-server:
+        condition: service_healthy
       sql-server-init:
         condition: service_completed_successfully
       azurite:
@@ -213,6 +224,10 @@ services:
     environment:
       - PYTHONPATH=/app
       - SQL_SERVER_HOST=sql-server
+      - SQL_SERVER_DATABASE=SynapseTestDB
+      - SQL_SERVER_USER=sa
+      - SQL_SERVER_PASSWORD=YourStrong!Passw0rd123
+      - SQL_SERVER_PORT=1433
       - AZURITE_HOST=azurite
       - E2E_TEST_MODE=flexible
     entrypoint: /usr/local/bin/run_e2e_tests_in_container.sh
@@ -357,16 +372,6 @@ main_execution() {
             
             log_info "テスト環境をバックグラウンドで起動しています..."
             docker-compose -f "$compose_file" up -d
-
-            log_info "データベースの初期化完了を待機しています... (最大5分)"
-            if ! docker wait adf-sql-server-init; then
-                log_error "データベースの初期化に失敗しました。ログを確認してください。"
-                docker logs adf-sql-server-init
-                docker logs adf-sql-server-test
-                cleanup_environment
-                exit 1
-            fi
-            log_success "データベースの初期化が完了しました。"
 
             log_info "テストランナーのログをストリーミングします... (Ctrl+Cで停止)"
             docker logs -f adf-e2e-test-runner &

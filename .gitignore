@@ -132,3 +132,4 @@ Thumbs.db
 .env
 .env
 test_results/results.xml
+tests/GEMINI.md

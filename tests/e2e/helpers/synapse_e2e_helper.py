@@ -69,8 +69,8 @@ class SynapseE2EConnection:
             f"DATABASE={database};"
             f"UID={username};"
             f"PWD={password};"
-            
-            ""
+            "TrustServerCertificate=yes;"
+            "Encrypt=yes;"
             "LoginTimeout=30;"
         )
         
