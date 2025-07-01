@@ -200,7 +200,7 @@ class SynapseE2EConnection:
             クエリ実行結果（辞書のリスト）
         """
         try:
-            query = self.query_manager.get_query(filename, query_name, **params)
+            query = self.query_manager.get_query(query_name, filename, **params)
             logger.info(f"Executing external query: {filename}::{query_name}")
             
             results = self.execute_query(query)

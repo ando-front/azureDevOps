@@ -85,7 +85,7 @@ echo "Running E2E Tests..."
 echo "========================================"
 
 # テストコマンド作成
-TEST_CMD="python -m pytest tests/e2e/ -v --tb=short -m e2e --junitxml=/app/test_results/e2e_results.xml"
+TEST_CMD="python -m pytest tests/e2e/ -v --tb=short --junitxml=/app/test_results/e2e_results.xml"
 
 # 追加のオプション（環境変数により調整可能）
 if [ "${E2E_TEST_MODE}" = "flexible" ]; then

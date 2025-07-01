@@ -115,14 +115,13 @@ get_compose_file() {
 ensure_compose_file() {
     local compose_file="$1"
     
-    if [[ ! -f "$compose_file" ]]; then
-        if [[ "$compose_file" == "docker-compose.e2e.no-proxy.yml" ]]; then
-            log_info "プロキシなし用 Docker Compose ファイルを作成中..."
-            create_no_proxy_compose_file
-        else
-            log_error "Docker Compose ファイルが見つかりません: $compose_file"
-            exit 1
-        fi
+    if [[ "$compose_file" == "docker-compose.e2e.no-proxy.yml" ]]; then
+        # プロキシなし用ファイルは常に最新版で再作成
+        log_info "プロキシなし用 Docker Compose ファイルを作成中..."
+        create_no_proxy_compose_file
+    elif [[ ! -f "$compose_file" ]]; then
+        log_error "Docker Compose ファイルが見つかりません: $compose_file"
+        exit 1
     fi
 }
 
@@ -196,11 +195,11 @@ services:
     networks:
       - adf-e2e-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:10000/devstoreaccount1"]
+      test: ["CMD-SHELL", "nc -z localhost 10000 && nc -z localhost 10001 && nc -z localhost 10002"]
       interval: 5s
       timeout: 3s
       retries: 5
-      start_period: 10s
+      start_period: 15s
 
   e2e-test-runner:
     build:
@@ -230,6 +229,18 @@ services:
       - SQL_SERVER_PORT=1433
       - AZURITE_HOST=azurite
       - E2E_TEST_MODE=flexible
+      # Azurite接続文字列（多くのテストで必要）
+      - AZURITE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      # IRシミュレーター設定（必要に応じて）
+      - IR_SIMULATOR_HOST=localhost
+      - IR_SIMULATOR_PORT=8080
+      # Azure Data Factory関連設定
+      - ADF_RESOURCE_GROUP=test-rg
+      - ADF_FACTORY_NAME=test-adf
+      - ADF_SUBSCRIPTION_ID=test-subscription
+      # テスト実行制御
+      - PYTEST_MARKERS=e2e
+      - PYTEST_VERBOSITY=2
     entrypoint: /usr/local/bin/run_e2e_tests_in_container.sh
 
 networks:
@@ -274,7 +285,46 @@ show_test_results() {
         echo "=== 📊 E2E テスト結果詳細 ==="
         
         # JUnit XMLファイルの分析
-        if [[ -f "test_results/e2e_no_proxy_results.xml" ]]; then
+        if [[ -f "test_results/e2e_results.xml" ]]; then
+            echo "✅ JUnit XMLレポート: test_results/e2e_results.xml"
+            # XMLからテスト統計を抽出（可能な場合）
+            if command -v grep >/dev/null 2>&1; then
+                local xml_content=$(cat test_results/e2e_results.xml)
+                if [[ $xml_content =~ tests=\"([0-9]+)\" ]]; then
+                    local total_tests="${BASH_REMATCH[1]}"
+                    echo "📝 総テスト数: $total_tests"
+                fi
+                if [[ $xml_content =~ failures=\"([0-9]+)\" ]]; then
+                    local failures="${BASH_REMATCH[1]}"
+                    echo "❌ 失敗: $failures"
+                fi
+                if [[ $xml_content =~ errors=\"([0-9]+)\" ]]; then
+                    local errors="${BASH_REMATCH[1]}"
+                    echo "⚠️ エラー: $errors"
+                fi
+                if [[ $xml_content =~ skipped=\"([0-9]+)\" ]]; then
+                    local skipped="${BASH_REMATCH[1]}"
+                    echo "⏭️ スキップ: $skipped"
+                fi
+                if [[ $xml_content =~ time=\"([0-9.]+)\" ]]; then
+                    local duration="${BASH_REMATCH[1]}"
+                    echo "⏱️ 実行時間: ${duration}秒"
+                fi
+                
+                # 成功率の計算
+                if [[ -n "$total_tests" && -n "$failures" && -n "$errors" && -n "$skipped" ]]; then
+                    local executed=$((total_tests - skipped))
+                    local passed=$((executed - failures - errors))
+                    if [[ $executed -gt 0 ]]; then
+                        local success_rate=$(echo "scale=1; $passed * 100 / $executed" | bc 2>/dev/null || echo "N/A")
+                        echo "✅ 成功: $passed"
+                        echo "📈 成功率: ${success_rate}%"
+                    else
+                        echo "⚠️ 実際に実行されたテストはありません（全てスキップ）"
+                    fi
+                fi
+            fi
+        elif [[ -f "test_results/e2e_no_proxy_results.xml" ]]; then
             echo "✅ JUnit XMLレポート: test_results/e2e_no_proxy_results.xml"
               # XMLからテスト統計を抽出（可能な場合）
             if command -v grep >/dev/null 2>&1; then

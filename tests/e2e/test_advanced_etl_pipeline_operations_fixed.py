@@ -68,7 +68,7 @@ class TestAdvancedETLPipelineOperations:
         if not hasattr(self, '_pyodbc_available') or not self._pyodbc_available:
             pytest.skip("pyodbc not available - skipping DB-dependent test")
         
-        conn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=sqlserver-test,1433;DATABASE=TGMATestDB;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes')
+        conn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=sql-server,1433;DATABASE=SynapseTestDB;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes;Encrypt=yes')
         cur = conn.cursor()
         cur.execute("SET IDENTITY_INSERT raw_data_source ON")
         for record_id, source_type, data_json, created_at in source_data:
@@ -205,7 +205,7 @@ class TestAdvancedETLPipelineOperations:
         if not hasattr(self, '_pyodbc_available') or not self._pyodbc_available:
             pytest.skip("pyodbc not available - skipping DB-dependent test")
         
-        conn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=sqlserver-test,1433;DATABASE=TGMATestDB;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes')
+        conn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=sql-server,1433;DATABASE=SynapseTestDB;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes;Encrypt=yes')
         cur = conn.cursor()
         cur.execute("SET IDENTITY_INSERT raw_data_source ON")
         for record_id, source_type, data_json, created_at in test_source_data:

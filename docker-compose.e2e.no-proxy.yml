@@ -73,6 +73,7 @@ services:
       - SQL_SERVER_PASSWORD=YourStrong!Passw0rd123
       - SQL_SERVER_PORT=1433
       - AZURITE_HOST=azurite
+      - AZURITE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       - E2E_TEST_MODE=flexible
     entrypoint: /usr/local/bin/run_e2e_tests_in_container.sh
 
