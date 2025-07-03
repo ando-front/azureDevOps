@@ -166,7 +166,7 @@ Input Data → [SQL Server] → [ADF Pipeline] → [Data Transformation] → [Ou
 | **DQ-009** | 外部キー整合性 | 参照整合性チェック | 存在しないclient_id参照 | 参照エラー検知・孤立レコード特定 | `SELECT * FROM orders WHERE client_id NOT IN (SELECT client_id FROM clients)` |
 | **DQ-010** | データ品質スコア | 総合品質評価 | 全データ品質ルール適用 | 品質スコア90%以上 | 品質ルール適用率の総合評価 |
 
-#### 3. 支払い処理E2Eテスト（約120ケース）
+#### 3. 支払い処理E2Eテスト（38パイプライン対応）
 
 | 機能 | テストケース数 | 検証項目 |
 |------|----------------|----------|
@@ -405,7 +405,7 @@ pytest tests/e2e/test_e2e_pipeline_client_dm.py -v
 
 【期待される結果】
 - test_comprehensive_data_scenarios.py: 239 passed
-- test_e2e_pipeline_payment_*.py: 120+ passed
+- test_e2e_pipeline_payment_*.py: 38パイプライン対応 passed
 - test_e2e_pipeline_*contract*.py: 130+ passed
 - test_e2e_adf_data_quality_*.py: 150+ passed
 - その他のテストファイル: 残り全て passed

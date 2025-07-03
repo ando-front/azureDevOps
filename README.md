@@ -1,6 +1,33 @@
-# Azure Data Factory テスト環境ガイド
+# Azure Data Factory 包括的開発・テスト環境
 
 ## Azure Data Factory (ADF) パイプライン開発・テスト・デプロイの統合環境
+
+> **新機能**: 包括的なドキュメント体系と設計仕様書の追加 (2025/07/03)
+
+## 📚 プロジェクト文書体系
+
+### 設計・仕様書
+
+- [**ARM テンプレート設計仕様書**](docs/ARM_TEMPLATE_DESIGN_SPECIFICATION.md) - パラメータ、リンクサービス、データセット、パイプライン、トリガーの詳細設計
+- [**要件定義書**](docs/ARM_TEMPLATE_REQUIREMENTS_DEFINITION.md) - ビジネス要件、機能要件、非機能要件の包括的定義
+
+### テスト仕様書
+
+- [**テスト方針書**](docs/TEST_STRATEGY_DOCUMENT.md) - テスト戦略、アプローチ、品質基準の定義
+- [**単体テスト仕様書**](docs/UNIT_TEST_SPECIFICATION.md) - コンポーネント別の詳細テストケース
+- [**E2Eテスト仕様書**](docs/E2E_TEST_SPECIFICATION.md) - ビジネスシナリオベースの統合テスト
+- [**総合テスト仕様書**](docs/COMPREHENSIVE_TEST_SPECIFICATION.md) - 品質保証と最終承認プロセス
+
+### アーキテクチャ概要
+
+```
+Azure Data Factory (omni-df-dev)
+├─ 14 リンクサービス (DB, Storage, 外部システム)
+├─ 14 データセット (構造化・半構造化・バイナリ)
+├─ 38 パイプライン (ETL/ELT処理)
+├─ 30+ トリガー (スケジュール実行)
+└─ 2 Integration Runtime (共有・Self-hosted)
+```
 
 ### テスト結果サマリー
 

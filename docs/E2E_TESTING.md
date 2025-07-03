@@ -7,7 +7,7 @@ Azure Data Factory パイプラインの包括的なE2Eテスト環境の詳細�
 ### 📊 テスト統計（最新）
 
 - **総テストケース数**: 689
-- **テストファイル数**: 77+ 
+- **テストファイル数**: 77+
 - **カバー対象パイプライン**: 37+ パイプライン
 - **成功率**: 100% (689/689)
 - **実行環境**: Docker + SQL Server 2022
@@ -16,7 +16,7 @@ Azure Data Factory パイプラインの包括的なE2Eテスト環境の詳細�
 
 | カテゴリ | パイプライン例 | テストケース数 |
 |---------|---------------|----------------|
-| **支払い関連** | `pi_Send_PaymentMethodMaster`, `pi_Send_PaymentAlert` | 120+ |
+| **支払い関連** | `pi_Send_PaymentMethodMaster`, `pi_Send_PaymentAlert` | 38 |
 | **契約管理** | `pi_Send_ElectricityContractThanks`, `pi_Send_OpeningPaymentGuide` | 95+ |
 | **顧客データ** | `pi_Send_MarketingClientDM`, `pi_Insert_ClientDM_Bx` | 180+ |
 | **機器・設備** | `cpkiyk` (CP機器・給湯器), 機器ライフサイクル | 85+ |
@@ -107,9 +107,10 @@ tests/e2e/test_docker_e2e_point_grant_email_fixed.py::test_performance_load PASS
 
 ## ビジネスロジック実装済みテストケース
 
-### 1. 支払い関連パイプライン（120+ テストケース）
+### 1. 支払い関連パイプライン（38パイプライン対応テストケース）
 
 #### `pi_Send_PaymentMethodMaster` テスト
+
 - **基本実行テスト**: パイプライン正常実行、CSV生成、SFTP転送検証
 - **大量データ処理**: 100万件データでの処理性能テスト
 - **データ品質検証**: 必須カラム、フォーマット、整合性チェック
@@ -117,6 +118,7 @@ tests/e2e/test_docker_e2e_point_grant_email_fixed.py::test_performance_load PASS
 - **監視・アラート**: パフォーマンス監視、閾値アラート機能
 
 #### `pi_Send_PaymentAlert` テスト
+
 - **未収データ抽出**: 支払期限過ぎた請求データの正確な抽出
 - **ガス契約結合**: ガス契約情報との結合ロジック検証
 - **本人特定**: 会員ID取得とマッチング精度確認
@@ -125,6 +127,7 @@ tests/e2e/test_docker_e2e_point_grant_email_fixed.py::test_performance_load PASS
 ### 2. 契約管理パイプライン（95+ テストケース）
 
 #### `pi_Send_ElectricityContractThanks` テスト
+
 - **契約タイプ検証**: BASIC, TIME_OF_USE, PEAK_SHIFT, FAMILY, BUSINESS
 - **タイムゾーン処理**: JST変換とフォーマット正規化
 - **データプライバシー**: 個人情報マスキングとコンプライアンス
@@ -132,6 +135,7 @@ tests/e2e/test_docker_e2e_point_grant_email_fixed.py::test_performance_load PASS
 - **大量データ性能**: 10,000件データでの45分以内処理保証
 
 #### `pi_Send_OpeningPaymentGuide` テスト
+
 - **新規開栓顧客**: 開栓者全量連携データの精度確認
 - **支払方法ガイド**: 口座振替、クレカ、コンビニ、請求書の選択肢
 - **ガスメーター情報**: 設置場所番号とメーター関連データ
@@ -140,6 +144,7 @@ tests/e2e/test_docker_e2e_point_grant_email_fixed.py::test_performance_load PASS
 ### 3. 顧客データパイプライン（180+ テストケース）
 
 #### `pi_Send_MarketingClientDM` テスト（533列構造）
+
 - **533列完全性検証**: 全カラムの存在とデータ型確認
 - **ガスメーター情報**: LIV0EU_*列グループのガス使用量・メーター情報
 - **機器詳細**: LIV0SPD_*列グループの設備・機器スペック
@@ -149,6 +154,7 @@ tests/e2e/test_docker_e2e_point_grant_email_fixed.py::test_performance_load PASS
 - **アラーム機器**: セキュリティ・アラーム機器データ
 
 #### `pi_Insert_ClientDM_Bx` テスト
+
 - **Bx付与ロジック**: ガス契約ベースのBx自動付与
 - **電気契約単独**: 3X+SA_IDベースマッチング検証
 - **ビジネスルール整合性**: 契約データ間の関連性確認
@@ -157,6 +163,7 @@ tests/e2e/test_docker_e2e_point_grant_email_fixed.py::test_performance_load PASS
 ### 4. 機器・設備管理（85+ テストケース）
 
 #### `cpkiyk` (CP機器・給湯器) テスト
+
 - **機器タイプ別**: WATER_HEATER, BOILER, GAS_STOVE シナリオ
 - **メーカー別処理**: RINNAI, NORITZ, PALOMA 機器の差異検証
 - **メンテナンス状態**: ACTIVE, MAINTENANCE, PREVENTIVE 状態管理
@@ -166,6 +173,7 @@ tests/e2e/test_docker_e2e_point_grant_email_fixed.py::test_performance_load PASS
 ### 5. データ品質・監視（139+ テストケース）
 
 #### 包括的データ品質テスト
+
 - **メール形式**: RFC準拠メールアドレス検証
 - **電話番号**: 国内外電話番号フォーマット検証
 - **日付範囲**: 業務日付の妥当性とタイムゾーン
@@ -174,6 +182,7 @@ tests/e2e/test_docker_e2e_point_grant_email_fixed.py::test_performance_load PASS
 - **重複検出**: 一意制約違反と重複レコード検出
 
 #### パフォーマンス・監視テスト
+
 - **大量データ処理**: 100万件以上のデータセット処理
 - **実行時間監視**: パイプライン別実行時間閾値管理
 - **リソース使用量**: CPU、メモリ、ディスクI/O監視
