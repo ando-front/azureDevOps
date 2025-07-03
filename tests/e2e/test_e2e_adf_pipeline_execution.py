@@ -21,13 +21,29 @@ class AzureBlobStorageMock:
     def __init__(self):
         self.storage = {}
     
-    def upload_blob(self, container, blob_name, data):
-        if container not in self.storage:
-            self.storage[container] = {}
-        self.storage[container][blob_name] = data
+    def upload_blob(self, blob_path, data, container="default"):
+        """Upload blob with blob_path format or individual parameters"""
+        if "/" in blob_path:
+            # Treat blob_path as the full path within the container
+            if container not in self.storage:
+                self.storage[container] = {}
+            self.storage[container][blob_path] = data
+        else:
+            # Legacy format: container, blob_name, data
+            container = blob_path
+            blob_name = data
+            data = container
+            if container not in self.storage:
+                self.storage[container] = {}
+            self.storage[container][blob_name] = data
     
-    def download_blob(self, container, blob_name):
-        return self.storage.get(container, {}).get(blob_name, None)
+    def download_blob(self, blob_path, container="default"):
+        """Download blob by path"""
+        return self.storage.get(container, {}).get(blob_path, None)
+    
+    def blob_exists(self, blob_path, container="default"):
+        """Check if blob exists"""
+        return blob_path in self.storage.get(container, {})
 
 
 @pytest.mark.e2e

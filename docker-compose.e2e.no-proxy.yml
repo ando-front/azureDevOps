@@ -1,59 +1,87 @@
-version: '3.8'
-
 services:
-  # SQL Server for E2E testing
-  sqlserver-e2e:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserver-e2e
+  sql-server:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: adf-sql-server-test
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=YourStrong!Passw0rd123
-      - MSSQL_PID=Developer
+      - SA_PASSWORD=YourStrong!Passw0rd123
+      - MSSQL_PID=Express
     ports:
       - "1433:1433"
     volumes:
-      - ./docker/sql/init:/opt/sql-scripts
-      - ./docker/sql/init/init-databases.sh:/opt/init-databases.sh
-    command: >
-      bash -c "
-      /opt/mssql/bin/sqlservr &
-      sleep 30 &&
-      chmod +x /opt/init-databases.sh &&
-      /opt/init-databases.sh &&
-      wait
-      "
-    healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd123 -Q 'SELECT 1' -C || exit 1"]
-      interval: 10s
-      timeout: 3s
-      retries: 15
-      start_period: 30s
+      - sql_data:/var/opt/mssql
     networks:
-      - e2e-network
+      - adf-e2e-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q 'SELECT 1' -C"]
+      interval: 10s
+      retries: 10
+      start_period: 30s
+      timeout: 5s
 
-  # Azurite for Azure Storage emulation
-  azurite-e2e:
+  sql-server-init:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: adf-sql-server-init
+    volumes:
+      - ./docker/sql/init:/docker-entrypoint-initdb.d
+    networks:
+      - adf-e2e-network
+    environment:
+      - SA_PASSWORD=YourStrong!Passw0rd123
+    depends_on:
+      sql-server:
+        condition: service_healthy
+    command: /docker-entrypoint-initdb.d/init-databases.sh
+
+  azurite:
     image: mcr.microsoft.com/azure-storage/azurite:latest
-    container_name: azurite-e2e
+    container_name: adf-azurite-test
+    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0"
     ports:
       - "10000:10000"
       - "10001:10001"
       - "10002:10002"
-    environment:
-      - AZURITE_ACCOUNTS=devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
-    command: ["azurite", "--blobHost", "0.0.0.0", "--queueHost", "0.0.0.0", "--tableHost", "0.0.0.0", "--location", "/workspace", "--debug", "/workspace/debug.log"]
     volumes:
-      - azurite-data:/workspace
+      - azurite_data:/data
     networks:
-      - e2e-network
+      - adf-e2e-network
 
-# Test runner is disabled to avoid proxy issues
-# Tests will be run from the host machine directly
-
-volumes:
-  azurite-data:
-    driver: local
+  e2e-test-runner:
+    build:
+      context: .
+      dockerfile: docker/test-runner/Dockerfile
+    image: azuredevops-e2e-test-runner:latest
+    container_name: adf-e2e-test-runner
+    volumes:
+      - .:/app
+      - ./test_results:/app/test_results
+      - ./logs:/app/logs
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      sql-server-init:
+        condition: service_completed_successfully
+      azurite:
+        condition: service_started
+    networks:
+      - adf-e2e-network
+    environment:
+      - PYTHONPATH=/app
+      - SQL_SERVER_HOST=sql-server
+      - SQL_SERVER_DATABASE=SynapseTestDB
+      - SQL_SERVER_USER=sa
+      - SQL_SERVER_PASSWORD=YourStrong!Passw0rd123
+      - SQL_SERVER_PORT=1433
+      - AZURITE_HOST=azurite
+      - AZURITE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      - E2E_TEST_MODE=flexible
+    entrypoint: /usr/local/bin/run_e2e_tests_in_container.sh
 
 networks:
-  e2e-network:
+  adf-e2e-network:
     driver: bridge
+
+volumes:
+  sql_data:
+  azurite_data:
+

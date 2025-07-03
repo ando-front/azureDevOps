@@ -129,3 +129,8 @@ Thumbs.db
 *.temp
 *.bak
 *.backup
+.env
+.env
+test_results/results.xml
+tests/GEMINI.md
+test_results/e2e_results.xml

@@ -27,19 +27,36 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV PYTHONHTTPSVERIFY=0
 
 # Microsoft ODBC ドライバーのインストール（証明書検証をスキップ）
-RUN apt-get update && apt-get install -y --allow-unauthenticated curl gnupg ca-certificates wget apt-transport-https
+RUN apt-get update && apt-get install -y --allow-unauthenticated curl gnupg ca-certificates wget apt-transport-https iputils-ping
 RUN curl -fsSL -k https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
 RUN echo "deb [trusted=yes] https://packages.microsoft.com/debian/11/prod bullseye main" > /etc/apt/sources.list.d/mssql-release.list
 RUN apt-get update
 RUN ACCEPT_EULA=Y apt-get install -y --allow-unauthenticated msodbcsql18
 RUN ACCEPT_EULA=Y apt-get install -y --allow-unauthenticated mssql-tools18
-RUN apt-get install -y --allow-unauthenticated unixodbc-dev
+RUN apt-get install -y --allow-unauthenticated unixodbc unixodbc-dev
+
+
 RUN apt-get clean
-RUN rm -rf /var/lib/apt/lists/*
 
 # ODBC Driver 18 のパスを環境変数に設定
 ENV PATH="$PATH:/opt/mssql-tools18/bin"
+RUN echo /opt/microsoft/msodbcsql18/lib64 > /etc/ld.so.conf.d/msodbcsql18.conf && ldconfig
+RUN ls -la /opt/mssql-tools18/
+RUN ls -la /opt/mssql-tools18/bin
+
+
+
 ENV ODBC_DRIVER="ODBC Driver 18 for SQL Server"
+
+# Configure ODBC Driver to trust server certificate and disable encryption
+RUN cat <<EOF > /etc/odbcinst.ini
+[ODBC Driver 18 for SQL Server]
+Description=Microsoft ODBC Driver 18 for SQL Server
+Driver=/usr/lib/libmsodbcsql-18.so
+UsageCount=1
+TrustServerCertificate=yes
+Encrypt=no
+EOF
 
 # 段階1: 基本パッケージのみ（信頼できるホスト設定付き）
 RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --no-cache-dir --upgrade pip && \
@@ -74,6 +91,8 @@ RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted
 
 # プロジェクトファイルをコピー
 COPY . .
+COPY docker/test-runner/run_e2e_tests_in_container.sh /usr/local/bin/run_e2e_tests_in_container.sh
+RUN chmod +x /usr/local/bin/run_e2e_tests_in_container.sh
 
 # Install pyodbc without ODBC drivers (will be mocked in tests)
 # TODO: 技術的負債 - pyodbcをコメントアウト中

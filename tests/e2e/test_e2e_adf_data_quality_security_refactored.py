@@ -17,6 +17,7 @@ from tests.e2e.helpers.synapse_e2e_helper import SynapseE2EConnection
 from tests.e2e.helpers.data_quality_test_manager import (
     DataQualityTestManager, DataQualityTableType, ProfilingTarget, QualityRule, LineageStep
 )
+from tests.helpers.reproducible_e2e_helper import setup_reproducible_test_class, cleanup_reproducible_test_class
 
 
 @pytest.mark.e2e

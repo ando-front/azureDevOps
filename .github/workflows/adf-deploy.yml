@@ -244,21 +244,9 @@ jobs:
                   print(f"❌ Failed to process {path}: {e}")
                   traceback.print_exc()
 
-          # 接続確認とリトライ機能を追加
           print("🔗 Attempting to connect to SQL Server...")
-          max_retries = 5
-          for attempt in range(max_retries):
-              try:
-                  conn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=sqlserver-test,1433;DATABASE=TGMATestDB;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes', timeout=30)
-                  print(f"✅ Connected to SQL Server on attempt {attempt + 1}")
-                  break
-              except Exception as e:
-                  print(f"⚠️ Connection attempt {attempt + 1} failed: {e}")
-                  if attempt < max_retries - 1:
-                      import time
-                      time.sleep(5)
-                  else:                      print("❌ Failed to connect after all retries")
-                      sys.exit(1)
+          conn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=sqlserver-test,1433;DATABASE=TGMATestDB;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes', timeout=30)
+          print("✅ Connected to SQL Server")
 
           # 全ての初期化SQLファイルを順序通り実行
           sql_files = [
@@ -301,65 +289,6 @@ jobs:
           else
             echo "⚠️ pyodbc not available in container - skipping DB initialization"
             echo "ℹ️ DB-dependent tests will be automatically skipped during test execution"
-          fi
-
-      - name: Wait for SQL Server ready (pyodbc) - 条件付き実行
-        run: |
-          # TODO: 技術的負債 - SQL Server接続確認もpyodbc依存
-          # 代替案: 
-          # 1. sqlcmdコマンドによる接続確認（コンテナ間通信）
-          # 2. curl/wgetによるSQL Server TCPポート確認
-          # 3. dockerコンテナのhealthcheckステータス確認
-          # pyodbcが利用可能かチェック
-          if docker exec pytest-test python -c "import pyodbc; print('✅ pyodbc available')" 2>/dev/null; then
-            echo "🔧 pyodbc is available, proceeding with SQL Server readiness check"
-            cat <<'EOF' > wait_sqlserver.py
-          import time
-          import pyodbc
-          
-          print("🔄 Waiting for SQL Server to be ready...")
-          max_retries = 60  # 増加: 60回 × 3秒 = 最大3分
-          
-          for i in range(max_retries):
-              try:
-                  # 接続テスト - より長いタイムアウト
-                  conn = pyodbc.connect(
-                      'DRIVER={ODBC Driver 18 for SQL Server};SERVER=sqlserver-test,1433;DATABASE=master;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes', 
-                      timeout=10  # 接続タイムアウトを10秒に増加
-                  )
-                  
-                  # TGMATestDBの存在確認
-                  cursor = conn.cursor()
-                  cursor.execute("SELECT name FROM sys.databases WHERE name = 'TGMATestDB'")
-                  if cursor.fetchone():
-                      print("✅ TGMATestDB database found")
-                  else:
-                      print("⚠️ TGMATestDB database not found, creating...")
-                      cursor.execute("CREATE DATABASE TGMATestDB")
-                      conn.commit()                  
-                  conn.close()
-                  
-                  # TGMATestDBへの接続テスト
-                  test_conn = pyodbc.connect(
-                      'DRIVER={ODBC Driver 18 for SQL Server};SERVER=sqlserver-test,1433;DATABASE=TGMATestDB;UID=sa;PWD=YourStrong!Passw0rd123;TrustServerCertificate=yes',
-                      timeout=10
-                  )
-                  test_conn.close()
-                  
-                  print(f'✅ SQL Server is ready (attempt {i+1}/{max_retries})')
-                  break
-              except Exception as e:
-                  print(f'⚠️ Waiting for SQL Server... ({i+1}/{max_retries}): {e}')
-                  time.sleep(3)  # 待機時間を3秒に増加
-          else:
-              print('❌ SQL Server did not become ready in time')
-              raise RuntimeError('SQL Server did not become ready in time')
-          EOF
-            docker cp wait_sqlserver.py pytest-test:/app/wait_sqlserver.py
-            docker exec pytest-test python /app/wait_sqlserver.py
-          else
-            echo "⚠️ pyodbc not available in container - skipping SQL Server readiness check"
-            echo "ℹ️ SQL Server dependent operations will be skipped"
           fi
 
       - name: Run pytest

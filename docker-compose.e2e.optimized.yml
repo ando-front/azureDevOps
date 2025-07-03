@@ -26,8 +26,10 @@ services:
       start_period: 30s
     command: >
       sh -c "
-        echo '🚀 Starting SQL Server with minimal setup...' &&
-        /opt/mssql/bin/sqlservr
+        echo '🚀 Starting SQL Server initialization script...';
+        /bin/bash /docker-entrypoint-initdb.d/init-databases.sh &&
+        echo '✅ Initialization complete. Starting SQL Server...' &&
+        exec /opt/mssql/bin/sqlservr
       "
     networks:
       - e2e-network

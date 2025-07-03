@@ -1,40 +1,25 @@
 #!/bin/bash
-# filepath: c:\Users\0190402\git\tgma-MA-POC\docker\sql\init\init-databases.sh
-# E2Eテスト用データベース初期化スクリプト（冪等性対応）
+
+# SQL Server データベース初期化スクリプト
+# このスクリプトはsql-server-initコンテナから実行されます
 
 set -e
 
 echo "Starting database initialization..."
 
-# SQL Serverの起動完了を待機
+# SQL Server の起動を待機
 echo "Waiting for SQL Server to be ready..."
-sleep 30
-
-# スクリプトの実行順序を定義
-scripts=(
-    "/opt/sql-scripts/00_create_synapse_db.sql"
-    "/opt/sql-scripts/01_init_database.sql"
-    "/opt/sql-scripts/02_create_test_tables.sql"
-    "/opt/sql-scripts/04_enhanced_test_tables.sql"
-    "/opt/sql-scripts/03_insert_test_data.sql"
-    "/opt/sql-scripts/05_comprehensive_test_data.sql"
-    "/opt/sql-scripts/06_additional_e2e_test_data.sql"
-)
-
-# 各スクリプトを順次実行
-for script in "${scripts[@]}"; do
-    if [ -f "$script" ]; then
-        echo "Executing: $script"
-        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -i "$script" -C
-        if [ $? -eq 0 ]; then
-            echo "Successfully executed: $script"
-        else
-            echo "Error executing: $script"
-            exit 1
-        fi
-    else
-        echo "Script not found: $script"
+for i in {1..30}; do
+    if /opt/mssql-tools18/bin/sqlcmd -S sql-server -U sa -P "$SA_PASSWORD" -Q "SELECT 1" -C > /dev/null 2>&1; then
+        echo "SQL Server is ready"
+        break
     fi
+    echo "Waiting for SQL Server... ($i/30)"
+    sleep 2
 done
 
-echo "Database initialization completed successfully!"
+# 初期化スクリプトの実行
+echo "Executing database initialization script..."
+/opt/mssql-tools18/bin/sqlcmd -S sql-server -U sa -P "$SA_PASSWORD" -i /docker-entrypoint-initdb.d/01-create-databases.sql -C
+
+echo "Database initialization completed successfully"

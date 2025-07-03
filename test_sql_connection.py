@@ -4,9 +4,24 @@
 SQL Server接続テストスクリプト
 """
 
+import os
 import pyodbc
 import socket
 import sys
+from dotenv import load_dotenv
+
+# .envファイルから環境変数を読み込む
+load_dotenv()
+
+# 接続情報を環境変数から取得
+server = os.getenv("SQL_SERVER")
+database = os.getenv("SQL_DATABASE")
+username = os.getenv("SQL_USERNAME")
+password = os.getenv("SQL_PASSWORD")
+driver = os.getenv("ODBC_DRIVER", "{ODBC Driver 18 for SQL Server}") # デフォルト値を設定
+
+# 接続文字列を構築 (Azure SQL DB向けに暗号化を有効化)
+conn_str = f"DRIVER={driver};SERVER={server};DATABASE={database};UID={username};PWD={password};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
 
 def test_network_connection():
     """ネットワーク接続テスト"""
@@ -102,3 +117,33 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+print("以下の情報でデータベースに接続します...")
+print(f"サーバー: {server}")
+print(f"データベース: {database}")
+print(f"ユーザー名: {username}")
+
+try:
+    # データベースに接続
+    with pyodbc.connect(conn_str, timeout=30) as conn:
+        print("\n\033[92m接続に成功しました！\033[0m")
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT @@VERSION")
+            row = cursor.fetchone()
+            print("SQL Serverのバージョン:")
+            print(row[0])
+
+except pyodbc.Error as ex:
+    sqlstate = ex.args[0]
+    print(f"\n\033[91m接続に失敗しました。エラーコード: {sqlstate}\033[0m")
+    print("エラー詳細:")
+    print(ex)
+    print("\n--- トラブルシューティング ---")
+    print("1. .envファイル内のSQL_SERVER, SQL_DATABASE, SQL_USERNAME, SQL_PASSWORDが正しいか確認してください。")
+    print("2. Azureポータルで、お使いのPCのIPアドレスがSQL Serverのファイアウォール規則で許可されているか確認してください。")
+    print("3. 企業ネットワークの場合、ポート1433がプロキシやファイアウォールでブロックされていないか確認してください。")
+
+
+except Exception as e:
+    print("\n\033[91m予期せぬエラーが発生しました。\033[0m")
+    print(e)

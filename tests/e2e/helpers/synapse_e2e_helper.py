@@ -50,26 +50,31 @@ class SynapseE2EConnection:
         self.connection_string = connection_string or self._get_connection_string()
         self.query_manager = E2ESQLQueryManager()
         logger.info("E2E SynapseE2EConnection initialized with SQL query manager")
+        self.wait_for_connection()
     
     def _get_connection_string(self) -> str:
         """環境変数から接続文字列を構築"""
-        server = os.getenv('E2E_SQL_SERVER', 'localhost,1433')
-        database = os.getenv('E2E_SQL_DATABASE', 'TGMATestDB')
-        username = os.getenv('E2E_SQL_USERNAME', 'sa')
-        password = os.getenv('E2E_SQL_PASSWORD', 'YourStrong!Passw0rd123')
+        # ホストとポートを環境変数から取得
+        server = os.getenv('SQL_SERVER_HOST', 'sql-server')
+        port = os.getenv('SQL_SERVER_PORT', '1433')
+        database = os.getenv('SQL_SERVER_DATABASE', 'master')
+        username = os.getenv('SQL_SERVER_USER', 'sa')
+        password = os.getenv('SQL_SERVER_PASSWORD', 'YourStrong!Passw0rd123')
         driver = os.getenv('E2E_SQL_DRIVER', 'ODBC Driver 18 for SQL Server')
         
+        # ポートを指定し、TrustServerCertificate を有効化
         connection_string = (
             f"DRIVER={{{driver}}};"
-            f"SERVER={server};"
+            f"SERVER={server},{port};"
             f"DATABASE={database};"
             f"UID={username};"
             f"PWD={password};"
             "TrustServerCertificate=yes;"
-            "Encrypt=no;"
+            "Encrypt=yes;"
+            "LoginTimeout=30;"
         )
         
-        logger.info(f"E2E Connection string: {connection_string.replace(password, '***')}")
+        logger.info(f"E2E Connection string: {connection_string}")
         return connection_string
     
     def get_connection(self):
@@ -107,7 +112,7 @@ class SynapseE2EConnection:
             logger.error(f"E2E Query execution failed: {e}")
             raise
     
-    def wait_for_connection(self, max_retries: int = 10, delay: int = 5) -> bool:
+    def wait_for_connection(self, max_retries: int = 10, delay: int = 3) -> bool:
         """データベース接続が利用可能になるまで待機"""
         logger.info(f"E2E Waiting for database connection (max {max_retries} retries)...")
         
@@ -195,7 +200,7 @@ class SynapseE2EConnection:
             クエリ実行結果（辞書のリスト）
         """
         try:
-            query = self.query_manager.get_query(filename, query_name, **params)
+            query = self.query_manager.get_query(query_name, filename, **params)
             logger.info(f"Executing external query: {filename}::{query_name}")
             
             results = self.execute_query(query)
@@ -450,7 +455,7 @@ def e2e_execute_query(query: str, params: tuple = None) -> List[tuple]:
         return []
 
 
-def e2e_wait_for_connection(max_retries: int = 10, delay: int = 5) -> bool:
+def e2e_wait_for_connection(max_retries: int = 10, delay: int = 3) -> bool:
     """
     E2Eテスト用データベース接続待機（グローバル関数版）
     
