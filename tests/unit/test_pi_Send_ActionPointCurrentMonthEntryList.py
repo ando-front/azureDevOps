@@ -1,6 +1,10 @@
 """
 ADFパイプライン: pi_Send_ActionPointCurrentMonthEntryList のユニットテスト。
 パイプライン名・アクティビティ・Copyアクティビティ内容の検証を行う。
+
+テストケースID: UT-PI-004
+テスト戦略準拠: パイプライン個別検証 (Unit Test Layer)
+自動化レベル: 完全自動化
 """
 
 from .normalize_column import normalize_column_name
@@ -15,6 +19,10 @@ import copy
 import pytest
 
 class TestPiSendActionPointCurrentMonthEntryList(unittest.TestCase):
+    """
+    pi_Send_ActionPointCurrentMonthEntryList パイプライン テスト
+    テストケースID: UT-PI-004
+    """
 
     @classmethod
     def setup_class(cls):

@@ -1,6 +1,19 @@
 """
+Azure Data Factory パイプライン構造検証テスト
+
+テストケースID: UT-PV-001
+テスト名: パイプライン構造検証テスト
+対象パイプライン: pi_Copy_marketing_client_dm
+テスト戦略: 自動化必須項目（パイプライン実行可能性テスト）
+作成日: 2025年7月3日（既存→トレーサビリティ追加）
+
 ADFパイプライン: pi_Copy_marketing_client_dm のユニットテスト。
 パイプライン名・アクティビティ・カラム整合性の検証を行う。
+
+実装済み業務価値:
+- 533列CSV・SFTP送信の詳細検証
+- マーケティング顧客データの精密な品質管理
+- SELECT-INSERT句のカラム対応整合性確認
 """
 
 import pytest
@@ -9,16 +22,29 @@ from tests.unit.helpers.english_column_extractor import compare_english_columns
 from tests.unit.normalize_column import normalize_column_name
 
 
-def test_pipeline_name(pipeline_copy_marketing_client_dm):
+def test_ut_pv_001_01_pipeline_name(pipeline_copy_marketing_client_dm):
+    """
+    UT-PV-001-01: パイプライン名検証
+    パイプライン識別子の正確性を確認
+    """
     assert "pi_Copy_marketing_client_dm" in pipeline_copy_marketing_client_dm["name"]
 
 
-def test_activities_exist(pipeline_copy_marketing_client_dm):
+def test_ut_pv_001_02_activities_exist(pipeline_copy_marketing_client_dm):
+    """
+    UT-PV-001-02: アクティビティ存在確認
+    期待するアクティビティ数（2個）の確認
+    """
     acts = pipeline_copy_marketing_client_dm["properties"]["activities"]
     assert len(acts) == 2
 
 
-def test_input_output_columns_match(pipeline_copy_marketing_client_dm):
+def test_ut_pv_001_03_input_output_columns_match(pipeline_copy_marketing_client_dm):
+    """
+    UT-PV-001-03: カラム整合性検証（重要）
+    SELECT句とINSERT句のカラム対応整合性確認
+    533列の精密なマッピング検証
+    """
     activities = pipeline_copy_marketing_client_dm["properties"]["activities"]
     select_sql = activities[0]["typeProperties"]["source"]["sqlReaderQuery"]
     insert_sql = activities[1]["typeProperties"]["scripts"][0]["text"]

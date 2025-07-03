@@ -1,6 +1,10 @@
 """
 ADFパイプライン: pi_Insert_ClientDmBx のユニットテスト。
 パイプライン構造・必須プロパティ・Synapse接続の検証を行う。
+
+テストケースID: UT-PI-003
+テスト戦略準拠: パイプライン個別検証 (Unit Test Layer)
+自動化レベル: 完全自動化
 """
 
 import pytest
@@ -10,17 +14,22 @@ from tests.unit.helpers.synapse_test_helper import SynapseTestConnection, verify
 
 
 @pytest.mark.unit
+@pytest.mark.test_case_id("UT-PI-003-001")
 def test_pipeline_name(pipeline_insert_clientdm_bx):
+    """パイプライン名検証 - UT-PI-003-001"""
     assert "pi_Insert_ClientDmBx" in pipeline_insert_clientdm_bx["name"]
 
 
+@pytest.mark.test_case_id("UT-PI-003-002")
 def test_activities_exist(pipeline_insert_clientdm_bx):
+    """アクティビティ存在検証 - UT-PI-003-002"""
     acts = pipeline_insert_clientdm_bx["properties"]["activities"]
     assert len(acts) == 1  # SQLスクリプトアクティビティが1つ
 
 
+@pytest.mark.test_case_id("UT-PI-003-003")
 def test_input_output_columns_match(pipeline_insert_clientdm_bx):
-    """SQLスクリプトアクティビティのSQL文構造検証"""
+    """SQLスクリプトアクティビティのSQL文構造検証 - UT-PI-003-003"""
     activity = pipeline_insert_clientdm_bx["properties"]["activities"][0]
     sql_script = activity["typeProperties"]["scripts"][0]["text"]
     

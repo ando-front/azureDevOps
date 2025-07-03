@@ -1,6 +1,19 @@
 """
+Azure Data Factory ファイル転送テスト
+
+テストケースID: UT-FT-001
+テスト名: ファイル転送テスト
+対象パイプライン: pi_PointGrantEmail
+テスト戦略: 自動化必須項目（パイプライン実行可能性テスト）
+作成日: 2025年7月3日（既存→トレーサビリティ追加）
+
 ADFパイプライン: pi_PointGrantEmail のユニットテスト。
 Blob操作・テーブル存在・データ挿入・ステータス更新の検証を行う。
+
+実装済み業務価値:
+- ポイント付与メール配信の統合検証
+- Blob-SFTP間のファイル転送処理確認
+- 顧客満足度向上施策の確実実行
 """
 
 import os
@@ -26,7 +39,11 @@ def setup_blob_containers(blob_service_client):
         except:
             pass
 
-def test_file_list_retrieval(blob_service_client, test_file):
+def test_ut_ft_001_01_file_list_retrieval(blob_service_client, test_file):
+    """
+    UT-FT-001-01: ファイル一覧取得テスト
+    Blobコンテナからのファイル取得機能確認
+    """
     input_path, name, _ = test_file
     blob = blob_service_client.get_blob_client("input", name)
     blob.upload_blob(input_path.read_bytes(), overwrite=True)
