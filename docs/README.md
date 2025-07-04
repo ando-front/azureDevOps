@@ -41,6 +41,7 @@
 
 #### 3.2 運用・保守
 - [🔧 トラブルシューティング](./TROUBLESHOOTING.md) - 問題解決ガイド
+- [🚨 Docker ネットワーク緊急対応](./DOCKER_NETWORK_EMERGENCY_FIX.md) - Dockerビルド接続問題の即座解決
 - [📦 ポータビリティガイド](./PORTABILITY_GUIDE.md) - 環境移行・展開
 
 ### 4. パイプライン・統合 (Pipeline & Integration)

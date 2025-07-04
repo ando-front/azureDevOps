@@ -4,6 +4,49 @@
 
 ## Docker関連の問題
 
+### ❌ apt-getネットワーク接続エラー
+
+#### 問題: Dockerビルド時にパッケージダウンロードが失敗する
+
+```bash
+# エラー例
+Err:1 http://deb.debian.org/debian bookworm InRelease
+  Connection failed [IP: 151.101.110.132 80]
+E: Unable to locate package curl
+```
+
+**原因**: Debianパッケージリポジトリへのネットワーク接続問題（プロキシ、DNS、ファイアウォール）
+
+**⚡ 即座の解決策**:
+
+1. **修正版Dockerfileを使用**:
+   ```bash
+   # 修正版Dockerfileでビルド
+   docker build -f Dockerfile.fixed -t your-app-fixed .
+   ```
+
+2. **DNS設定の確認**:
+   ```bash
+   # Dockerデーモンの再起動
+   docker system prune -f
+   docker builder prune -f
+   ```
+
+3. **プロキシ環境の場合**:
+   ```bash
+   # プロキシ設定でビルド
+   docker build --build-arg HTTP_PROXY=http://your-proxy:port \
+               --build-arg HTTPS_PROXY=http://your-proxy:port \
+               -f Dockerfile.fixed -t your-app .
+   ```
+
+4. **ミラーサーバー使用版**:
+   - `Dockerfile.fixed`に日本のミラーサーバー設定済み
+   - タイムアウト設定とリトライ機能付き
+   - Microsoft ODBCドライバーはオプション（失敗許容）
+
+**📋 詳細ガイド**: `docs/DOCKER_NETWORK_EMERGENCY_FIX.md`を参照
+
 ### コンテナが起動しない
 
 #### 問題: docker-compose が失敗する
@@ -75,6 +118,126 @@ docker exec -it ir-simulator-e2e pytest tests/e2e/ -v
    export HTTP_PROXY=http://proxy.company.com:8080
    export HTTPS_PROXY=http://proxy.company.com:8080
    export NO_PROXY=localhost,127.0.0.1
+   ```
+
+### Dockerビルド時のネットワーク接続エラー
+
+#### 問題: apt-get update が失敗する
+
+```bash
+# エラー例
+Err:1 http://deb.debian.org/debian bookworm InRelease
+  Connection failed [IP: 151.101.110.132 80]
+E: Unable to locate package curl
+E: Package 'gnupg' has no installation candidate
+```
+
+**原因:**
+- ネットワーク接続の問題
+- プロキシ設定の問題
+- DNSリゾルバの問題
+- Dockerのネットワーク設定の問題
+
+**解決方法:**
+
+1. **ネットワーク接続の確認**
+
+   ```bash
+   # ホストマシンからの接続確認
+   ping 8.8.8.8
+   curl -I http://deb.debian.org/debian/
+   ```
+
+2. **Dockerのネットワーク設定確認**
+
+   ```bash
+   # Docker Daemonの再起動
+   sudo systemctl restart docker
+   
+   # Dockerのネットワーク一覧確認
+   docker network ls
+   
+   # デフォルトブリッジの確認
+   docker network inspect bridge
+   ```
+
+3. **DNSの設定確認**
+
+   ```bash
+   # Docker Daemon設定ファイルの確認・編集
+   sudo nano /etc/docker/daemon.json
+   ```
+
+   ```json
+   {
+     "dns": ["8.8.8.8", "8.8.4.4"]
+   }
+   ```
+
+4. **プロキシ設定（企業環境の場合）**
+
+   ```bash
+   # Docker Daemon用プロキシ設定
+   sudo mkdir -p /etc/systemd/system/docker.service.d/
+   sudo nano /etc/systemd/system/docker.service.d/http-proxy.conf
+   ```
+
+   ```ini
+   [Service]
+   Environment="HTTP_PROXY=http://proxy.company.com:port"
+   Environment="HTTPS_PROXY=http://proxy.company.com:port"
+   Environment="NO_PROXY=localhost,127.0.0.1"
+   ```
+
+5. **代替パッケージリポジトリの使用**
+
+   Dockerfileを修正して異なるミラーを使用:
+
+   ```dockerfile
+   # 日本のミラーを使用
+   RUN sed -i 's/deb.debian.org/ftp.jp.debian.org/g' /etc/apt/sources.list
+   RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y...
+   ```
+
+6. **段階的なパッケージインストール**
+
+   ```dockerfile
+   # パッケージを分割してインストール
+   RUN apt-get update
+   RUN apt-get install -y curl gnupg lsb-release
+   RUN apt-get install -y unixodbc unixodbc-dev
+   RUN apt-get install -y freetds-dev tdsodbc gcc g++ freetds-bin
+   RUN rm -rf /var/lib/apt/lists/*
+   ```
+
+7. **一時的な回避策: キャッシュを使用**
+
+   ```bash
+   # 既存のイメージからコンテナを起動
+   docker run -it --name temp-container debian:bookworm /bin/bash
+   
+   # 手動でパッケージをインストール
+   apt-get update
+   apt-get install -y curl gnupg lsb-release unixodbc unixodbc-dev freetds-dev tdsodbc gcc g++ freetds-bin
+   
+   # コンテナをコミット
+   docker commit temp-container my-custom-image:latest
+   
+   # Dockerfileのベースイメージを変更
+   FROM my-custom-image:latest
+   ```
+
+8. **Windows環境での追加対応**
+
+   ```powershell
+   # Windows DockerでのDNS設定
+   # Docker Desktop設定でDNSサーバを指定
+   # Settings → Resources → Network → DNS Server: 8.8.8.8
+   
+   # WSL2使用時のネットワーク設定確認
+   wsl --list --verbose
+   wsl --shutdown
+   wsl
    ```
 
 ## テスト実行の問題
