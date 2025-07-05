@@ -10,6 +10,9 @@
 
 - [**ARM テンプレート設計仕様書**](docs/ARM_TEMPLATE_DESIGN_SPECIFICATION.md) - パラメータ、リンクサービス、データセット、パイプライン、トリガーの詳細設計
 - [**要件定義書**](docs/ARM_TEMPLATE_REQUIREMENTS_DEFINITION.md) - ビジネス要件、機能要件、非機能要件の包括的定義
+- [**ドメイン駆動設計モデル**](docs/DOMAIN_DRIVEN_DESIGN_MODEL.md) - DDDプラクティスに基づくドメインモデル設計
+- [**要件定義プロンプト設計ガイド**](docs/REQUIREMENTS_PROMPT_DESIGN_GUIDE.md) - 新機能開発における標準化された要件定義プロセス
+- [**実用プロンプト例集**](docs/PRACTICAL_PROMPT_EXAMPLES.md) - 実際の開発で使用できる具体的なプロンプト例
 
 ### テスト仕様書
 
@@ -20,13 +23,24 @@
 
 ### アーキテクチャ概要
 
-```
-Azure Data Factory (omni-df-dev)
-├─ 14 リンクサービス (DB, Storage, 外部システム)
-├─ 14 データセット (構造化・半構造化・バイナリ)
-├─ 38 パイプライン (ETL/ELT処理)
-├─ 30+ トリガー (スケジュール実行)
-└─ 2 Integration Runtime (共有・Self-hosted)
+```text
+Azure Data Factory + DDD アーキテクチャ
+├─ ドメイン層
+│  ├─ パイプライン実行ドメイン (Core)
+│  ├─ データ品質保証ドメイン (Core)  
+│  ├─ テスト自動化ドメイン (Core)
+│  ├─ 接続管理ドメイン (Supporting)
+│  └─ 設定管理ドメイン (Supporting)
+├─ ADF リソース層
+│  ├─ 14 リンクサービス (DB, Storage, 外部システム)
+│  ├─ 14 データセット (構造化・半構造化・バイナリ)
+│  ├─ 38 パイプライン (ETL/ELT処理)
+│  ├─ 30+ トリガー (スケジュール実行)
+│  └─ 2 Integration Runtime (共有・Self-hosted)
+└─ テスト・品質保証層
+   ├─ 400+ E2Eテストケース
+   ├─ Docker統合環境
+   └─ CI/CD自動化パイプライン
 ```
 
 ### テスト結果サマリー
