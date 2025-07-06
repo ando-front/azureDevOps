@@ -10,6 +10,7 @@ import time
 import logging
 import subprocess
 from pathlib import Path
+import threading
 
 # pyodbcの条件付きインポート（技術的負債対応）
 try:
@@ -67,6 +68,14 @@ except ImportError:    # pyodbcが利用できない場合のモッククラス
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
 
+# グローバルな状態管理
+class GlobalTestState:
+    db_initialized = False
+    lock = threading.Lock()
+
+global_state = GlobalTestState()
+
+
 class ReproducibleE2EHelper:
     """再現可能なE2Eテスト実行をサポートするヘルパークラス"""
     
@@ -77,33 +86,39 @@ class ReproducibleE2EHelper:
     def ensure_reproducible_database_state(self) -> bool:
         """
         完全に再現可能なデータベース状態を確保
-        毎回同じ初期状態でテストを開始できることを保証
+        初回のみ初期化を実行し、以降は状態を維持する
         """
-        logger.info("🔄 Ensuring reproducible database state for E2E tests...")
-        
-        try:
-            # 自動初期化スクリプトを実行
-            result = subprocess.run(
-                [sys.executable, str(self.initializer_script)],
-                capture_output=True,
-                text=True,
-                timeout=120  # 2分でタイムアウト
-            )
-            
-            if result.returncode == 0:
-                logger.info("✅ Database initialization completed successfully")
-                logger.info("📊 Test data is now in a completely reproducible state")
+        with global_state.lock:
+            if global_state.db_initialized:
+                logger.info("✅ Database already initialized. Skipping.")
                 return True
-            else:
-                logger.error(f"❌ Database initialization failed: {result.stderr}")
-                return False
+
+            logger.info("🔄 Ensuring reproducible database state for E2E tests (first run)...")
+            
+            try:
+                # 自動初期化スクリプトを実行
+                result = subprocess.run(
+                    [sys.executable, str(self.initializer_script)],
+                    capture_output=True,
+                    text=True,
+                    timeout=300  # 5分に延長
+                )
                 
-        except subprocess.TimeoutExpired:
-            logger.error("❌ Database initialization timed out")
-            return False
-        except Exception as e:
-            logger.error(f"❌ Failed to run database initialization: {str(e)}")
-            return False
+                if result.returncode == 0:
+                    logger.info("✅ Database initialization completed successfully")
+                    logger.info("📊 Test data is now in a completely reproducible state")
+                    global_state.db_initialized = True
+                    return True
+                else:
+                    logger.error(f"❌ Database initialization failed: {result.stderr}")
+                    return False
+                    
+            except subprocess.TimeoutExpired:
+                logger.error("❌ Database initialization timed out")
+                return False
+            except Exception as e:
+                logger.error(f"❌ Failed to run database initialization: {str(e)}")
+                return False
     
     def validate_test_environment(self) -> bool:
         """テスト環境の準備状況を検証"""
@@ -218,7 +233,7 @@ def get_reproducible_database_connection():
         raise ImportError("pyodbc is not available - DB tests will be skipped")
         
     connection_string = (
-        "DRIVER={ODBC Driver 17 for SQL Server};"
+        "DRIVER={ODBC Driver 18 for SQL Server};"
         "SERVER=localhost,1433;"
         "DATABASE=testdb;"
         "UID=sa;"

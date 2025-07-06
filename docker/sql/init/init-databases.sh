@@ -19,7 +19,10 @@ for i in {1..30}; do
 done
 
 # 初期化スクリプトの実行
-echo "Executing database initialization script..."
-/opt/mssql-tools18/bin/sqlcmd -S sql-server -U sa -P "$SA_PASSWORD" -i /docker-entrypoint-initdb.d/01-create-databases.sql -C
+echo "Executing database initialization scripts..."
+for f in /docker-entrypoint-initdb.d/*.sql; do
+    echo "Executing $f..."
+    /opt/mssql-tools18/bin/sqlcmd -S sql-server -U sa -P "$SA_PASSWORD" -i "$f" -C
+done
 
 echo "Database initialization completed successfully"

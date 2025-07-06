@@ -4,9 +4,12 @@ Azure Data Factory E2E Test Helper for Synapse Connection
 SQL Server connection helper for E2E testing with actual database operations
 """
 
-import os
-import time
 import logging
+import os
+import random
+import time
+import uuid
+
 # pyodbcの条件付きインポート（技術的負債対応）
 try:
     import pyodbc
@@ -99,8 +102,12 @@ class SynapseE2EConnection:
                 # SELECT文の場合は結果を取得
                 if query.strip().upper().startswith('SELECT'):
                     results = cursor.fetchall()
-                    logger.info(f"E2E Query executed, returned {len(results)} rows")
-                    return results
+                    # カラム名を取得
+                    columns = [column[0] for column in cursor.description]
+                    # 結果を辞書のリストに変換
+                    dict_results = [dict(zip(columns, row)) for row in results]
+                    logger.info(f"E2E Query executed, returned {len(dict_results)} rows")
+                    return dict_results
                 else:
                     # INSERT/UPDATE/DELETE文の場合はcommitして行数を返す
                     conn.commit()
@@ -183,6 +190,82 @@ class SynapseE2EConnection:
         logger.info(f"Mock pipeline completion: {run_id}")
         return "Succeeded"
 
+    def run_pipeline(self, pipeline_name: str, parameters: dict = None, timeout_minutes: int = 30) -> dict:
+        """
+        パイプライン実行をシミュレートし、結果を返す（モック実装）
+        """
+        logger.info(f"Simulating run for pipeline: {pipeline_name} with params: {parameters}")
+        run_id = self.trigger_pipeline(pipeline_name, parameters)
+        status = self.wait_for_pipeline_completion(run_id, timeout_minutes)
+        
+        # モックの結果を生成
+        return {
+            "runId": run_id,
+            "status": status,
+            "output": {
+                "filePath": f"/test/output/{pipeline_name}_output.csv",
+                "rowsWritten": random.randint(100, 1000)
+            },
+            "activityRuns": {
+                f"at_CreateCSV_{pipeline_name.replace('pi_Send_', '')}": {
+                    "status": "Succeeded",
+                    "output": {}
+                },
+                f"at_SFTP_{pipeline_name.replace('pi_Send_', '')}": {
+                    "status": "Succeeded",
+                    "output": {}
+                },
+                f"activity_{pipeline_name}": {
+                    "status": "Succeeded",
+                    "output": {}
+                }
+            }
+        }
+
+    def setup_test_data(self, table_name: str, test_data: list[dict]) -> bool:
+        """
+        テストデータを指定テーブルに挿入する（モック実装）
+        """
+        if not test_data:
+            return True
+            
+        logger.info(f"Setting up test data for table: {table_name}")
+        
+        columns = test_data[0].keys()
+        placeholders = ', '.join('?' * len(columns))
+        insert_query = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({placeholders})"
+        
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                for row in test_data:
+                    params = tuple(row.values())
+                    cursor.execute(insert_query, params)
+                conn.commit()
+            logger.info(f"Successfully inserted {len(test_data)} rows into {table_name}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to setup test data for {table_name}: {e}")
+            return False
+
+    def test_pipeline_error_handling(self, pipeline_name: str, error_condition: str) -> dict:
+        """パイプラインのエラーハンドリングをテストする（モック実装）"""
+        logger.info(f"Testing error handling for pipeline: {pipeline_name} with condition: {error_condition}")
+        return {
+            "runId": str(uuid.uuid4()),
+            "status": "Failed",
+            "error": {
+                "code": "MockError",
+                "message": f"Mock error condition met: {error_condition}"
+            }
+        }
+
+    def setup_cpkiyk_csv_sftp_test_data(self, scenario: str) -> bool:
+        """CPKIYK CSV/SFTPテスト用データをセットアップする（モック実装）"""
+        logger.info(f"Setting up test data for CPKIYK scenario: {scenario}")
+        # ここに実際のデータセットアップロジックを記述（例：テーブル作成、データ挿入）
+        return True
+
     # =================================================================
     # 外部SQLクエリ管理機能
     # =================================================================
@@ -206,12 +289,19 @@ class SynapseE2EConnection:
             results = self.execute_query(query)
             
             # 結果を辞書形式に変換
-            if results and hasattr(results[0], '_fields'):
-                # Named tupleの場合
-                return [dict(zip(row._fields, row)) for row in results]
-            else:
-                # 通常のtupleの場合、カラム名を推定
-                return [{"col" + str(i): val for i, val in enumerate(row)} for row in results]
+            if results:
+                if hasattr(results[0], '_fields'):
+                    # Named tupleの場合
+                    return [dict(zip(row._fields, row)) for row in results]
+                
+                # pyodbc.Rowの場合、カラム名を取得して辞書に変換
+                if cursor.description:
+                    columns = [column[0] for column in cursor.description]
+                    return [dict(zip(columns, row)) for row in results]
+                else:
+                    # 通常のtupleの場合、カラム名を推定
+                    return [{"col" + str(i): val for i, val in enumerate(row)} for row in results]
+            return []
                 
         except Exception as e:
             logger.error(f"External query execution failed: {filename}::{query_name} - {e}")

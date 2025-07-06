@@ -15,7 +15,7 @@ import pytest
 import json
 import os
 from unittest.mock import Mock, patch
-from azure.datafactory import DataFactoryManagementClient
+from azure.mgmt.datafactory import DataFactoryManagementClient
 from azure.identity import DefaultAzureCredential
 import time
 
