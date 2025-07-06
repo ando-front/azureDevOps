@@ -75,7 +75,7 @@ class ImprovedReproducibleE2EHelper:
         self.initializer_script = self.project_root / "e2e_db_auto_initializer.py"
         
         # 接続情報
-        self.server = os.getenv("SQL_SERVER_HOST", "localhost")
+        self.server = os.getenv("SQL_SERVER_HOST", "sql-server")
         self.port = os.getenv("SQL_SERVER_PORT", "1433")
         self.username = os.getenv("SQL_SERVER_USER", "sa")
         self.password = os.getenv("SQL_SERVER_PASSWORD", "YourStrong!Passw0rd123")

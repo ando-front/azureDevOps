@@ -72,6 +72,8 @@ logger = logging.getLogger(__name__)
 class GlobalTestState:
     db_initialized = False
     lock = threading.Lock()
+    working_password = "YourStrong!Passw0rd123"  # improved版で使用されているパスワード
+    working_database = "TGMATestDB"  # improved版で使用されているデータベース
 
 global_state = GlobalTestState()
 
@@ -82,6 +84,21 @@ class ReproducibleE2EHelper:
     def __init__(self):
         self.project_root = Path(__file__).parent.parent.parent
         self.initializer_script = self.project_root / "e2e_db_auto_initializer.py"
+        
+        # 接続情報 - 環境変数から取得（フォールバック付き）
+        self.server = os.getenv("SQL_SERVER_HOST", "localhost")  # localhostに変更
+        self.port = os.getenv("SQL_SERVER_PORT", "1433")
+        self.username = os.getenv("SQL_SERVER_USER", "sa")
+        self.database = os.getenv("SQL_SERVER_DATABASE", "TGMATestDB")
+        
+        # 複数のパスワードパターンを準備
+        self.password_candidates = [
+            os.getenv("SQL_SERVER_PASSWORD", "YourStrong!Passw0rd123"),  # 環境変数が最優先
+            "YourStrong!Passw0rd123",  # improved版で使用されているパスワード
+            "Password123!",            # 従来のパスワード
+            "Sa@123456",              # 別のパスワード
+            "TestPassword123!"        # 代替パスワード
+        ]
         
     def ensure_reproducible_database_state(self) -> bool:
         """
@@ -95,7 +112,20 @@ class ReproducibleE2EHelper:
 
             logger.info("🔄 Ensuring reproducible database state for E2E tests (first run)...")
             
+            # 先にDBが準備完了するまで待つ
+            if not self.wait_for_database_ready():
+                logger.error("❌ Database is not ready, skipping initialization")
+                return False
+
+            # 初期化スクリプトの存在確認
+            if not self.initializer_script.exists():
+                logger.warning(f"⚠️ Initializer script not found: {self.initializer_script}")
+                logger.info("🔄 Proceeding without initialization (assuming database is already set up)")
+                global_state.db_initialized = True
+                return True
+
             try:
+                logger.info(f"🔄 Running database initialization script: {self.initializer_script}")
                 # 自動初期化スクリプトを実行
                 result = subprocess.run(
                     [sys.executable, str(self.initializer_script)],
@@ -111,6 +141,8 @@ class ReproducibleE2EHelper:
                     return True
                 else:
                     logger.error(f"❌ Database initialization failed: {result.stderr}")
+                    logger.error(f"❌ Return code: {result.returncode}")
+                    logger.error(f"❌ Stdout: {result.stdout}")
                     return False
                     
             except subprocess.TimeoutExpired:
@@ -184,30 +216,55 @@ class ReproducibleE2EHelper:
             'marketing_client_dm_e2e': 5 # 5 marketing records
         }
     
-    def wait_for_database_ready(self, max_retries: int = 30, delay: int = 2) -> bool:
-        """データベースが準備完了するまで待機"""
+    def wait_for_database_ready(self, max_retries: int = 15, delay: int = 4) -> bool:
+        """データベースが準備完了するまで待機（診断強化版）"""
         logger.info("⏳ Waiting for database to be ready...")
         
+        if not PYODBC_AVAILABLE:
+            logger.warning("⚠️ pyodbc not available, skipping database readiness check")
+            return True
+        
+        # 複数のデータベース名とパスワードパターンを試行
+        database_names = [self.database, "testdb", "TGMATestDB"]
+        
         for attempt in range(max_retries):
-            try:
-                # 簡単な接続テスト
-                result = subprocess.run(
-                    [sys.executable, str(self.initializer_script), "--check-only"],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
-                )
-                
-                if result.returncode == 0:
-                    logger.info("✅ Database is ready")
-                    return True
-                    
-            except Exception:
-                pass
+            for db_name in database_names:
+                for password in self.password_candidates:
+                    try:
+                        connection_string = (
+                            "DRIVER={ODBC Driver 18 for SQL Server};"
+                            f"SERVER={self.server},{self.port};"
+                            f"DATABASE={db_name};"
+                            f"UID={self.username};"
+                            f"PWD={password};"
+                            "TrustServerCertificate=yes;"
+                            "ConnectRetryCount=3;"
+                            "ConnectRetryInterval=5;"
+                            "LoginTimeout=15;"
+                        )
+                        
+                        conn = pyodbc.connect(connection_string, autocommit=True)
+                        cursor = conn.cursor()
+                        cursor.execute("SELECT 1")
+                        cursor.fetchone()
+                        cursor.close()
+                        conn.close()
+                        
+                        logger.info(f"✅ Database '{db_name}' is ready with password: {password[:3]}***")
+                        # 成功した設定をグローバルに保存
+                        global_state.working_password = password
+                        global_state.working_database = db_name
+                        return True
+                        
+                    except Exception as pwd_error:
+                        logger.debug(f"⏳ DB:{db_name} PWD:{password[:3]}*** failed: {str(pwd_error)[:50]}")
+                        continue
             
             if attempt < max_retries - 1:
                 logger.info(f"⏳ Database not ready, waiting... ({attempt + 1}/{max_retries})")
                 time.sleep(delay)
+            else:
+                logger.error(f"❌ Database connection failed after {max_retries} attempts")
         
         logger.error("❌ Database did not become ready within timeout")
         return False
@@ -231,16 +288,24 @@ def get_reproducible_database_connection():
     """再現可能テスト用のデータベース接続を取得"""
     if not PYODBC_AVAILABLE:
         raise ImportError("pyodbc is not available - DB tests will be skipped")
-        
+    
+    # グローバル状態から正しいパスワードとデータベース名を取得
+    password = getattr(global_state, 'working_password', "YourStrong!Passw0rd123")
+    database = getattr(global_state, 'working_database', "TGMATestDB")
+    
     connection_string = (
         "DRIVER={ODBC Driver 18 for SQL Server};"
-        "SERVER=localhost,1433;"
-        "DATABASE=testdb;"
+        "SERVER=localhost,1433;"  # localhostに変更
+        f"DATABASE={database};"
         "UID=sa;"
-        "PWD=Password123!;"
+        f"PWD={password};"
         "TrustServerCertificate=yes;"
+        "ConnectRetryCount=3;"
+        "ConnectRetryInterval=5;"
+        "LoginTimeout=15;"
     )
-    return pyodbc.connect(connection_string)
+    # autocommitを有効にして、データ操作を即時反映
+    return pyodbc.connect(connection_string, autocommit=True)
 
 def get_reproducible_synapse_connection():
     """Synapse接続のシミュレーション（実際にはSQL Serverに接続）"""

@@ -1,0 +1,56 @@
+# =================================================================
+# 軽量E2Eテスト用 Docker Compose ファイル
+# 初期化スクリプトを簡素化して安定性を向上
+# =================================================================
+
+services:
+  # 軽量E2Eテスト用データベース
+  sqlserver-simple:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver-simple-test
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong!Passw0rd123
+      - MSSQL_PID=Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_simple_data:/var/opt/mssql
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q 'SELECT 1' -C" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # 基本的な初期化のみ実行
+    command: >
+      sh -c "
+        echo 'Starting SQL Server with minimal initialization...' &&
+        /opt/mssql/bin/sqlservr &
+        SERVER_PID=$$! &&
+        echo 'Waiting for SQL Server to be ready...' &&
+        sleep 30 &&
+        echo 'Testing SQL Server connection...' &&
+        for i in {1..20}; do
+          if /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q 'SELECT 1' -C >/dev/null 2>&1; then
+            echo 'SQL Server is ready!' &&
+            break
+          fi
+          echo 'Waiting for SQL Server... attempt' $$i &&
+          sleep 3
+        done &&
+        echo 'Creating minimal test databases...' &&
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123' -Q 'CREATE DATABASE TGMATestDB; CREATE DATABASE SynapseTestDB;' -C &&
+        echo 'Database initialization completed successfully!' &&
+        echo 'SQL Server is ready for connections' &&
+        wait $$SERVER_PID
+      "
+    networks:
+      - simple-network
+
+networks:
+  simple-network:
+    driver: bridge
+
+volumes:
+  sqlserver_simple_data:

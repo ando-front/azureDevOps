@@ -4,13 +4,25 @@
 USE TGMATestDB;
 GO
 
--- Clear existing test data
-DELETE FROM [dbo].[point_grant_email];
-DELETE FROM [dbo].[marketing_client_dm];
-DELETE FROM [dbo].[ClientDmBx];
-DELETE FROM [dbo].[client_dm];
--- Note: staging.client_raw table does not exist in current schema
-DELETE FROM [etl].[e2e_test_execution_log];
+-- Clear existing test data (with existence checks)
+IF OBJECT_ID('[dbo].[point_grant_email]', 'U') IS NOT NULL
+    DELETE FROM [dbo].[point_grant_email];
+
+IF OBJECT_ID('[dbo].[marketing_client_dm]', 'U') IS NOT NULL
+    DELETE FROM [dbo].[marketing_client_dm];
+
+IF OBJECT_ID('[dbo].[ClientDmBx]', 'U') IS NOT NULL
+    DELETE FROM [dbo].[ClientDmBx];
+
+IF OBJECT_ID('[dbo].[client_dm]', 'U') IS NOT NULL
+    DELETE FROM [dbo].[client_dm];
+
+-- Clear etl.e2e_test_execution_log if it exists
+IF OBJECT_ID('[etl].[e2e_test_execution_log]', 'U') IS NOT NULL
+    DELETE FROM [etl].[e2e_test_execution_log];
+ELSE
+    PRINT 'etl.e2e_test_execution_log table does not exist - skipping delete';
+
 GO
 
 -- Insert test client data
