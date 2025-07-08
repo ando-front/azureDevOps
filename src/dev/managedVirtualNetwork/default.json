@@ -1,6 +1,4 @@
 {
-  "name": "default",
-  "type": "Microsoft.DataFactory/factories/managedVirtualNetworks",
-  "properties": {},
-  "dependsOn": []
+	"name": "default",
+	"type": "Microsoft.DataFactory/factories/managedvirtualnetworks"
 }
