@@ -14,7 +14,8 @@ from dataclasses import dataclass, asdict
 import logging
 
 # パッケージパス設定
-sys.path.insert(0, '/home/ando')
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 # テストクラスインポート
 from e2e_v2.domains.kendenki.test_point_grant_email import TestPointGrantEmailPipeline
@@ -110,51 +111,52 @@ class TestRunner:
             }
         }
         
-        # テストメソッドマッピング
+        # テストメソッドマッピング (カテゴリ付き)
         self.test_methods = [
+            # カテゴリ, メソッド名, 説明
             # 検電ドメイン - ポイント付与メール
-            ("functional_with_file_exists", "機能テスト(ファイル有り)"),
-            ("functional_without_file", "機能テスト(ファイル無し)"),
-            ("data_quality_validation", "データ品質テスト"),
-            ("performance_large_dataset", "パフォーマンステスト"),
-            ("integration_sftp_connectivity", "統合テスト(SFTP)"),
+            (TestCategory.FUNCTIONAL, "functional_with_file_exists", "機能テスト(ファイル有り)"),
+            (TestCategory.FUNCTIONAL, "functional_without_file", "機能テスト(ファイル無し)"),
+            (TestCategory.DATA_QUALITY, "data_quality_validation", "データ品質テスト"),
+            (TestCategory.PERFORMANCE, "performance_large_dataset", "パフォーマンステスト"),
+            (TestCategory.INTEGRATION, "integration_sftp_connectivity", "統合テスト(SFTP)"),
             # SMC支払いアラート
-            ("functional_payment_alerts", "機能テスト(アラート)"),
-            ("functional_overdue_processing", "機能テスト(延滞処理)"),
-            ("data_quality_contact_validation", "データ品質テスト(連絡先)"),
-            ("performance_large_payment_dataset", "パフォーマンステスト(支払い)"),
-            ("integration_alert_distribution", "統合テスト(配信)"),
+            (TestCategory.FUNCTIONAL, "functional_payment_alerts", "機能テスト(アラート)"),
+            (TestCategory.FUNCTIONAL, "functional_overdue_processing", "機能テスト(延滞処理)"),
+            (TestCategory.DATA_QUALITY, "data_quality_contact_validation", "データ品質テスト(連絡先)"),
+            (TestCategory.PERFORMANCE, "performance_large_payment_dataset", "パフォーマンステスト(支払い)"),
+            (TestCategory.INTEGRATION, "integration_alert_distribution", "統合テスト(配信)"),
             # SMC公共料金
-            ("functional_utility_bills_processing", "機能テスト(公共料金)"),
-            ("functional_seasonal_adjustment", "機能テスト(季節調整)"),
-            ("data_quality_usage_validation", "データ品質テスト(使用量)"),
-            ("performance_high_volume_bills", "パフォーマンステスト(大量請求書)"),
-            ("integration_billing_system", "統合テスト(請求システム)"),
+            (TestCategory.FUNCTIONAL, "functional_utility_bills_processing", "機能テスト(公共料金)"),
+            (TestCategory.FUNCTIONAL, "functional_seasonal_adjustment", "機能テスト(季節調整)"),
+            (TestCategory.DATA_QUALITY, "data_quality_usage_validation", "データ品質テスト(使用量)"),
+            (TestCategory.PERFORMANCE, "performance_high_volume_bills", "パフォーマンステスト(大量請求書)"),
+            (TestCategory.INTEGRATION, "integration_billing_system", "統合テスト(請求システム)"),
             # ActionPoint
-            ("functional_entry_event_processing", "機能テスト(イベント)"),
-            ("functional_campaign_event_processing", "機能テスト(キャンペーン)"),
-            ("performance_bulk_processing", "パフォーマンステスト(大量)"),
-            ("integration_database_operations", "統合テスト(DB)"),
+            (TestCategory.FUNCTIONAL, "functional_entry_event_processing", "機能テスト(イベント)"),
+            (TestCategory.FUNCTIONAL, "functional_campaign_event_processing", "機能テスト(キャンペーン)"),
+            (TestCategory.PERFORMANCE, "performance_bulk_processing", "パフォーマンステスト(大量)"),
+            (TestCategory.INTEGRATION, "integration_database_operations", "統合テスト(DB)"),
             # Marketing
-            ("functional_client_dm_processing", "機能テスト(DM配信)"),
-            ("functional_customer_segmentation", "機能テスト(セグメンテーション)"),
-            ("functional_opt_out_filtering", "機能テスト(オプトアウト)"),
-            ("performance_large_customer_base", "パフォーマンステスト(大量顧客)"),
-            ("integration_campaign_delivery", "統合テスト(キャンペーン配信)"),
+            (TestCategory.FUNCTIONAL, "functional_client_dm_processing", "機能テスト(DM配信)"),
+            (TestCategory.FUNCTIONAL, "functional_customer_segmentation", "機能テスト(セグメンテーション)"),
+            (TestCategory.FUNCTIONAL, "functional_opt_out_filtering", "機能テスト(オプトアウト)"),
+            (TestCategory.PERFORMANCE, "performance_large_customer_base", "パフォーマンステスト(大量顧客)"),
+            (TestCategory.INTEGRATION, "integration_campaign_delivery", "統合テスト(キャンペーン配信)"),
             # TGContract
-            ("functional_contract_score_calculation", "機能テスト(スコア計算)"),
-            ("functional_risk_assessment", "機能テスト(リスク評価)"),
-            ("functional_premium_customer_identification", "機能テスト(プレミアム顧客)"),
-            ("data_quality_score_validation", "データ品質テスト(スコア値)"),
-            ("performance_large_contract_portfolio", "パフォーマンステスト(大量契約)"),
-            ("integration_score_based_actions", "統合テスト(スコアアクション)"),
+            (TestCategory.FUNCTIONAL, "functional_contract_score_calculation", "機能テスト(スコア計算)"),
+            (TestCategory.FUNCTIONAL, "functional_risk_assessment", "機能テスト(リスク評価)"),
+            (TestCategory.FUNCTIONAL, "functional_premium_customer_identification", "機能テスト(プレミアム顧客)"),
+            (TestCategory.DATA_QUALITY, "data_quality_score_validation", "データ品質テスト(スコア値)"),
+            (TestCategory.PERFORMANCE, "performance_large_contract_portfolio", "パフォーマンステスト(大量契約)"),
+            (TestCategory.INTEGRATION, "integration_score_based_actions", "統合テスト(スコアアクション)"),
             # Infrastructure
-            ("functional_data_copy_processing", "機能テスト(データ複製)"),
-            ("functional_data_quality_improvement", "機能テスト(品質向上)"),
-            ("functional_incremental_processing", "機能テスト(増分処理)"),
-            ("data_quality_normalization_validation", "データ品質テスト(正規化)"),
-            ("performance_large_dataset_copy", "パフォーマンステスト(大量複製)"),
-            ("integration_multi_stage_pipeline", "統合テスト(多段階パイプライン)")
+            (TestCategory.FUNCTIONAL, "functional_data_copy_processing", "機能テスト(データ複製)"),
+            (TestCategory.FUNCTIONAL, "functional_data_quality_improvement", "機能テスト(品質向上)"),
+            (TestCategory.FUNCTIONAL, "functional_incremental_processing", "機能テスト(増分処理)"),
+            (TestCategory.DATA_QUALITY, "data_quality_normalization_validation", "データ品質テスト(正規化)"),
+            (TestCategory.PERFORMANCE, "performance_large_dataset_copy", "パフォーマンステスト(大量複製)"),
+            (TestCategory.INTEGRATION, "integration_multi_stage_pipeline", "統合テスト(多段階パイプライン)")
         ]
     
     def run_pipeline_test(self, domain: str, pipeline_name: str, test_class) -> PipelineTestReport:
@@ -174,10 +176,10 @@ class TestRunner:
             test_instance = test_class()
             
             # 各テストメソッド実行
-            for method_name, method_description in self.test_methods:
+            for category, method_name, method_description in self.test_methods:
                 if hasattr(test_instance, f"test_{method_name}"):
                     try:
-                        logger.info(f"  テスト実行: {method_description}")
+                        logger.info(f"  テスト実行: [{category.name}] {method_description}")
                         
                         # テスト実行
                         test_method = getattr(test_instance, f"test_{method_name}")
@@ -187,6 +189,7 @@ class TestRunner:
                         
                         # 成功結果記録
                         test_results.append({
+                            "category": category.name,
                             "method": method_name,
                             "description": method_description,
                             "status": "PASSED",
@@ -195,12 +198,13 @@ class TestRunner:
                         })
                         passed_tests += 1
                         
-                        logger.info(f"    ✓ {method_description} - {test_duration:.2f}秒")
+                        logger.info(f"    ✓ [{category.name}] {method_description} - {test_duration:.2f}秒")
                         
                     except Exception as e:
                         # 失敗結果記録
-                        error_msg = f"{method_description}: {str(e)}"
+                        error_msg = f"[{category.name}] {method_description}: {str(e)}"
                         test_results.append({
+                            "category": category.name,
                             "method": method_name,
                             "description": method_description,
                             "status": "FAILED",
@@ -210,7 +214,7 @@ class TestRunner:
                         failed_tests += 1
                         errors.append(error_msg)
                         
-                        logger.error(f"    ✗ {method_description}: {str(e)}")
+                        logger.error(f"    ✗ [{category.name}] {method_description}: {str(e)}")
         
         except Exception as e:
             error_msg = f"パイプラインテスト初期化失敗: {str(e)}"
@@ -343,7 +347,7 @@ class TestRunner:
                 report_lines.append("- テスト詳細:")
                 for test_result in pipeline_report.test_results:
                     status_icon = "✓" if test_result["status"] == "PASSED" else "✗"
-                    report_lines.append(f"  {status_icon} {test_result['description']}")
+                    report_lines.append(f"  {status_icon} [{test_result['category']}] {test_result['description']}")
                     if test_result["error"]:
                         report_lines.append(f"    エラー: {test_result['error']}")
                 
@@ -389,13 +393,19 @@ class TestRunner:
     def save_report(self, summary: TestExecutionSummary, report_content: str):
         """レポート保存"""
         timestamp = summary.start_time.strftime('%Y%m%d_%H%M%S')
-        report_file = f"/home/ando/e2e_v2/reports/test_report_{timestamp}.txt"
+        
+        # レポート保存先ディレクトリ
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        reports_dir = os.path.join(os.path.dirname(script_dir), "reports")
+        os.makedirs(reports_dir, exist_ok=True)
+        
+        report_file = os.path.join(reports_dir, f"test_report_{timestamp}.txt")
         
         with open(report_file, 'w', encoding='utf-8') as f:
             f.write(report_content)
         
         # JSON形式でも保存
-        json_file = f"/home/ando/e2e_v2/reports/test_report_{timestamp}.json"
+        json_file = os.path.join(reports_dir, f"test_report_{timestamp}.json")
         report_data = {
             "summary": asdict(summary),
             "pipeline_reports": [asdict(report) for report in self.pipeline_reports],

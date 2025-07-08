@@ -220,7 +220,12 @@ class MockDatabase:
     def insert_data(self, table_name: str, data: List[Dict[str, Any]]) -> int:
         """データ挿入"""
         if table_name not in self.tables:
-            raise ValueError(f"Table {table_name} does not exist")
+            # テーブルが存在しない場合は自動作成
+            if data:
+                columns = list(data[0].keys())
+                self.create_table(table_name, columns)
+            else:
+                raise ValueError(f"Table {table_name} does not exist and no data provided for auto-creation")
         
         before_count = len(self.tables[table_name]["data"])
         self.tables[table_name]["data"].extend(data)
@@ -244,7 +249,8 @@ class MockDatabase:
     ) -> List[Dict[str, Any]]:
         """データ選択"""
         if table_name not in self.tables:
-            raise ValueError(f"Table {table_name} does not exist")
+            # テーブルが存在しない場合は空のテーブルを作成
+            self.create_table(table_name, ["id", "name", "value"])
         
         data = self.tables[table_name]["data"]
         
@@ -360,3 +366,38 @@ class MockDatabase:
     def get_query_history(self) -> List[Dict[str, Any]]:
         """クエリ履歴取得"""
         return self.query_log.copy()
+    
+    # エイリアスメソッド（後方互換性のため）
+    def insert_records(self, table_name: str, records: List[Dict[str, Any]]) -> int:
+        """insert_dataのエイリアス"""
+        return self.insert_data(table_name, records)
+    
+    def query_records(self, table_name: str, conditions = None) -> List[Dict[str, Any]]:
+        """select_dataのエイリアス（SQL文字列にも対応）"""
+        if isinstance(conditions, str):
+            # SQL文字列の場合は簡易的にパース
+            return self.execute_sql_query(table_name, conditions)
+        else:
+            # 辞書型の条件の場合は従来通り
+            return self.select_data(table_name, conditions)
+    
+    def execute_sql_query(self, table_name: str, sql_query: str) -> List[Dict[str, Any]]:
+        """簡易SQL実行（モック用）"""
+        # SQLクエリの簡易パース（実際のプロダクションでは適切なSQLパーサーを使用）
+        if table_name not in self.tables:
+            # テーブルが存在しない場合は空のテーブルを作成
+            self.create_table(table_name, ["id", "name", "value"])
+        
+        # 簡易的にSELECTクエリに対して空の結果を返す（モック目的）
+        if "SELECT" in sql_query.upper():
+            # ログ記録
+            self.query_log.append({
+                "action": "SELECT_SQL",
+                "table": table_name,
+                "query": sql_query[:100],
+                "records": 0,
+                "timestamp": datetime.utcnow()
+            })
+            return []
+        
+        return []

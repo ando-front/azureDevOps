@@ -300,9 +300,10 @@ class TestUsageServiceMtgIdPipeline(DomainTestBase):
         self.mock_storage.upload_file(self.output_container, output_file_path, output_data)
         
         # データベース挿入シミュレーション
+        db_records = self.convert_csv_to_dict_list(transformed_data)
         db_insert_result = self.mock_database.insert_records(
             self.database_target, 
-            transformed_data
+            db_records
         )
         
         # ビジネスルール検証
@@ -335,8 +336,8 @@ class TestUsageServiceMtgIdPipeline(DomainTestBase):
         test_id = f"functional_no_file_{int(time.time())}"
         self.log_test_info(test_id, "開始")
         
-        # ファイル存在チェック
-        file_date = datetime.utcnow().strftime('%Y%m%d')
+        # ファイル存在チェック（存在しないファイルパスを使用）
+        file_date = "99999999"  # 存在しない日付
         file_path = f"UsageService/{file_date}/usage_service_mtgid.tsv"
         
         file_exists = self.mock_storage.file_exists(self.source_container, file_path)
@@ -467,9 +468,10 @@ class TestUsageServiceMtgIdPipeline(DomainTestBase):
         )
         
         # 2. 新規挿入
+        db_records = self.convert_csv_to_dict_list(transformed_data)
         insert_result = self.mock_database.insert_records(
             self.database_target, 
-            transformed_data
+            db_records
         )
         
         # 3. 高使用量アラート

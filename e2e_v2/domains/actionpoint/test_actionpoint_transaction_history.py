@@ -397,9 +397,10 @@ class TestActionPointTransactionHistoryPipeline(DomainTestBase):
         self.mock_storage.upload_file(self.output_container, output_file_path, output_data)
         
         # データベース挿入シミュレーション
+        db_records = self.convert_csv_to_dict_list(transformed_data)
         db_insert_result = self.mock_database.insert_records(
             self.database_target, 
-            transformed_data
+            db_records
         )
         
         # ビジネスルール検証
@@ -530,9 +531,10 @@ class TestActionPointTransactionHistoryPipeline(DomainTestBase):
         )
         
         # 2. 一括挿入
+        db_records = self.convert_csv_to_dict_list(transformed_data)
         insert_result = self.mock_database.insert_records(
             self.database_target, 
-            transformed_data
+            db_records
         )
         
         # 3. 失効処理分析
