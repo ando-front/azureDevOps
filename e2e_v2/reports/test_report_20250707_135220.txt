@@ -1,0 +1,211 @@
+================================================================================
+E2E V2 パイプラインテスト実行レポート
+================================================================================
+実行日時: 2025/07/07 13:52:20 - 13:52:28
+実行時間: 8.62秒
+
+## 実行サマリ
+- 対象パイプライン数: 10
+- 総テスト数: 52
+- 成功テスト数: 30
+- 失敗テスト数: 22
+- 成功率: 57.7%
+- 平均実行時間: 0.17秒/テスト
+
+## KENDENKIドメイン
+### pi_PointGrantEmail
+- 成功率: 80.0% (4/5)
+- 実行時間: 0.43秒
+- エラー:
+  * 機能テスト(ファイル無し): ファイルが存在してはいけない
+- テスト詳細:
+  ✓ 機能テスト(ファイル有り)
+  ✗ 機能テスト(ファイル無し)
+    エラー: 機能テスト(ファイル無し): ファイルが存在してはいけない
+  ✓ データ品質テスト
+  ✓ パフォーマンステスト
+  ✓ 統合テスト(SFTP)
+
+### pi_PointLostEmail
+- 成功率: 20.0% (1/5)
+- 実行時間: 0.73秒
+- エラー:
+  * 機能テスト(ファイル有り): パイプライン実行失敗: []
+  * 機能テスト(ファイル無し): SKIPPED
+  * データ品質テスト: 'validity'
+  * パフォーマンステスト: パイプライン実行失敗: []
+- テスト詳細:
+  ✗ 機能テスト(ファイル有り)
+    エラー: 機能テスト(ファイル有り): パイプライン実行失敗: []
+  ✗ 機能テスト(ファイル無し)
+    エラー: 機能テスト(ファイル無し): SKIPPED
+  ✗ データ品質テスト
+    エラー: データ品質テスト: 'validity'
+  ✗ パフォーマンステスト
+    エラー: パフォーマンステスト: パイプライン実行失敗: []
+  ✓ 統合テスト(SFTP)
+
+### pi_Ins_usageservice_mtgid
+- 成功率: 20.0% (1/5)
+- 実行時間: 0.78秒
+- エラー:
+  * 機能テスト(ファイル有り): 'TestUsageServiceMtgIdPipeline' object has no attribute 'mock_database'
+  * 機能テスト(ファイル無し): SKIPPED
+  * データ品質テスト: 'validity'
+  * 統合テスト(DB): 'TestUsageServiceMtgIdPipeline' object has no attribute 'mock_database'
+- テスト詳細:
+  ✗ 機能テスト(ファイル有り)
+    エラー: 機能テスト(ファイル有り): 'TestUsageServiceMtgIdPipeline' object has no attribute 'mock_database'
+  ✗ 機能テスト(ファイル無し)
+    エラー: 機能テスト(ファイル無し): SKIPPED
+  ✗ データ品質テスト
+    エラー: データ品質テスト: 'validity'
+  ✓ パフォーマンステスト
+  ✗ 統合テスト(DB)
+    エラー: 統合テスト(DB): 'TestUsageServiceMtgIdPipeline' object has no attribute 'mock_database'
+
+## SMCドメイン
+### pi_Send_PaymentAlert
+- 成功率: 80.0% (4/5)
+- 実行時間: 0.03秒
+- エラー:
+  * 統合テスト(配信): 配信数不足: 5
+- テスト詳細:
+  ✓ 機能テスト(アラート)
+  ✓ 機能テスト(延滞処理)
+  ✓ データ品質テスト(連絡先)
+  ✓ パフォーマンステスト(支払い)
+  ✗ 統合テスト(配信)
+    エラー: 統合テスト(配信): 配信数不足: 5
+
+### pi_UtilityBills
+- 成功率: 80.0% (4/5)
+- 実行時間: 0.07秒
+- エラー:
+  * データ品質テスト(使用量): 有効レコード数不正: 期待=1, 実際=2
+- テスト詳細:
+  ✓ 機能テスト(公共料金)
+  ✓ 機能テスト(季節調整)
+  ✗ データ品質テスト(使用量)
+    エラー: データ品質テスト(使用量): 有効レコード数不正: 期待=1, 実際=2
+  ✓ パフォーマンステスト(大量請求書)
+  ✓ 統合テスト(請求システム)
+
+## ACTIONPOINTドメイン
+### pi_Insert_ActionPointEntryEvent
+- 成功率: 60.0% (3/5)
+- 実行時間: 0.01秒
+- エラー:
+  * データ品質テスト: 有効レコード数不正: 期待=1, 実際=2
+  * 統合テスト(DB): 最終レコード数不一致
+- テスト詳細:
+  ✗ データ品質テスト
+    エラー: データ品質テスト: 有効レコード数不正: 期待=1, 実際=2
+  ✓ 機能テスト(イベント)
+  ✓ 機能テスト(キャンペーン)
+  ✓ パフォーマンステスト(大量)
+  ✗ 統合テスト(DB)
+    エラー: 統合テスト(DB): 最終レコード数不一致
+
+### pi_Insert_ActionPointTransactionHistory
+- 成功率: 0.0% (0/4)
+- 実行時間: 1.39秒
+- エラー:
+  * 機能テスト(イベント): can't compare datetime.datetime to datetime.date
+  * 機能テスト(キャンペーン): can't compare datetime.datetime to datetime.date
+  * パフォーマンステスト(大量): can't compare datetime.datetime to datetime.date
+  * 統合テスト(DB): 'TestActionPointTransactionHistoryPipeline' object has no attribute 'mock_database'
+- テスト詳細:
+  ✗ 機能テスト(イベント)
+    エラー: 機能テスト(イベント): can't compare datetime.datetime to datetime.date
+  ✗ 機能テスト(キャンペーン)
+    エラー: 機能テスト(キャンペーン): can't compare datetime.datetime to datetime.date
+  ✗ パフォーマンステスト(大量)
+    エラー: パフォーマンステスト(大量): can't compare datetime.datetime to datetime.date
+  ✗ 統合テスト(DB)
+    エラー: 統合テスト(DB): 'TestActionPointTransactionHistoryPipeline' object has no attribute 'mock_database'
+
+## MARKETINGドメイン
+### pi_Send_ClientDM
+- 成功率: 83.3% (5/6)
+- 実行時間: 0.90秒
+- エラー:
+  * 機能テスト(セグメンテーション): 法人キャンペーンなし
+- テスト詳細:
+  ✓ データ品質テスト(連絡先)
+  ✓ 機能テスト(DM配信)
+  ✗ 機能テスト(セグメンテーション)
+    エラー: 機能テスト(セグメンテーション): 法人キャンペーンなし
+  ✓ 機能テスト(オプトアウト)
+  ✓ パフォーマンステスト(大量顧客)
+  ✓ 統合テスト(キャンペーン配信)
+
+## TGCONTRACTドメイン
+### pi_Send_karte_contract_score_info
+- 成功率: 50.0% (3/6)
+- 実行時間: 0.37秒
+- エラー:
+  * 機能テスト(スコア計算): ビジネスルール違反: ['行52: 信用スコアが範囲外 (-1.0)']
+  * 機能テスト(リスク評価): リスク監視対象不足: 0
+  * 統合テスト(スコアアクション): リスク監視アクションなし
+- テスト詳細:
+  ✗ 機能テスト(スコア計算)
+    エラー: 機能テスト(スコア計算): ビジネスルール違反: ['行52: 信用スコアが範囲外 (-1.0)']
+  ✗ 機能テスト(リスク評価)
+    エラー: 機能テスト(リスク評価): リスク監視対象不足: 0
+  ✓ 機能テスト(プレミアム顧客)
+  ✓ データ品質テスト(スコア値)
+  ✓ パフォーマンステスト(大量契約)
+  ✗ 統合テスト(スコアアクション)
+    エラー: 統合テスト(スコアアクション): リスク監視アクションなし
+
+## INFRASTRUCTUREドメイン
+### pi_Copy_marketing_client_dm
+- 成功率: 83.3% (5/6)
+- 実行時間: 3.92秒
+- エラー:
+  * 機能テスト(品質向上): パイプライン実行失敗: []
+- テスト詳細:
+  ✓ 機能テスト(データ複製)
+  ✗ 機能テスト(品質向上)
+    エラー: 機能テスト(品質向上): パイプライン実行失敗: []
+  ✓ 機能テスト(増分処理)
+  ✓ データ品質テスト(正規化)
+  ✓ パフォーマンステスト(大量複製)
+  ✓ 統合テスト(多段階パイプライン)
+
+## 未実装パイプライン
+以下のパイプラインはまだテストが実装されていません:
+### KENDENKIドメイン
+- pi_PointLostEmail
+- pi_Ins_usageservice_mtgid
+### SMCドメイン
+- pi_Send_UsageServices
+- pi_Send_mTGMailPermission
+- pi_UtilityBills
+- pi_Insert_ClientDmBx
+- pi_Send_ActionPointCurrentMonthEntryList
+- pi_Send_ActionPointRecentTransactionHistoryList
+- pi_Send_ElectricityContractThanks
+- pi_Send_LIMSettlementBreakdownRepair
+- pi_Send_LINEIDLinkInfo
+- pi_Send_MovingPromotionList
+- pi_Send_OpeningPaymentGuide
+- pi_Send_PaymentMethodChanged
+- pi_Send_PaymentMethodMaster
+### ACTIONPOINTドメイン
+- pi_Insert_ActionPointTransactionHistory
+### MARKETINGドメイン
+- pi_Send_ClientDM
+- pi_Send_Cpkiyk
+### TGCONTRACTドメイン
+- pi_Send_karte_contract_score_info
+### INFRASTRUCTUREドメイン
+- DoUntilPipeline
+- pi_Copy_marketing_client_dm
+- pi_Copy_marketing_client_dna
+- pi_CustmNoRegistComp
+### MTGMASTERドメイン
+- pi_Insert_mTGCustomerMaster
+
+================================================================================

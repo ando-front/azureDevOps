@@ -1,0 +1,93 @@
+================================================================================
+E2E V2 パイプラインテスト実行レポート
+================================================================================
+実行日時: 2025/07/07 13:06:16 - 13:06:17
+実行時間: 0.54秒
+
+## 実行サマリ
+- 対象パイプライン数: 3
+- 総テスト数: 15
+- 成功テスト数: 11
+- 失敗テスト数: 4
+- 成功率: 73.3%
+- 平均実行時間: 0.04秒/テスト
+
+## KENDENKIドメイン
+### pi_PointGrantEmail
+- 成功率: 80.0% (4/5)
+- 実行時間: 0.50秒
+- エラー:
+  * 機能テスト(ファイル無し): ファイルが存在してはいけない
+- テスト詳細:
+  ✓ 機能テスト(ファイル有り)
+  ✗ 機能テスト(ファイル無し)
+    エラー: 機能テスト(ファイル無し): ファイルが存在してはいけない
+  ✓ データ品質テスト
+  ✓ パフォーマンステスト
+  ✓ 統合テスト(SFTP)
+
+## SMCドメイン
+### pi_Send_PaymentAlert
+- 成功率: 80.0% (4/5)
+- 実行時間: 0.03秒
+- エラー:
+  * 統合テスト(配信): 配信数不足: 5
+- テスト詳細:
+  ✓ 機能テスト(アラート)
+  ✓ 機能テスト(延滞処理)
+  ✓ データ品質テスト(連絡先)
+  ✓ パフォーマンステスト(支払い)
+  ✗ 統合テスト(配信)
+    エラー: 統合テスト(配信): 配信数不足: 5
+
+## ACTIONPOINTドメイン
+### pi_Insert_ActionPointEntryEvent
+- 成功率: 60.0% (3/5)
+- 実行時間: 0.01秒
+- エラー:
+  * データ品質テスト: 有効レコード数不正: 期待=1, 実際=2
+  * 統合テスト(DB): 最終レコード数不一致
+- テスト詳細:
+  ✗ データ品質テスト
+    エラー: データ品質テスト: 有効レコード数不正: 期待=1, 実際=2
+  ✓ 機能テスト(イベント)
+  ✓ 機能テスト(キャンペーン)
+  ✓ パフォーマンステスト(大量)
+  ✗ 統合テスト(DB)
+    エラー: 統合テスト(DB): 最終レコード数不一致
+
+## 未実装パイプライン
+以下のパイプラインはまだテストが実装されていません:
+### KENDENKIドメイン
+- pi_PointLostEmail
+- pi_Ins_usageservice_mtgid
+### SMCドメイン
+- pi_Send_UsageServices
+- pi_Send_mTGMailPermission
+- pi_UtilityBills
+- pi_Insert_ClientDmBx
+- pi_Send_ActionPointCurrentMonthEntryList
+- pi_Send_ActionPointRecentTransactionHistoryList
+- pi_Send_ElectricityContractThanks
+- pi_Send_LIMSettlementBreakdownRepair
+- pi_Send_LINEIDLinkInfo
+- pi_Send_MovingPromotionList
+- pi_Send_OpeningPaymentGuide
+- pi_Send_PaymentMethodChanged
+- pi_Send_PaymentMethodMaster
+### ACTIONPOINTドメイン
+- pi_Insert_ActionPointTransactionHistory
+### MARKETINGドメイン
+- pi_Send_ClientDM
+- pi_Send_Cpkiyk
+### TGCONTRACTドメイン
+- pi_Send_karte_contract_score_info
+### INFRASTRUCTUREドメイン
+- DoUntilPipeline
+- pi_Copy_marketing_client_dm
+- pi_Copy_marketing_client_dna
+- pi_CustmNoRegistComp
+### MTGMASTERドメイン
+- pi_Insert_mTGCustomerMaster
+
+================================================================================

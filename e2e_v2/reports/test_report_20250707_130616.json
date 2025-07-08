@@ -1,0 +1,162 @@
+{
+  "summary": {
+    "total_pipelines": 3,
+    "total_tests": 15,
+    "passed_tests": 11,
+    "failed_tests": 4,
+    "total_execution_time": 0.5435342788696289,
+    "start_time": "2025-07-07 13:06:16.520865",
+    "end_time": "2025-07-07 13:06:17.064439"
+  },
+  "pipeline_reports": [
+    {
+      "pipeline_name": "pi_PointGrantEmail",
+      "domain": "kendenki",
+      "test_results": [
+        {
+          "method": "functional_with_file_exists",
+          "description": "機能テスト(ファイル有り)",
+          "status": "PASSED",
+          "duration": 0.0016605854034423828,
+          "error": null
+        },
+        {
+          "method": "functional_without_file",
+          "description": "機能テスト(ファイル無し)",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "機能テスト(ファイル無し): ファイルが存在してはいけない"
+        },
+        {
+          "method": "data_quality_validation",
+          "description": "データ品質テスト",
+          "status": "PASSED",
+          "duration": 0.0003771781921386719,
+          "error": null
+        },
+        {
+          "method": "performance_large_dataset",
+          "description": "パフォーマンステスト",
+          "status": "PASSED",
+          "duration": 0.4900491237640381,
+          "error": null
+        },
+        {
+          "method": "integration_sftp_connectivity",
+          "description": "統合テスト(SFTP)",
+          "status": "PASSED",
+          "duration": 0.0003418922424316406,
+          "error": null
+        }
+      ],
+      "total_tests": 5,
+      "passed_tests": 4,
+      "failed_tests": 1,
+      "execution_time": 0.4978063106536865,
+      "errors": [
+        "機能テスト(ファイル無し): ファイルが存在してはいけない"
+      ],
+      "warnings": []
+    },
+    {
+      "pipeline_name": "pi_Send_PaymentAlert",
+      "domain": "smc",
+      "test_results": [
+        {
+          "method": "functional_payment_alerts",
+          "description": "機能テスト(アラート)",
+          "status": "PASSED",
+          "duration": 0.0047817230224609375,
+          "error": null
+        },
+        {
+          "method": "functional_overdue_processing",
+          "description": "機能テスト(延滞処理)",
+          "status": "PASSED",
+          "duration": 0.00020074844360351562,
+          "error": null
+        },
+        {
+          "method": "data_quality_contact_validation",
+          "description": "データ品質テスト(連絡先)",
+          "status": "PASSED",
+          "duration": 0.00011730194091796875,
+          "error": null
+        },
+        {
+          "method": "performance_large_payment_dataset",
+          "description": "パフォーマンステスト(支払い)",
+          "status": "PASSED",
+          "duration": 0.025983572006225586,
+          "error": null
+        },
+        {
+          "method": "integration_alert_distribution",
+          "description": "統合テスト(配信)",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "統合テスト(配信): 配信数不足: 5"
+        }
+      ],
+      "total_tests": 5,
+      "passed_tests": 4,
+      "failed_tests": 1,
+      "execution_time": 0.03142976760864258,
+      "errors": [
+        "統合テスト(配信): 配信数不足: 5"
+      ],
+      "warnings": []
+    },
+    {
+      "pipeline_name": "pi_Insert_ActionPointEntryEvent",
+      "domain": "actionpoint",
+      "test_results": [
+        {
+          "method": "data_quality_validation",
+          "description": "データ品質テスト",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "データ品質テスト: 有効レコード数不正: 期待=1, 実際=2"
+        },
+        {
+          "method": "functional_entry_event_processing",
+          "description": "機能テスト(イベント)",
+          "status": "PASSED",
+          "duration": 0.0010521411895751953,
+          "error": null
+        },
+        {
+          "method": "functional_campaign_event_processing",
+          "description": "機能テスト(キャンペーン)",
+          "status": "PASSED",
+          "duration": 0.0001289844512939453,
+          "error": null
+        },
+        {
+          "method": "performance_bulk_processing",
+          "description": "パフォーマンステスト(大量)",
+          "status": "PASSED",
+          "duration": 0.008686304092407227,
+          "error": null
+        },
+        {
+          "method": "integration_database_operations",
+          "description": "統合テスト(DB)",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "統合テスト(DB): 最終レコード数不一致"
+        }
+      ],
+      "total_tests": 5,
+      "passed_tests": 3,
+      "failed_tests": 2,
+      "execution_time": 0.013313770294189453,
+      "errors": [
+        "データ品質テスト: 有効レコード数不正: 期待=1, 実際=2",
+        "統合テスト(DB): 最終レコード数不一致"
+      ],
+      "warnings": []
+    }
+  ],
+  "overall_errors": []
+}

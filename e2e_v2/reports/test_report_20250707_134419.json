@@ -1,0 +1,382 @@
+{
+  "summary": {
+    "total_pipelines": 7,
+    "total_tests": 38,
+    "passed_tests": 27,
+    "failed_tests": 11,
+    "total_execution_time": 5.395152568817139,
+    "start_time": "2025-07-07 13:44:19.409026",
+    "end_time": "2025-07-07 13:44:24.804234"
+  },
+  "pipeline_reports": [
+    {
+      "pipeline_name": "pi_PointGrantEmail",
+      "domain": "kendenki",
+      "test_results": [
+        {
+          "method": "functional_with_file_exists",
+          "description": "機能テスト(ファイル有り)",
+          "status": "PASSED",
+          "duration": 0.001810312271118164,
+          "error": null
+        },
+        {
+          "method": "functional_without_file",
+          "description": "機能テスト(ファイル無し)",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "機能テスト(ファイル無し): ファイルが存在してはいけない"
+        },
+        {
+          "method": "data_quality_validation",
+          "description": "データ品質テスト",
+          "status": "PASSED",
+          "duration": 0.0005717277526855469,
+          "error": null
+        },
+        {
+          "method": "performance_large_dataset",
+          "description": "パフォーマンステスト",
+          "status": "PASSED",
+          "duration": 0.44156312942504883,
+          "error": null
+        },
+        {
+          "method": "integration_sftp_connectivity",
+          "description": "統合テスト(SFTP)",
+          "status": "PASSED",
+          "duration": 0.000335693359375,
+          "error": null
+        }
+      ],
+      "total_tests": 5,
+      "passed_tests": 4,
+      "failed_tests": 1,
+      "execution_time": 0.44672393798828125,
+      "errors": [
+        "機能テスト(ファイル無し): ファイルが存在してはいけない"
+      ],
+      "warnings": []
+    },
+    {
+      "pipeline_name": "pi_Send_PaymentAlert",
+      "domain": "smc",
+      "test_results": [
+        {
+          "method": "functional_payment_alerts",
+          "description": "機能テスト(アラート)",
+          "status": "PASSED",
+          "duration": 0.005650520324707031,
+          "error": null
+        },
+        {
+          "method": "functional_overdue_processing",
+          "description": "機能テスト(延滞処理)",
+          "status": "PASSED",
+          "duration": 0.00014162063598632812,
+          "error": null
+        },
+        {
+          "method": "data_quality_contact_validation",
+          "description": "データ品質テスト(連絡先)",
+          "status": "PASSED",
+          "duration": 0.00011348724365234375,
+          "error": null
+        },
+        {
+          "method": "performance_large_payment_dataset",
+          "description": "パフォーマンステスト(支払い)",
+          "status": "PASSED",
+          "duration": 0.025751113891601562,
+          "error": null
+        },
+        {
+          "method": "integration_alert_distribution",
+          "description": "統合テスト(配信)",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "統合テスト(配信): 配信数不足: 5"
+        }
+      ],
+      "total_tests": 5,
+      "passed_tests": 4,
+      "failed_tests": 1,
+      "execution_time": 0.032050132751464844,
+      "errors": [
+        "統合テスト(配信): 配信数不足: 5"
+      ],
+      "warnings": []
+    },
+    {
+      "pipeline_name": "pi_UtilityBills",
+      "domain": "smc",
+      "test_results": [
+        {
+          "method": "functional_utility_bills_processing",
+          "description": "機能テスト(公共料金)",
+          "status": "PASSED",
+          "duration": 0.0014040470123291016,
+          "error": null
+        },
+        {
+          "method": "functional_seasonal_adjustment",
+          "description": "機能テスト(季節調整)",
+          "status": "PASSED",
+          "duration": 6.961822509765625e-05,
+          "error": null
+        },
+        {
+          "method": "data_quality_usage_validation",
+          "description": "データ品質テスト(使用量)",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "データ品質テスト(使用量): 有効レコード数不正: 期待=1, 実際=2"
+        },
+        {
+          "method": "performance_high_volume_bills",
+          "description": "パフォーマンステスト(大量請求書)",
+          "status": "PASSED",
+          "duration": 0.06992363929748535,
+          "error": null
+        },
+        {
+          "method": "integration_billing_system",
+          "description": "統合テスト(請求システム)",
+          "status": "PASSED",
+          "duration": 0.0014843940734863281,
+          "error": null
+        }
+      ],
+      "total_tests": 5,
+      "passed_tests": 4,
+      "failed_tests": 1,
+      "execution_time": 0.07327008247375488,
+      "errors": [
+        "データ品質テスト(使用量): 有効レコード数不正: 期待=1, 実際=2"
+      ],
+      "warnings": []
+    },
+    {
+      "pipeline_name": "pi_Insert_ActionPointEntryEvent",
+      "domain": "actionpoint",
+      "test_results": [
+        {
+          "method": "data_quality_validation",
+          "description": "データ品質テスト",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "データ品質テスト: 有効レコード数不正: 期待=1, 実際=2"
+        },
+        {
+          "method": "functional_entry_event_processing",
+          "description": "機能テスト(イベント)",
+          "status": "PASSED",
+          "duration": 0.0011243820190429688,
+          "error": null
+        },
+        {
+          "method": "functional_campaign_event_processing",
+          "description": "機能テスト(キャンペーン)",
+          "status": "PASSED",
+          "duration": 0.00012564659118652344,
+          "error": null
+        },
+        {
+          "method": "performance_bulk_processing",
+          "description": "パフォーマンステスト(大量)",
+          "status": "PASSED",
+          "duration": 0.009025335311889648,
+          "error": null
+        },
+        {
+          "method": "integration_database_operations",
+          "description": "統合テスト(DB)",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "統合テスト(DB): 最終レコード数不一致"
+        }
+      ],
+      "total_tests": 5,
+      "passed_tests": 3,
+      "failed_tests": 2,
+      "execution_time": 0.012238502502441406,
+      "errors": [
+        "データ品質テスト: 有効レコード数不正: 期待=1, 実際=2",
+        "統合テスト(DB): 最終レコード数不一致"
+      ],
+      "warnings": []
+    },
+    {
+      "pipeline_name": "pi_Send_ClientDM",
+      "domain": "marketing",
+      "test_results": [
+        {
+          "method": "data_quality_contact_validation",
+          "description": "データ品質テスト(連絡先)",
+          "status": "PASSED",
+          "duration": 0.00012493133544921875,
+          "error": null
+        },
+        {
+          "method": "functional_client_dm_processing",
+          "description": "機能テスト(DM配信)",
+          "status": "PASSED",
+          "duration": 0.0018358230590820312,
+          "error": null
+        },
+        {
+          "method": "functional_customer_segmentation",
+          "description": "機能テスト(セグメンテーション)",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "機能テスト(セグメンテーション): 法人キャンペーンなし"
+        },
+        {
+          "method": "functional_opt_out_filtering",
+          "description": "機能テスト(オプトアウト)",
+          "status": "PASSED",
+          "duration": 0.00010704994201660156,
+          "error": null
+        },
+        {
+          "method": "performance_large_customer_base",
+          "description": "パフォーマンステスト(大量顧客)",
+          "status": "PASSED",
+          "duration": 0.837662935256958,
+          "error": null
+        },
+        {
+          "method": "integration_campaign_delivery",
+          "description": "統合テスト(キャンペーン配信)",
+          "status": "PASSED",
+          "duration": 0.00018453598022460938,
+          "error": null
+        }
+      ],
+      "total_tests": 6,
+      "passed_tests": 5,
+      "failed_tests": 1,
+      "execution_time": 0.840409517288208,
+      "errors": [
+        "機能テスト(セグメンテーション): 法人キャンペーンなし"
+      ],
+      "warnings": []
+    },
+    {
+      "pipeline_name": "pi_Send_karte_contract_score_info",
+      "domain": "tgcontract",
+      "test_results": [
+        {
+          "method": "functional_contract_score_calculation",
+          "description": "機能テスト(スコア計算)",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "機能テスト(スコア計算): ビジネスルール違反: ['行52: 信用スコアが範囲外 (-1.0)']"
+        },
+        {
+          "method": "functional_risk_assessment",
+          "description": "機能テスト(リスク評価)",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "機能テスト(リスク評価): リスク監視対象不足: 0"
+        },
+        {
+          "method": "functional_premium_customer_identification",
+          "description": "機能テスト(プレミアム顧客)",
+          "status": "PASSED",
+          "duration": 0.00022649765014648438,
+          "error": null
+        },
+        {
+          "method": "data_quality_score_validation",
+          "description": "データ品質テスト(スコア値)",
+          "status": "PASSED",
+          "duration": 0.000232696533203125,
+          "error": null
+        },
+        {
+          "method": "performance_large_contract_portfolio",
+          "description": "パフォーマンステスト(大量契約)",
+          "status": "PASSED",
+          "duration": 0.2716410160064697,
+          "error": null
+        },
+        {
+          "method": "integration_score_based_actions",
+          "description": "統合テスト(スコアアクション)",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "統合テスト(スコアアクション): リスク監視アクションなし"
+        }
+      ],
+      "total_tests": 6,
+      "passed_tests": 3,
+      "failed_tests": 3,
+      "execution_time": 0.27826499938964844,
+      "errors": [
+        "機能テスト(スコア計算): ビジネスルール違反: ['行52: 信用スコアが範囲外 (-1.0)']",
+        "機能テスト(リスク評価): リスク監視対象不足: 0",
+        "統合テスト(スコアアクション): リスク監視アクションなし"
+      ],
+      "warnings": []
+    },
+    {
+      "pipeline_name": "pi_Copy_marketing_client_dm",
+      "domain": "infrastructure",
+      "test_results": [
+        {
+          "method": "functional_data_copy_processing",
+          "description": "機能テスト(データ複製)",
+          "status": "PASSED",
+          "duration": 0.02143692970275879,
+          "error": null
+        },
+        {
+          "method": "functional_data_quality_improvement",
+          "description": "機能テスト(品質向上)",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "機能テスト(品質向上): パイプライン実行失敗: []"
+        },
+        {
+          "method": "functional_incremental_processing",
+          "description": "機能テスト(増分処理)",
+          "status": "PASSED",
+          "duration": 0.0007390975952148438,
+          "error": null
+        },
+        {
+          "method": "data_quality_normalization_validation",
+          "description": "データ品質テスト(正規化)",
+          "status": "PASSED",
+          "duration": 0.00011944770812988281,
+          "error": null
+        },
+        {
+          "method": "performance_large_dataset_copy",
+          "description": "パフォーマンステスト(大量複製)",
+          "status": "PASSED",
+          "duration": 3.6838648319244385,
+          "error": null
+        },
+        {
+          "method": "integration_multi_stage_pipeline",
+          "description": "統合テスト(多段階パイプライン)",
+          "status": "FAILED",
+          "duration": 0,
+          "error": "統合テスト(多段階パイプライン): name 'json' is not defined"
+        }
+      ],
+      "total_tests": 6,
+      "passed_tests": 4,
+      "failed_tests": 2,
+      "execution_time": 3.710690498352051,
+      "errors": [
+        "機能テスト(品質向上): パイプライン実行失敗: []",
+        "統合テスト(多段階パイプライン): name 'json' is not defined"
+      ],
+      "warnings": []
+    }
+  ],
+  "overall_errors": []
+}

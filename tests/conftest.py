@@ -2,11 +2,15 @@
 テストの共通設定を管理するモジュール
 """
 import os
+import sys
 import json
 import pytest
 from azure.storage.blob import BlobServiceClient
 from tests.unit.helpers.synapse_test_helper import SynapseTestConnection
 from tests.unit.helpers.azure_storage_mock import create_mock_blob_service_client
+
+# プロジェクトのルートディレクトリをsys.pathに追加
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # テストデータのパス設定
 DATA_ROOT = "tests/data"
